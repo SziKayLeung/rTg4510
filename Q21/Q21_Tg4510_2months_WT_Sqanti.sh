@@ -20,7 +20,7 @@ seqtk seq -a /mnt/data1/Szi/Q21/Collapse_Isoform/Q21.collapsed.min_fl_2.filtered
 cd /mnt/data1/Szi/Q21/Sqanti
 
 python /mnt/data1/software/PacBio/ConesaLab-sqanti-6927e53e56d2/sqanti_qc.py -g \
-/mnt/data1/Szi/Q21/Collapse_Isoform_2/Q21.collapsed.min_fl_2.filtered.gff \
+/mnt/data1/Szi/Q21/Collapse_Isoform/Q21.collapsed.min_fl_2.filtered.gff \
 /mnt/data1/Szi/reference/GRCm38.p4.gtf \
 /mnt/data1/Szi/reference/GRCm38.p4.genome.fa \
 -o Q21 -d /mnt/data1/Szi/Q21/Sqanti  &> sqanti_qc_outfile.txt
