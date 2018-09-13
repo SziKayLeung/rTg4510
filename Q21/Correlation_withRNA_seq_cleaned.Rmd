@@ -1,0 +1,298 @@
+---
+title: "Post SMRTAnalysis"
+output: html_document
+---
+AD mouse model, age: J20, 6months (Baseline)
+Phenotype: WT
+Brain region: Entorinhal Cortex
+Sample: C21
+
+Objective: To tabulate the number of full-length reads obtained per gene from Isoseq and order genes from high to low, for comparison with RNAseq data for exact sample 
+
+Rationale: To evaluate whether Isoseq output comparable to RNAseq output 
+
+Analysis: 
+1) Downloaded raw subread.bam file from Sequel output 
+2) CCS and Isoseq3 command line (Lima, Cluster, Polish)
+3) Mapped to mouse genome using GMAP 
+4) Tofu Cupcake 
+5) Sqanti for isoform characterisation  
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir ="//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_J20/C21")
+```
+XX
+```{r}
+RNAseq <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
+
+head(RNAseq)
+
+# only include RNAseq raw counts from Sample Q21(Tg4510) for direct comparisons
+# row.names of gene name to copy across from RNASeq as lost during splicing 
+Q21_RNAseq_count <- data.frame(RNAseq[,"Q21"],row.names = (rownames(RNAseq)))
+colnames(Q21_RNAseq_count)[1] = "RNASeq Raw Counts"
+
+# Input: Isoseq Q21 processed from Count.Q21.Rmd 
+Q21_PacBio_complete <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_ordered_unique.csv", header = TRUE)[,-1]
+
+Q21_PacBio_count <- Q21_PacBio_complete[,c("mgi_symbol","isoform","count_fl")]
+# Q21_PacBio_count[which(Q21_PacBio_count == "Arf3"),]
+
+library(dplyr)
+Q21_PacBio_count_max <- Q21_PacBio_count %>% group_by(mgi_symbol) %>%
+   slice(which.max(count_fl))
+Q21_PacBio_count_max[which(Q21_PacBio_count_max$mgi_symbol == "Arf3"),]
+
+
+merge_count <- merge(Q21_RNAseq_count,Q21_PacBio_count,by.x = 0,
+                     by.y = "mgi_symbol",all = TRUE)
+
+```
+
+```{r}
+colnames(merge_count) <- c("Genes","RNASeq_Raw_Counts","PacBio_ID","PacBio_FL_Counts")
+# checking for correct merging
+merge_count[which(merge_count$Genes == "Arf3"),]
+# Q21_PacBio_count[which(Q21_PacBio_count == "Arf3"),]
+```
+
+# PacBio Output with one gene but multiple isoforms, thus complicates correlation with RNA-seq gene expression data 
+# only keep most higly expresssed isoform 
+library(dplyr)
+merge_count_max <- merge_count %>% group_by(Genes) %>%
+   slice(which.max(PacBio_FL_Counts))
+merge_count_max[which(merge_count_max$Genes == "Arf3"),]
+
+# sum of all isoforms across same gene 
+# e.g RNASeq_Raw_Counts = RNASeq_Raw_Counts[1] => to keep column
+# group by gene column
+merge_count_all <- merge_count %>% group_by(Genes) %>%
+   summarize(RNASeq_Raw_Counts = RNASeq_Raw_Counts[1], PacBio_ID = PacBio_ID[1], 
+             PacBio_FL_Counts = sum(PacBio_FL_Counts))
+# validation
+merge_count_all[which(merge_count_all$Genes == "Arf3"),]
+
+```
+
+```{r}
+# correlation between RNA_Seq counts and PacBio FL read counts
+# note missing values: http://bwlewis.github.io/covar/missing.html
+# complete.obs = remove rows with missing observations/counts
+cor(merge_count_max$RNASeq_Raw_Counts,merge_count_max$PacBio_FL_Counts, method = "pearson", use = "complete.obs")
+
+# if(!require(devtools)) install.packages("devtools")
+# devtools::install_github("kassambara/ggpubr")
+
+# correlation plots 
+# interesting no NA pacbio reads i.e. no 2...
+# dim(merge_count_max much much smaller....)
+library("ggpubr")
+ggscatter(merge_count_max, x = "PacBio_FL_Counts", y = "RNASeq_Raw_Counts", 
+          color = "Both",palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "PacBio Full-Length Counts", ylab = "RNASeq Raw") 
+
+      
+merge_count_max$Both="3"
+colnames(merge_count_max)
+merge_count_max$Both[is.na(merge_count_max$RNASeq_Raw_Counts)]="1"
+merge_count_max$Both[is.na(merge_count_max$PacBio_FL_Counts)]="2"
+
+
+
+```
+
+```{r}
+# check normality of counts - log2 data
+hist(merge_count_max$PacBio_FL_Counts)
+hist(merge_count_max$RNASeq_Raw_Counts)
+hist(log2(merge_count_max$RNASeq_Raw_Counts))
+hist(log10(merge_count_max$RNASeq_Raw_Counts))
+hist(log(merge_count_max$PacBio_FL_Counts))
+hist(sqrt(merge_count_max$PacBio_FL_Counts))
+
+# normalise counts using log2 and cbind 
+merge_count_all$RNASeq_Raw_Counts <- as.numeric(as.character(merge_count_all$RNASeq_Raw_Counts))
+merge_count_all[merge_count_all == 0] <- NA
+
+merge_count_all_norm <- cbind(merge_count_all, log2(merge_count_all$RNASeq_Raw_Counts),log2(merge_count_all$PacBio_FL_Counts))
+
+colnames(merge_count_all_norm) <- c("Genes","RNASeq_Raw_Counts","PacBio_ID","PacBio_FL_Counts","log2RNaSeq_Raw_Counts",
+                                    "log2PacBio_FL_Counts")
+
+cor(merge_count_all_norm$log2RNaSeq_Raw_Counts,merge_count_all_norm$log2PacBio_FL_Counts,method = "pearson", use = "complete.obs")
+
+library("ggpubr")
+ggscatter(merge_count_all_norm, y = "log2RNaSeq_Raw_Counts", x = "log2PacBio_FL_Counts", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          ylab = "PacBio Full-Length Counts", xlab = "RNASeq Raw")
+          
+
+```
+
+```{r}
+cor(merge_count_all$RNASeq_Raw_Counts,merge_count_all$PacBio_FL_Counts, method = "pearson", use = "complete.obs")
+
+hist(merge_count_all$PacBio_FL_Counts)
+hist(merge_count_all$RNASeq_Raw_Counts)
+hist(log2(merge_count_all$RNASeq_Raw_Counts))
+hist(log(merge_count_all$PacBio_FL_Counts))
+hist(sqrt(merge_count_all$PacBio_FL_Counts))
+
+# correlation plots 
+library("ggpubr")
+ggscatter(merge_count_all, x = "PacBio_FL_Counts", y = "RNASeq_Raw_Counts", 
+          color = "Detection",palette = c("black", "red", "blue","yellow"),
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "PacBio Full-Length Counts", ylab = "RNASeq Raw",xlim = c(0,1000))
+          
+merge_count_all <- data.frame(merge_count_all)
+merge_count_all[is.na(merge_count_all)] <- 0
+merge_count_all$Detection ="Both"
+colnames(merge_count_all)
+View(merge_count_all)
+merge_count_all$Detection[merge_count_all$RNASeq_Raw_Counts == "0"] = "noRSeq"
+merge_count_all$Detection[merge_count_all$PacBio_FL_Counts == "0"] <- "noPB"
+merge_count_all$Detection[merge_count_all$PacBio_FL_Counts == "0" & merge_count_all$RNASeq_Raw_Counts == "0"] <- "none"
+
+dim(merge_count_all[which(merge_count_all$Detection == "noPB"),])
+dim(merge_count_all[which(merge_count_all$Detection == "Both"),])
+dim(merge_count_all[which(merge_count_all$Detection == "noRSeq"),])
+
+# histograms of Isabel's data detected vs un-detected
+noPB <- merge_count_all[merge_count_all$Detection == "noPB",]
+Both <- merge_count_all[merge_count_all$Detection == "Both",]
+
+# very long tail, therfore removed RNAseq counts of 100
+hist(noPB$RNASeq_Raw_Counts,breaks = 100)
+noPB_100 <- noPB[which(noPB$RNASeq_Raw_Counts > 100),]
+hist(noPB_100$RNASeq_Raw_Counts,breaks = 100)
+hist(Both$RNASeq_Raw_Counts)
+
+noPB_100_5000 <- noPB[which(noPB$RNASeq_Raw_Counts > 100 & noPB$RNASeq_Raw_Counts < 5000),]
+hist(noPB_100_5000$RNASeq_Raw_Counts,breaks = 100)
+
+hist(Both$RNASeq_Raw_Counts)
+Both_100_5000 <- Both[which(Both$RNASeq_Raw_Counts > 100 & Both$RNASeq_Raw_Counts < 5000),]
+hist(Both_100_5000$RNASeq_Raw_Counts,breaks = 100)
+
+#komogorpf-smirnof test
+
+
+```{r}
+library("tidyr")
+str(merge_count_max)
+merge_count_max_long<- gather(data = merge_count_max, key = Technology, value = Counts,
+                              -Genes, -PacBio_ID)
+
+
+library("ggplot2")
+merge_count_max.heatmap <- ggplot(data = merge_count_max_long, 
+                                  mapping = aes(x = Technology, y = Genes,
+                                                fill = Counts)) + 
+  geom_tile() + xlab(label = "Sequencing Platform")
+
+merge_count_max.heatmap
+```
+
+```{r}
+library("tidyr")
+str(merge_count_all)
+merge_count_all_long<- gather(data = merge_count_all, key = Technology, value = Counts,
+                              -Genes, -PacBio_ID)
+merge_count_all_long <- merge_count_all_long[,-2]
+
+class(merge_count_all_long$Genes)
+class(merge_count_all_long$Technology)
+merge_count_all_long$Genes <- as.factor(merge_count_all_long$Genes)
+merge_count_all_long$Technology <- as.factor(merge_count_all_long$Technology)
+merge_count_all_long$Counts <- as.numeric(as.character(merge_count_all_long$Counts))
+
+library("ggplot2")
+library("digest")
+merge_count_all.heatmap <- ggplot(data = merge_count_all_long, 
+                                  mapping = aes(x = Technology, y = Genes,
+                                                fill = Counts)) + 
+  geom_tile() + xlab(label = "Sequencing Platform")
+
+# heatmap with normalised data
+merge_count_all_long[merge_count_all_long == 0] <- NA
+merge_count_all_long_norm <- cbind(merge_count_all_long,log2(merge_count_all_long$Counts))
+colnames(merge_count_all_long_norm)[4] <- "log2Counts"
+
+library("ggplot2")
+merge_count_all_norm.heatmap <- ggplot(data = merge_count_all_long_norm, 
+                                  mapping = aes(x = Technology, y = Genes,
+                                                fill = log2Counts)) + 
+  geom_tile() + xlab(label = "Sequencing Platform") 
+
+merge_count_all_norm.heatmap
+
+```
+
+```{r}
+# heatmap with normalised data, subset only data with highest PacBio counts
+# highest PacBio normalised data = 11.36
+dim(merge_count_all_long_norm[which(merge_count_all_long_norm$log2Counts <= 1),])
+merge_count_all_long_norm[which(merge_count_all_long_norm$Technology == "RNASeq_Raw_Counts" & is.na(merge_count_all_long_norm$log2Counts)),]
+
+
+library("ggplot2")
+test <- ggplot(data = merge_count_all_long_norm[which(is.na(merge_count_all_long_norm$log2Counts)),], mapping = aes(x = Technology, y = Genes,
+                                                fill = log2Counts)) + 
+  geom_tile() + xlab(label = "Sequencing Platform") + 
+  scale_fill_gradient(name = "log2Counts",
+                      low = "#FFFFFF",
+                      high = "#012345")
+
+test
+
+```
+```{r}
+# remove NA samples from both PacBio and RNAseq data for visualisation ease by keeping only samples that are not NA
+# unsure whether to keep here or before as may affect correlation 
+all.na <-  merge_count_all_norm[is.na(merge_count_all_norm$RNASeq_Raw_Counts) & is.na(merge_count_all_norm$log2PacBio_FL_Counts),]
+
+merge_count_all_norm_cleaned <- merge_count_all_norm[!merge_count_all_norm$Genes %in% all.na$Genes, , drop = FALSE]
+# keep only normalised counts for heatmap 
+colnames(merge_count_all_norm_cleaned)
+merge_count_all_norm_cleaned <- merge_count_all_norm_cleaned[,c(1,5,6)]
+
+View(merge_count_all_norm_cleaned)
+
+# same correlation (on normalised data and pearson method)
+cor(merge_count_all_norm_cleaned$log2PacBio_FL_Counts,merge_count_all_norm_cleaned$log2RNaSeq_Raw_Counts, method = "pearson", use = "complete.obs")
+
+# heatmap of all genes with NAs from both technology removed 
+library("tidyr")
+merge_count_all_norm_cleaned_long<- gather(data = merge_count_all_norm_cleaned, key = Technology, value = Counts,-Genes)
+View(merge_count_all_norm_cleaned_long)
+
+# need to convert from character to factor for heatmap below 
+class(merge_count_all_norm_cleaned_long$Technology)
+class(merge_count_all_norm_cleaned_long$Genes)
+merge_count_all_norm_cleaned_long$Technology <- as.factor(merge_count_all_norm_cleaned_long$Technology)
+merge_count_all_norm_cleaned_long$Genes <- as.factor(merge_count_all_norm_cleaned_long$Genes)
+
+library("ggplot2")
+merge_count_all_norm_cleaned_long.heatmap <- ggplot(data = merge_count_all_norm_cleaned_long, 
+                                  mapping = aes(x = Technology, y = Genes,
+                                                fill = Counts)) + 
+  geom_tile() + xlab(label = "Sequencing Platform")
+
+merge_count_all_norm_cleaned_long.heatmap
+
+```
+
+```{r}
+# to check the genes where there are RNAseq counts but no PacBio counts 
+merge_count_all_norm_cleaned_RNAseq <- merge_count_all_norm_cleaned[
+  which(is.na(merge_count_all_norm_cleaned$log2PacBio_FL_Counts)),]
+
+merge_count_all_norm_cleaned_RNAseq
+merge_count_all_norm_cleaned_RNAseq[which(is.na(merge_count_all_norm_cleaned_RNAseq)),]
+```
+
