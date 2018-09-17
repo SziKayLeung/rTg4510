@@ -31,7 +31,7 @@ Input: Cupcake of number of FL Reads (CCS) clustered for HQ-unique isoform  i.e.
 O18_Classification <- read.delim2("/mnt/data1/Szi/O18/Sqanti/O18_classification.txt", header = TRUE)
 
 # Remove rows 1:14 of descriptor 
-O18_Counts <- read.delim2("/mnt/data1/Szi/O18/Collapse_Isoform_2/test.collapsed.min_fl_2.filtered.abundance.txt", header = TRUE)[-c(1:14),]
+O18_Counts <- read.csv("/mnt/data1/Szi/O18/Collapse_Isoform_2/test.collapsed.min_fl_2.filtered.abundance.csv", header = TRUE)[-c(1:14),]
 
 colnames(O18_Counts) <- c("PacBio_Id","count_fl","count_nfl","count_nfl_amb","norm_fl","norm_nfl","norm_nfl_amb")
 ```
@@ -44,7 +44,7 @@ O18_Classification <- O18_Classification[,-which(names(O18_Classification) %in% 
 ```{r}
 # To merge two files together by PacBio ID
 O18_merge <- merge(O18_Classification,O18_Counts,by.x = "isoform", by.y = "PacBio_Id")
-write.csv(O18_merge,"//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/O18/Isoseq3/Merged_O18.csv")
+# write.csv(O18_merge,"//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/O18/Isoseq3/Merged_O18.csv")
 ```
 
 ```{r}
