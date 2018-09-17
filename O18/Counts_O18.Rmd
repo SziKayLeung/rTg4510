@@ -87,7 +87,7 @@ O18_ordered_unique$count_fl <- as.numeric(as.character(O18_ordered_unique$count_
 O18_ordered_unique <- O18_ordered_unique[order(-O18_ordered_unique$count_fl),]
 
 # save output 
-dir.create(/mnt/data1/Szi/O18/Comparisons_RNAseq)
+dir.create('/mnt/data1/Szi/O18/Comparisons_RNAseq')
 write.csv(O18_ordered_unique,"/mnt/data1/Szi/O18/Comparisons_RNAseq/O18_ordered_unique.csv")
 
 ```
