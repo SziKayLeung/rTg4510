@@ -21,14 +21,14 @@ Analysis:
 5) Sqanti for isoform characterisation  
 
 ```{r setup, include=FALSE}
-knitr::opts_knit$set(root.dir ="//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21")
-# knitr::opts_knit$set(root.dir ="~")
+# knitr::opts_knit$set(root.dir ="//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21")
+knitr::opts_knit$set(root.dir ="~")
 ```
 ## Input RNA-seq Count
 ```{r}
 # Input: Isabel's Tg4510 short-read ordered by raw counts 
-RNAseq <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
-# RNAseq <- read.csv("/home/sLeung/IsoSeq3_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
+# RNAseq <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
+RNAseq <- read.csv("/home/sLeung/IsoSeq3_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
 
 head(RNAseq)
 
@@ -44,8 +44,8 @@ head(RNAseq_Q21)
 Input PacBio FL data fromm cupcake with isoform identification from Sqanti
 ```{r}
 # Input: Isoseq Q21 processed from Count.Q21.Rmd  
-Q21_PacBio_complete <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_ordered_unique.csv", header = TRUE)[,-1]
-# Q21_PacBio_complete <- read.csv("/mnt/data1/Szi/Q21/Comparisons_RNAseq/Q21_ordered_unique.csv", header = TRUE)[,-1]
+# Q21_PacBio_complete <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_ordered_unique.csv", header = TRUE)[,-1]
+Q21_PacBio_complete <- read.csv("/mnt/data1/Szi/Q21/Comparisons_RNAseq/Q21_ordered_unique.csv", header = TRUE)[,-1]
 
 # For Gene column with novel genes, replace NA with associated gene 
 # first to convert both columns into character 
@@ -81,12 +81,12 @@ MCount <- MCount[!MCount$Genes %in% none$Genes, , drop = FALSE]
 dim(MCount)[1]
 
 # to check the genes where there are RNAseq counts but no PacBio counts 
-MCount[which(is.na(MCount$PacBio_FL_Counts)),]
+head(MCount[which(is.na(MCount$PacBio_FL_Counts)),])
 ```
 ## Sum of FL Count of all isoforms per gene 
 As in example above, PacBio FL count presented per isoform rather than per gene. However, RNA-seq count from Isabel presented for counts per gene (and not isoform). Therefore for direct comparison of count per gene, summed PacBio FL counts of isofors per gene. 
 Did also consider choosing only the isoform with the highest number of FL counts, yet biased results especially given if many isoforms with similar or slgihtly smaller number of FL-counts. Assuming RNA-seq captures expression of all RNA transcripts irrespective of isoforms, decided to also compare with total number of FL counts
-```{r}
+```{r Message=FALSE}
 # PacBio Output with one gene but multiple isoforms, thus complicates correlation with RNA-seq gene expression data 
 # sum of FLcounts of all isoforms across same gene 
 #  %>% group_by(Genes) %>% = group/splice MCount dataframe by genes
@@ -97,9 +97,9 @@ MCount_all <- MCount %>% group_by(Genes) %>%
    summarize(RNASeq_Raw_Counts = RNASeq_Raw_Counts[1], PacBio_ID = PacBio_ID[1], 
              PacBio_FL_Counts = sum(PacBio_FL_Counts))
 # validation
-MCount_all[which(MCount_all$Genes == "Arf3"),]
-write.csv(MCount_all,file = '//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/MergeCount_allIsoforms.csv')
-
+head(MCount_all[which(MCount_all$Genes == "Arf3"),])
+# write.csv(MCount_all,file = '//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/MergeCount_allIsoforms.csv')
+write.csv(MCount_all,file = '/mnt/data1/Szi/Q21/Comparisons_RNAseq/MergeCount_allIsoforms.csv')
 ```
 ## Normalise Read Counts for correlation 
 ```{r}
@@ -120,7 +120,7 @@ MCount_all_norm <- cbind(MCount_all, log2(MCount_all$RNASeq_Raw_Counts),log2(MCo
 
 colnames(MCount_all_norm) <- c("Genes","RNASeq_Raw_Counts","PacBio_ID","PacBio_FL_Counts","log2RNaSeq_Raw_Counts",
                                     "log2PacBio_FL_Counts")
-MCount_all_norm
+head(MCount_all_norm)
                                     
 ```
 ## Correlation 
@@ -131,7 +131,7 @@ For information on missing values: http://bwlewis.github.io/covar/missing.html
 cor(MCount_all_norm$log2RNaSeq_Raw_Counts,MCount_all_norm$log2PacBio_FL_Counts,method = "pearson", use = "complete.obs")
 ```
 ## Correlation Plot of normalised data
-```{r}
+```{r message=FALSE}
 # Before plotting correlation, want to detect the genes that are detected by RNAseq and not by PacBio and vice-versa 
 # ensure working with dataframe 
 MCount_all_norm <- data.frame(MCount_all_norm)
@@ -164,7 +164,7 @@ Corplot_norm <- ggscatter(MCount_all_norm, y = "log2RNaSeq_Raw_Counts", x = "log
 Corplot_norm
 ```
 # Correlation plot of raw data
-```{r}
+```{r message=FALSE}
 # open directory with saved file of Mcount_all, rather than running through code again
 # MCount_all <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/MergeCount_allIsoforms.csv", header = TRUE)
 # Before plotting correlation, want to detect the genes that are detected by RNAseq and not by PacBio and vice-versa 
@@ -206,7 +206,7 @@ Corplot
 ```
 ## Histograms of RNAseq genes detected by PacBio vs undetected
 Of raw counts i.e not logged
-```{r}
+```{r message=FALSE}
 # subset data that is not detected by PacBio by noPB and data detected by both
 noPB <- MCount_all[MCount_all$Detection == "noPB",]
 Both <- MCount_all[MCount_all$Detection == "Both",]
@@ -231,7 +231,7 @@ hist(noRseq_0_300$PacBio_FL_Counts,breaks = 50)
 #komogorpf-smirnof test
 ```
 
-```{r}
+```{r message=FALSE}
 # HeatMap of normalised data
 # To gather data in a format that can be mapped i.e from wide to long 
 library("tidyr")
