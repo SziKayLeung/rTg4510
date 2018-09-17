@@ -1,0 +1,90 @@
+---
+title: "Post SMRTAnalysis"
+output: html_document
+---
+AD mouse model, age: J20, 6months (Baseline)
+Phenotype: WT
+Brain region: Entorinhal Cortex
+Sample: Q21
+
+Objective: To tabulate the number of full-length reads obtained per gene from Isoseq and order genes from high to low, for comparison with RNAseq data for exact sample 
+
+Rationale: To evaluate whether Isoseq output comparable to RNAseq output 
+
+Analysis: 
+1) Downloaded raw subread.bam file from Sequel output 
+2) CCS and Isoseq3 command line (Lima, Cluster, Polish)
+3) Mapped to mouse genome using GMAP 
+4) Tofu Cupcake 
+5) Sqanti for isoform characterisation  
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir ="//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21")
+```
+Input: Sqanti Classification text with all details of HQ-unique isoforms filtered out
+  Necessary as assigns PacBio output gene Cluster ID to mouse gene name 
+Input: Cupcake of number of FL Reads (CCS) clustered for HQ-unique isoform  i.e. number of ZMW for each isoform
+  Parameters: Minimum 2 FL-read reads per gene, and filtered by 5' degradation
+  Therefore only tabulating the count ouput from TofuCupcake (Step 4)
+```{r}
+Q21_Classification <- read.delim2("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_classification.txt", header = TRUE)
+
+# Remove rows 1:14 of descriptor 
+Q21_Counts <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21.collapsed.min_fl_2.filtered.abundance.csv", header = TRUE)[-c(1:14),]
+
+colnames(Q21_Counts) <- c("PacBio_Id","count_fl","count_nfl","count_nfl_amb","norm_fl","norm_nfl","norm_nfl_amb")
+```
+```{r}
+head(Q21_Classification)
+# to remove specific empty columns 
+Q21_Classification <- Q21_Classification[,-which(names(Q21_Classification) %in% c("sd_cov","min_cov","FL","min_sample_cov","iso_exp","gene_exp","ratio_exp"))]
+```
+
+```{r}
+# To merge two files together by PacBio ID
+Q21_merge <- merge(Q21_Classification,Q21_Counts,by.x = "isoform", by.y = "PacBio_Id")
+write.csv(Q21_merge,"//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Merged_Q21.csv")
+```
+
+```{r}
+# Q21_merge <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/MyDocuments/PacBio/AD_Mouse_J20/Q21/Merged_Q21.csv", header = TRUE)[,-1]
+
+# To include novel genes by replacing "-" with . and then extracting the first word 
+# need to extract first word because associated gene has a number folowed by the . for the different isoforms, therefore associated gene not recognised by biomart  
+library(stringr)
+Q21_merge$associated_gene <- str_replace_all(Q21_merge$associated_gene,"_",".")
+
+# to extract the first number separated by . per row (carried out with a for loop)
+strings <- data.frame()
+for(row in 1:nrow(Q21_merge)){
+  gene <- Q21_merge$associated_gene[row]
+  df <- word(gene,1, sep = fixed ('.'))
+  strings[row,1] <- df
+}
+Q21_ordered <- cbind(Q21_merge,strings)
+
+```
+
+```{r}
+# Convert Ensembl ID to gene using biomart
+library("biomaRt")
+# mart = mouse genome
+mart <- useDataset("mmusculus_gene_ensembl", useMart("ensembl"))
+# genes = V1 input 
+genes <- Q21_ordered$V1
+G_list <- getBM(filters= "ensembl_gene_id", attributes=
+                  c("ensembl_gene_id","mgi_symbol"),values=genes,mart= mart)
+
+Q21_ordered <- merge(Q21_ordered,G_list,by.x = "V1", by.y = "ensembl_gene_id",all = TRUE)
+Q21_ordered_unique <- unique(Q21_ordered)
+# to rearrange columns for formatting; column 34 = final column = mgi_symbol 
+# column 2:33 of all columns -1 (V1 from stringi, extracted name)
+Q21_ordered_unique <- Q21_ordered_unique[,c(34,2:33)]
+
+# order FL from highest to lowest
+Q21_ordered_unique$count_fl <- as.numeric(as.character(Q21_ordered_unique$count_fl))
+Q21_ordered_unique <- Q21_ordered_unique[order(-Q21_ordered_unique$count_fl),]
+write.csv(Q21_ordered_unique,"//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_ordered_unique.csv")
+
+```
+
