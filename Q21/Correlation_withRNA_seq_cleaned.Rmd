@@ -2,10 +2,10 @@
 title: "Comparison with RNASeqData"
 output: html_document
 ---
-AD mouse model, age: J20, 6months (Baseline)
+AD mouse model, age: Tg4510, 6months (Baseline)
 Phenotype: WT
 Brain region: Entorinhal Cortex
-Sample: C21
+Sample: Q21
 
 Objective: To tabulate the number of full-length reads obtained per gene from Isoseq and order genes from high to low
 for comparison with RNAseq data for exact sample 
@@ -20,14 +20,14 @@ Analysis:
 5) Sqanti for isoform characterisation  
 
 ```{r setup, include=FALSE}
-# knitr::opts_knit$set(root.dir ="//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_J20/C21")
-knitr::opts_knit$set(root.dir ="~")
+knitr::opts_knit$set(root.dir ="//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21")
+# knitr::opts_knit$set(root.dir ="~")
 ```
 ## Input RNA-seq Count
 ```{r}
 # Input: Isabel's Tg4510 short-read ordered by raw counts 
-# RNAseq <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
-RNAseq <- read.csv("/home/sLeung/IsoSeq3_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
+RNAseq <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
+# RNAseq <- read.csv("/home/sLeung/IsoSeq3_Tg4510/countdata_ordered_Tg4510.csv", row.names = 1, header = TRUE)
 
 head(RNAseq)
 
@@ -36,13 +36,23 @@ head(RNAseq)
 RNAseq_Q21 <- data.frame(RNAseq[,"Q21"],row.names = (rownames(RNAseq)))
 colnames(RNAseq_Q21)[1] = "RNASeq Raw Counts"
 
+head(RNAseq_Q21)
+
 ```
 ## Input PacBio Count
 Input PacBio FL data fromm cupcake with isoform identification from Sqanti
 ```{r}
 # Input: Isoseq Q21 processed from Count.Q21.Rmd  
-# Q21_PacBio_complete <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_ordered_unique.csv", header = TRUE)[,-1]
-Q21_PacBio_complete <- read.csv("/mnt/data1/Szi/Q21/Comparisons_RNAseq/Q21_ordered_unique.csv", header = TRUE)[,-1]
+Q21_PacBio_complete <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/Isoseq3/Q21_ordered_unique.csv", header = TRUE)[,-1]
+# Q21_PacBio_complete <- read.csv("/mnt/data1/Szi/Q21/Comparisons_RNAseq/Q21_ordered_unique.csv", header = TRUE)[,-1]
+
+# For Gene column with novel genes, replace NA with associated gene 
+# first to convert both columns into character 
+Q21_PacBio_complete$mgi_symbol <- as.character(Q21_PacBio_complete$mgi_symbol)
+Q21_PacBio_complete$associated_gene <- as.character(Q21_PacBio_complete$associated_gene)
+# if gene column is NA, replace from text in associated gene column in respective row
+Q21_PacBio_complete$mgi_symbol <- ifelse(is.na(Q21_PacBio_complete$mgi_symbol) == TRUE, Q21_PacBio_complete$associated_gene, Q21_PacBio_complete$mgi_symbol)
+
 
 # Only take 3 columns forwarded for comparison with RNA-seq data: 1) gene names 2) PacBio ID for identification of different isoforms per gene 3) Number of FL counts 
 PacBio_Q21 <- Q21_PacBio_complete[,c("mgi_symbol","isoform","count_fl")]
@@ -62,12 +72,15 @@ MCount[which(MCount$Genes == "Arf3"),]
 # remove rows(genes) that are not detected in both PacBio and RNAseq data 
 # only interested in genes that are both or either detected in technology for comparison of expression/threshold for detection
 # splice out the rows that are 0 counts for both technology and name as none
-none <-  Mcount[which(Mcount%RNASeq_Raw_Counts == 0 &  Mcount$2PacBio_FL_Counts == 0),]
-# remove rows in Mcount dataframe if the gene column matches the gene column in none column i.e. filter out the genes that are not detected
-Mcount <- Mcount_all[!Mcount_all$Genes %in% none$Genes, , drop = FALSE]
+none <-  MCount[which(MCount$RNASeq_Raw_Counts == 0 &  is.na(MCount$PacBio_FL_Count)),]
+# number of genes before cleaning 
+dim(MCount)[1]
+# remove rows in MCount dataframe if the gene column matches the gene column in none column i.e. filter out the genes that are not detected
+MCount <- MCount[!MCount$Genes %in% none$Genes, , drop = FALSE]
+dim(MCount)[1]
 
 # to check the genes where there are RNAseq counts but no PacBio counts 
-Mcount[which(Mcount$PacBio_FL_Counts == 0),]
+MCount[which(is.na(MCount$PacBio_FL_Counts)),]
 ```
 ## Sum of FL Count of all isoforms per gene 
 As in example above, PacBio FL count presented per isoform rather than per gene. However, RNA-seq count from Isabel presented for counts per gene (and not isoform). Therefore for direct comparison of count per gene, summed PacBio FL counts of isofors per gene. 
@@ -75,7 +88,7 @@ Did also consider choosing only the isoform with the highest number of FL counts
 ```{r}
 # PacBio Output with one gene but multiple isoforms, thus complicates correlation with RNA-seq gene expression data 
 # sum of FLcounts of all isoforms across same gene 
-#  %>% group_by(Genes) %>% = group/splice Mcount dataframe by genes
+#  %>% group_by(Genes) %>% = group/splice MCount dataframe by genes
 # In the groups, keep RNAseq Counts and PacBio ID columns as they are 
 # sum(PacBio_FL_Counts)
 library(dplyr)
@@ -84,6 +97,7 @@ MCount_all <- MCount %>% group_by(Genes) %>%
              PacBio_FL_Counts = sum(PacBio_FL_Counts))
 # validation
 MCount_all[which(MCount_all$Genes == "Arf3"),]
+write.csv(MCount_all,file = '//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/MergeCount_allIsoforms.csv')
 
 ```
 ## Normalise Read Counts for correlation 
@@ -103,10 +117,9 @@ MCount_all$RNASeq_Raw_Counts <- as.numeric(as.character(MCount_all$RNASeq_Raw_Co
 MCount_all[MCount_all == 0] <- NA
 MCount_all_norm <- cbind(MCount_all, log2(MCount_all$RNASeq_Raw_Counts),log2(MCount_all$PacBio_FL_Counts))
 
-colnames(Mcount_all_norm) <- c("Genes","RNASeq_Raw_Counts","PacBio_ID","PacBio_FL_Counts","log2RNaSeq_Raw_Counts",
+colnames(MCount_all_norm) <- c("Genes","RNASeq_Raw_Counts","PacBio_ID","PacBio_FL_Counts","log2RNaSeq_Raw_Counts",
                                     "log2PacBio_FL_Counts")
-# keep only the gene column and logged counts 
-Mcount_all_norm <- [,c(1,5,6]
+MCount_all_norm
                                     
 ```
 ## Correlation 
@@ -114,59 +127,105 @@ To check correlation of RNAseq raw counts with PacBio FL counts, hypothesise hig
 For information on missing values: http://bwlewis.github.io/covar/missing.html
 ```{r}
 # complete.obs to not include rows that have missing observations/counts in either technology 
-cor(Mcount_all_norm$log2RNaSeq_Raw_Counts,Mcount_all_norm$log2PacBio_FL_Counts,method = "pearson", use = "complete.obs")
+cor(MCount_all_norm$log2RNaSeq_Raw_Counts,MCount_all_norm$log2PacBio_FL_Counts,method = "pearson", use = "complete.obs")
 ```
-## Correlation Plot 
+## Correlation Plot of normalised data
 ```{r}
-# Before plotting correlation, want to detect the genes that are detected by RNAseq and not by PacBio and vice-versa
+# Before plotting correlation, want to detect the genes that are detected by RNAseq and not by PacBio and vice-versa 
 # ensure working with dataframe 
-Mcount_all_norm <- data.frame(Mcount_all_norm)
+MCount_all_norm <- data.frame(MCount_all_norm)
 # recoverted NA values back to 0, otherwise not detect the genes that are not detected in either technology 
-Mcount_all_norm[is.na(Mcount_all_norm)] <- 0
+MCount_all_norm[is.na(MCount_all_norm)] <- 0
 # Create new column as detection and as default fill with "Both" i.e. detected by both technology 
-Mcount_all_norm$Detection ="Both"
+MCount_all_norm$Detection ="Both"
 # For rows with 0 RNASeq raw counts, populate detection column with "noRSeq"
-Mcount_all_norm$Detection[Mcount_all_norm$RNASeq_Raw_Counts == "0"] = "noRSeq"
+MCount_all_norm$Detection[MCount_all_norm$log2RNaSeq_Raw_Counts == "0"] = "noRSeq"
 # For rows with 0 PacBio raw counts, populate detection column with "noPB"
-Mcount_all_norm$Detection[Mcount_all_norm_$PacBio_FL_Counts == "0"] <- "noPB"
+MCount_all_norm$Detection[MCount_all_norm$log2PacBio_FL_Counts == "0"] <- "noPB"
 # For rows with 0 PacBio raw counts and 0 , populate detection column with "noPB", should be 0 as removed earlier before
-Mcount_all_norm$Detection[MCount_all_norm$PacBio_FL_Counts == "0" & Mcount_all_norm$RNASeq_Raw_Counts == "0"] <- "none"
+MCount_all_norm$Detection[MCount_all_norm$PacBio_FL_Counts == "0" & MCount_all_norm$RNASeq_Raw_Counts == "0"] <- "none"
 
-dim(Mcount_all_norm[which(Mcount_all_norm$Detection == "noPB"),])
-dim(Mcount_all_norm[which(Mcount_all_norm$Detection == "Both"),])
-dim(Mcount_all_norm[which(Mcount_all_norm$Detection == "noRSeq"),])
+dim(MCount_all_norm[which(MCount_all_norm$Detection == "noPB"),])
+dim(MCount_all_norm[which(MCount_all_norm$Detection == "Both"),])
+dim(MCount_all_norm[which(MCount_all_norm$Detection == "noRSeq"),])
+dim(MCount_all_norm)[1]
 
 # Correlation plot
-if(!require(devtools)) install.packages("devtools")
-devtools::install_github("kassambara/ggpubr")
+# if(!require(devtools)) install.packages("devtools")
+#devtools::install_github("kassambara/ggpubr")
 library("ggpubr")
-Corplot <- ggscatter(Mcount_all_norm, y = "log2RNaSeq_Raw_Counts", x = "log2PacBio_FL_Counts", 
+Corplot_norm <- ggscatter(MCount_all_norm, y = "log2RNaSeq_Raw_Counts", x = "log2PacBio_FL_Counts", 
           color = "Detection",palette = c("black", "red", "blue","yellow"),
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
-          ylab = "PacBio Full-Length Counts", xlab = "RNASeq Raw Counts")
+          ylab = "log2RNaSeq_Raw_Counts", xlab = "log2PacBio_FL_Counts")
 
+Corplot_norm
+```
+# Correlation plot of raw data
+```{r}
+# open directory with saved file of Mcount_all, rather than running through code again
+# MCount_all <- read.csv("//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/MergeCount_allIsoforms.csv", header = TRUE)
+# Before plotting correlation, want to detect the genes that are detected by RNAseq and not by PacBio and vice-versa 
+# ensure working with dataframe 
+MCount_all <- data.frame(MCount_all)
+MCount_all$Genes <- as.character(MCount_all$Genes)
+MCount_all$PacBio_ID <- as.character(MCount_all$PacBio_ID)
+# recoverted NA values back to 0, otherwise not detect the genes that are not detected in either technology 
+MCount_all[is.na(MCount_all)] <- 0
+# Create new column as detection and as default fill with "Both" i.e. detected by both technology 
+MCount_all$Detection ="Both"
+# For rows with 0 RNASeq raw counts, populate detection column with "noRSeq"
+MCount_all$Detection[MCount_all$RNASeq_Raw_Counts == "0" & !MCount_all$Genes %like% "novel" ] = "noRSeq"
+# For rows with 0 PacBio raw counts, populate detection column with "noPB"
+MCount_all$Detection[MCount_all$PacBio_FL_Counts == "0"] <- "noPB"
+# For rows with 0 PacBio raw counts and 0 , populate detection column with "noPB", should be 0 as removed earlier before
+MCount_all$Detection[MCount_all$PacBio_FL_Counts == "0" & MCount_all$RNASeq_Raw_Counts == "0"] <- "none"
+# For rows with novel genes, populate detection column with "novel"
+# use datatable function %like% as gene names are novel.x, therefore only partial selection
+library("data.table")
+MCount_all$Detection[MCount_all$Genes %like% "novel"] <- "novel PB"
+
+dim(MCount_all[which(MCount_all$Detection == "noPB"),])[1]
+dim(MCount_all[which(MCount_all$Detection == "Both"),])[1]
+dim(MCount_all[which(MCount_all$Detection == "noRSeq"),])[1]
+dim(MCount_all)[1]
+
+# Correlation plot
+#if(!require(devtools)) install.packages("devtools")
+#devtools::install_github("kassambara/ggpubr")
+library("ggpubr")
+Corplot <- ggscatter(MCount_all, y = "RNASeq_Raw_Counts", x = "PacBio_FL_Counts", 
+          color = "Detection",
+          palette = c("black", "red"," blue","green","yellow"),
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson", cor.use = "complete.obs",
+          ylab = "RNASeq_Raw_Counts", xlab = "PacBio_FL_Counts")
 Corplot
 ```
-## Histograms of RNAseq genes detected by PacBio vs undetected 
+## Histograms of RNAseq genes detected by PacBio vs undetected
+Of raw counts i.e not logged
 ```{r}
 # subset data that is not detected by PacBio by noPB and data detected by both
-noPB <- MCount_all_norm[MCount_all_norm$Detection == "noPB",]
-Both <- MCount_all_norm[MCount_all_norm$Detection == "Both",]
+noPB <- MCount_all[MCount_all$Detection == "noPB",]
 Both <- MCount_all[MCount_all$Detection == "Both",]
-
-# very long tail, therfore removed RNAseq counts of 100
-hist(noPB$RNASeq_Raw_Counts,breaks = 100)
-noPB_100 <- noPB[which(noPB$RNASeq_Raw_Counts > 100),]
-hist(noPB_100$RNASeq_Raw_Counts,breaks = 100)
+noRseq <- MCount_all[MCount_all$Detection == "noRSeq",]
+# very long tail, therfore removed RNAseq counts of 50
+hist(noPB$RNASeq_Raw_Counts,breaks = 50)
+noPB_50 <- noPB[which(noPB$RNASeq_Raw_Counts > 50),]
+hist(noPB_50$RNASeq_Raw_Counts,breaks = 100)
 hist(Both$RNASeq_Raw_Counts)
 
-noPB_100_5000 <- noPB[which(noPB$RNASeq_Raw_Counts > 100 & noPB$RNASeq_Raw_Counts < 5000),]
-hist(noPB_100_5000$RNASeq_Raw_Counts,breaks = 100)
+noPB_50_5000 <- noPB[which(noPB$RNASeq_Raw_Counts > 50 & noPB$RNASeq_Raw_Counts < 5000),]
+hist(noPB_50_5000$RNASeq_Raw_Counts,breaks = 100)
 
 hist(Both$RNASeq_Raw_Counts)
-Both_100_5000 <- Both[which(Both$RNASeq_Raw_Counts > 100 & Both$RNASeq_Raw_Counts < 5000),]
-hist(Both_100_5000$RNASeq_Raw_Counts,breaks = 100)
+Both_50_5000 <- Both[which(Both$RNASeq_Raw_Counts > 50 & Both$RNASeq_Raw_Counts < 5000),]
+hist(Both_50_5000$RNASeq_Raw_Counts,breaks = 100)
+
+hist(noRseq$PacBio_FL_Counts)
+noRseq_0_300 <- Both[which(noRseq$PacBio_FL_Counts > 50 & noRseq$PacBio_FL_Counts < 300),]
+hist(noRseq_0_300$PacBio_FL_Counts,breaks = 50)
 
 #komogorpf-smirnof test
 ```
@@ -182,19 +241,19 @@ MCount_all_norm_long<- gather(data = MCount_all_norm, key = Technology, value = 
                               -Genes)
 
 # need to convert from character to factor for heatmap 
-class(Mcount_all_norm_long$Genes)
-class(Mcount_all_norm_long$Technology)
-Mcount_all_norm_long$Genes <- as.factor(Mcount_all_norm_long$Genes)
-Mcount_all_norm_long$Technology <- as.factor(Mcount_all_norm_long$Technology)
-Mcount_all_norm_long$Counts <- as.numeric(as.character(Mcount_all_norm_long$Counts))
+class(MCount_all_norm_long$Genes)
+class(MCount_all_norm_long$Technology)
+MCount_all_norm_long$Genes <- as.factor(MCount_all_norm_long$Genes)
+MCount_all_norm_long$Technology <- as.factor(MCount_all_norm_long$Technology)
+MCount_all_norm_long$Counts <- as.numeric(as.character(MCount_all_norm_long$Counts))
 
 library("ggplot2")
 library("digest")
-MCount_all.heatmap <- ggplot(data = Mcount_all_norm_long, 
+MCount_all.heatmap <- ggplot(data = MCount_all_norm_long, 
                                   mapping = aes(x = Technology, y = Genes,
                                                 fill = Counts)) + 
   geom_tile() + xlab(label = "Sequencing Platform")
 
-Mcount_all.heatmap
+MCount_all.heatmap
 
 ```
