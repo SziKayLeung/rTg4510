@@ -1,7 +1,7 @@
 ---
 title: "Comparison with RNASeqData"
-output: html_document
-Date: 17 September 2018
+output: pdf_document
+date: September 17, 2018
 ---
 AD mouse model, age: Tg4510, 2months (Baseline)
 Phenotype: TG 
