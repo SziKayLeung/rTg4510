@@ -193,6 +193,8 @@ dim(MCount_all[which(MCount_all$Detection == "Both"),])[1]
 dim(MCount_all[which(MCount_all$Detection == "noRSeq"),])[1]
 dim(MCount_all)[1]
 
+write.csv(MCount_all,file = '/mnt/data1/Szi/O18/Comparisons_RNAseq/MergeCount_allIsoforms_Detection.csv')
+
 # Correlation plot
 #if(!require(devtools)) install.packages("devtools")
 #devtools::install_github("kassambara/ggpubr")
