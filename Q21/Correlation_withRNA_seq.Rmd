@@ -187,6 +187,7 @@ MCount_all$Detection[MCount_all$PacBio_FL_Counts == "0" & MCount_all$RNASeq_Raw_
 library("data.table")
 MCount_all$Detection[MCount_all$Genes %like% "novel"] <- "novel PB"
 
+write.csv(MCount_all,file = '/mnt/data1/Szi/Q21/Comparisons_RNAseq/MergeCount_allIsoforms_Detection.csv')
 dim(MCount_all[which(MCount_all$Detection == "noPB"),])[1]
 dim(MCount_all[which(MCount_all$Detection == "Both"),])[1]
 dim(MCount_all[which(MCount_all$Detection == "noRSeq"),])[1]
