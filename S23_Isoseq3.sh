@@ -1,7 +1,7 @@
 #!/bin/sh
 #PBS -V # export all environment variables to the batch job.
 #PBS -q sq # submit to the serial queue
-#PBS -l walltime=30:00:00 # Maximum wall time for the job.
+#PBS -l walltime=72:00:00 # Maximum wall time for the job.
 #PBS -A Research_Project-MRC148213
 #PBS -l procs=1 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
@@ -12,12 +12,22 @@
 # Isoseq3.1
 #############################################################################################################
 
+#############################################################################################################
+# Rawdata transfer
+#############################################################################################################
+#scp sl693@zeus.ex.ac.uk:/bioseqfs/PacBio/Sequel/2801/r54082_20190403_131312/1_C11/m54082_190403_135102.subreads.bam sl693@login.isca.ex.ac.uk:/gpfs/ts0/scratch/sl693/S23
+#scp sl693@zeus.ex.ac.uk:/bioseqfs/PacBio/Sequel/2801/r54082_20190403_131312/1_C11/m54082_190403_135102.subreads.bam.pbi sl693@login.isca.ex.ac.uk:/gpfs/ts0/scratch/sl693/S23
+#scp sl693@zeus.ex.ac.uk:/bioseqfs/PacBio/Sequel/2801/r54082_20190403_131312/1_C11/m54082_190403_135102.subreadset.xml sl693@login.isca.ex.ac.uk:/gpfs/ts0/scratch/sl693/S23
+################################################################################################################
+
 module load Anaconda2
 source activate my_root 
 
 cd /gpfs/ts0/scratch/sl693/S23/
 
-# Generating circular consensus sequence (ccs) from subreads 
+#############################################################################################################
+# Generating circular consensus sequence (ccs) from subreads
+#############################################################################################################
 # --minPasses=1, only need minimum 1 subread to gerenate CCS
 ccs --version
 ccs --numThreads=16 --noPolish --minPasses=1 /gpfs/ts0/scratch/sl693/S23/m54082_190403_135102.subreads.bam
@@ -25,8 +35,9 @@ S23.ccs.bam
 
 echo ccs done
 
-################################################################################################################
-
+#############################################################################################################
+# Isoseq3.1
+#############################################################################################################
 # Lima 
 # removed --no pbi as this is needed for downstream polishing
 lima -version
@@ -41,8 +52,12 @@ echo refine done
 
 # Isoseq3 cluster 
 isoseq3 cluster --version
-isoseq3 cluster S23.flnc.bam S23.unpolished.bam
+isoseq3 cluster S23.flnc.bam S23.unpolished.bam --verbose
 echo cluster done
 
+# Isoseq3 polish 
+isoseq3 polish --version 
+isoseq3 polish S23.unpolished.bam m54082_190403_135102.subreadset.xml polished.bam --verbose
+echo polish done
 ################################################################################################################
 source deactivate
