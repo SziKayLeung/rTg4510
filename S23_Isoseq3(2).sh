@@ -1,16 +1,10 @@
-#!/bin/sh
-#PBS -V # export all environment variables to the batch job.
-#PBS -q mrchq # submit to the serial queue
-#PBS -l walltime=144:00:00 # Maximum wall time for the job.
-#PBS -A Research_Project-MRC148213
-#PBS -l procs=32 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
 
 ##############################################################################################################
 # Date: 10th April 2019
 # ran Isoseq3.sh at 11am (10th April), by 21:20, finished CCS for Sample S23_Tg4510_8months
 # Error due to wrong directory for primer fasta for refine
-# only rerun isoseq3 refine onwards as no error in ccs and lima
+# only rerun isoseq3 refine onwards as no error in ccs and lia 
 #############################################################################################################
 
 #############################################################################################################
