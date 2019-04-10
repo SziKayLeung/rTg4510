@@ -1,9 +1,9 @@
 #!/bin/sh
 #PBS -V # export all environment variables to the batch job.
-#PBS -q sq # submit to the serial queue
-#PBS -l walltime=72:00:00 # Maximum wall time for the job.
+#PBS -q mrchq # submit to the serial queue
+#PBS -l walltime=144:00:00 # Maximum wall time for the job.
 #PBS -A Research_Project-MRC148213
-#PBS -l procs=1 # specify number of processors.
+#PBS -l procs=32 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
 
 ##############################################################################################################
@@ -30,8 +30,7 @@ cd /gpfs/ts0/scratch/sl693/S23/
 #############################################################################################################
 # --minPasses=1, only need minimum 1 subread to gerenate CCS
 ccs --version
-ccs --numThreads=16 --noPolish --minPasses=1 /gpfs/ts0/scratch/sl693/S23/m54082_190403_135102.subreads.bam
-S23.ccs.bam
+ccs --numThreads=16 --noPolish --minPasses=1 /gpfs/ts0/scratch/sl693/S23/m54082_190403_135102.subreads.bam S23.ccs.bam
 
 echo ccs done
 
@@ -52,12 +51,12 @@ echo refine done
 
 # Isoseq3 cluster 
 isoseq3 cluster --version
-isoseq3 cluster S23.flnc.bam S23.unpolished.bam --verbose
+isoseq3 cluster S23.flnc.bam S23.unpolished.bam --verbose -j 32
 echo cluster done
 
 # Isoseq3 polish 
 isoseq3 polish --version 
-isoseq3 polish S23.unpolished.bam m54082_190403_135102.subreadset.xml polished.bam --verbose
+isoseq3 polish S23.unpolished.bam m54082_190403_135102.subreadset.xml polished.bam --verbose -j 32
 echo polish done
 ################################################################################################################
 source deactivate
