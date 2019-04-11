@@ -91,6 +91,6 @@ for polish in "${SAMPLES_NAMES[@]}"; do
   echo "Processing $polish file..."
   output=(${SAMPLES[count]})
   isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $output.bam --verbose    
-   echo polish $output succeeded
+  echo polish $output succeeded
   count=$((count+1)) 
 done
