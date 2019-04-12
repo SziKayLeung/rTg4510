@@ -54,42 +54,34 @@ ls *ccs.bam
 
 # Lima 
 # removed --no pbi as this is needed for downstream polishing
-count=0
 for lima in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $lima file for demultiplexing"
   lima "$lima.ccs.bam" $FASTA $lima.demux.ccs.bam --isoseq --dump-clips --dump-removed --peek-guess
   echo "lima $lima succeeded"
-  count=$((count+1)) 
 done
 
 ## Isoseq3 refine from demuxed bam
-count=0
 for refine in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $refine file for refine"
   isoseq3 refine "$refine.demux.ccs.primer_5p--primer_3p.bam" $FASTA $refine.flnc.bam --require-polya
   echo "refine $refine succeeded"
-  count=$((count+1)) 
 done
 
 # Isoseq3 cluster 
-count=0
 for cluster in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $cluster file for cluster"
   isoseq3 cluster "$cluster.flnc.bam" $cluster.unpolished.bam --verbose
   echo "cluster $cluster succeeded"
-  count=$((count+1)) 
 done
 
 ls *unpolished.bam
 # Isoseq3 polish 
-count=0
 for polish in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $polish file..."
   isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $polish.polished.bam --verbose    
   echo "polish $polish succeeded"
   gunzip $polish.polished.hq.fastq
   echo "unzipped $polish.polished.hq.fastq successful"  
-  count=$((count+1)) 
 done
 
 #############################################################################################################
