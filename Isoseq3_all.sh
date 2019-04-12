@@ -21,7 +21,6 @@ ccs --version
 lima --version 
 isoseq3 --version
 
-head samples.txt
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 
 # remove comments in raw.txt (https://kvz.io/blog/2007/07/11/cat-a-file-without-the-comments/)
