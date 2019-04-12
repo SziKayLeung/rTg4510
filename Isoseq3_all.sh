@@ -25,7 +25,6 @@ source activate my_root
 
 head samples.txt
 =======
->>>>>>> 09754be2232a5ab291fd687d644a2a506386a54c
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 
 cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/Parameters
@@ -93,8 +92,6 @@ done
 
 #############################################################################################################
 source deactivate
-<<<<<<< HEAD
-=======
 mv *ccs.bam* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS
 mv *demux* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/LIMA
 mv *flnc* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/REFINE
@@ -102,4 +99,4 @@ mv *unpolished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CLUSTER
 mv *polished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
 
 echo done
->>>>>>> 09754be2232a5ab291fd687d644a2a506386a54c
+
