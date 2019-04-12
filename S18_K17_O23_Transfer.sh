@@ -1,9 +1,4 @@
-#PBS -V # export all environment variables to the batch job.
-#PBS -q sq # submit to the serial queue
-#PBS -l walltime=2:00:00 # Maximum wall time for the job.
-#PBS -A Research_Project-MRC148213
-#PBS -l procs=1 # specify number of processors.
-#PBS -m e -M sl693@exeter.ac.uk # email me at job completion
+#$ -cwd -V -pe smp 32
 
 # Date: 12th April 2019 
 # Transfer S18, K17, O23 Files from ISCA to ISCA personal scratch drive (to work from as path only recently established)
