@@ -19,12 +19,11 @@ ccs --version
 lima --version 
 isoseq3 --version
 #############################################################################################################
-<<<<<<< HEAD
 module load Anaconda2
 source activate my_root 
 
 head samples.txt
-=======
+
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 
 cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/Parameters
