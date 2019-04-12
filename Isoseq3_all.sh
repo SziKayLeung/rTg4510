@@ -21,7 +21,7 @@ isoseq3 --version
 #############################################################################################################
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 
-cd /gpfs/ts0/scratch/sl693/Isoseq3/Parameters
+cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/Parameters
 # remove comments in raw.txt (https://kvz.io/blog/2007/07/11/cat-a-file-without-the-comments/)
 head raw.txt 
 BAM_FILES=(`cat "raw.txt" | egrep -v "^\s*(#|$)"`)
@@ -33,7 +33,7 @@ FASTA=/gpfs/ts0/home/sl693/reference/primer.fasta
 head $FASTA
 
 # change directory for saving 
-cd /gpfs/ts0/scratch/sl693/Isoseq3
+cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3
 #############################################################################################################
 # Generating circular consensus sequence (ccs) from subreads
 #############################################################################################################
@@ -99,3 +99,5 @@ mv *demux* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/LIMA
 mv *flnc* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/REFINE
 mv *unpolished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CLUSTER
 mv *polished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
+
+echo done
