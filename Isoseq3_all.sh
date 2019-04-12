@@ -11,18 +11,17 @@
 # run Isoseq3 for all Tg4510 samples: L22, K18, O23, S18, K17 
 # already run Isoseq3 as test on S23 sample (10th April S23_Isoseq3.sh)
 #############################################################################################################
-
-module load Anaconda2
-source activate my_root 
-cd /gpfs/ts0/scratch/sl693/Isoseq3/Parameters
-
 # Listing versions 
 ccs --version
 lima --version 
 isoseq3 --version
+#############################################################################################################
+module load Anaconda2
+source activate my_root 
 
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 
+cd /gpfs/ts0/scratch/sl693/Isoseq3/Parameters
 # remove comments in raw.txt (https://kvz.io/blog/2007/07/11/cat-a-file-without-the-comments/)
 head raw.txt 
 BAM_FILES=(`cat "raw.txt" | egrep -v "^\s*(#|$)"`)
@@ -58,7 +57,7 @@ count=0
 for lima in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $lima file for demultiplexing"
   output=(${SAMPLES_NAMES[count]})
-  lima "$lima.ccs.bam" $FASTA $output.demux.ccs.bam
+  lima "$lima.ccs.bam" $FASTA $output.demux.ccs.bam --isoseq --dump-clips --dump-removed --peek-guess
   echo lima $output succeeded
   count=$((count+1)) 
 done
@@ -89,7 +88,9 @@ count=0
 for polish in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $polish file..."
   output=(${SAMPLES[count]})
-  isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $output.bam --verbose    
+  isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $output.polished.bam --verbose    
   echo polish $output succeeded
   count=$((count+1)) 
 done
+#############################################################################################################
+source deactivate
