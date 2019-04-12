@@ -18,14 +18,17 @@ module load SAMtools/1.7-foss-2018a
 samtools --version
 
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
+# directory for saving output
+cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/MAP
 
-cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
+# determine path directory for input data
+POLISH=/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
 
 count=0
 for map in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $map file for mapping on GMAP"
   output=(${SAMPLES_NAMES[count]})
-  gmap -D /gpfs/ts0/home/sl693/reference -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force "$map.polished.hq.fastq" > $output.isoforms.fastq.sam \
+  gmap -D /gpfs/ts0/home/sl693/reference -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force $POLISH/"$map.polished.hq.fastq" > $output.isoforms.fastq.sam \
   2> $output.sam.log
   echo "Mapping $output succeeded"
   sort -k 3,3 -k 4,4n $output.hq_isoforms.fastq.sam > $output.hq_isoforms.fastq.sorted.sam

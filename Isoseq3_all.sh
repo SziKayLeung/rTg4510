@@ -39,7 +39,7 @@ cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3
 #############################################################################################################
 
 count=0
-for f in "${BAM.FILES[@]}"; do
+for f in "${BAM_FILES[@]}"; do
   echo "Processing $f file..."
   output=(${SAMPLES_NAMES[count]})
   ccs --numThreads=16 --noPolish --minPasses=1 $f $output.ccs.bam
@@ -57,9 +57,8 @@ ls *ccs.bam
 count=0
 for lima in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $lima file for demultiplexing"
-  output=(${SAMPLES_NAMES[count]})
-  lima "$lima.ccs.bam" $FASTA $output.demux.ccs.bam --isoseq --dump-clips --dump-removed --peek-guess
-  echo "lima $output succeeded"
+  lima "$lima.ccs.bam" $FASTA $lima.demux.ccs.bam --isoseq --dump-clips --dump-removed --peek-guess
+  echo "lima $lima succeeded"
   count=$((count+1)) 
 done
 
@@ -67,9 +66,8 @@ done
 count=0
 for refine in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $refine file for refine"
-  output=(${SAMPLES_NAMES[count]})
-  isoseq3 refine "$refine.demux.ccs.primer_5p--primer_3p.bam" $FASTA $output.flnc.bam --require-polya
-  echo "refine $output succeeded"
+  isoseq3 refine "$refine.demux.ccs.primer_5p--primer_3p.bam" $FASTA $refine.flnc.bam --require-polya
+  echo "refine $refine succeeded"
   count=$((count+1)) 
 done
 
@@ -77,9 +75,8 @@ done
 count=0
 for cluster in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $cluster file for cluster"
-  output=(${SAMPLES_NAMES[count]})
-  isoseq3 cluster "$cluster.flnc.bam" $output.unpolished.bam --verbose
-  echo "cluster $output succeeded"
+  isoseq3 cluster "$cluster.flnc.bam" $cluster.unpolished.bam --verbose
+  echo "cluster $cluster succeeded"
   count=$((count+1)) 
 done
 
@@ -88,11 +85,10 @@ ls *unpolished.bam
 count=0
 for polish in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $polish file..."
-  output=(${SAMPLES[count]})
-  isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $output.polished.bam --verbose    
-  echo "polish $output succeeded"
-  gunzip $output.polished.hq.fastq
-  echo "unzipped $output.polished.hq.fastq successful"  
+  isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $polish.polished.bam --verbose    
+  echo "polish $polish succeeded"
+  gunzip $polish.polished.hq.fastq
+  echo "unzipped $polish.polished.hq.fastq successful"  
   count=$((count+1)) 
 done
 
