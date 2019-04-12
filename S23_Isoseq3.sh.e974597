@@ -1,4 +1,0 @@
-ccs 3.4.1 (commit v3.4.1)
-ERROR: CLI::Interface - unknown option name: v>|> 20190410 20:21:58.052 -|- FATAL      -|- ParsePositionalArgs -|- 0x2abcb32b9100|| -|- Input barcode file does not exist: /mnt/data1/Szi/reference/primer.fasta
->|> 20190410 20:21:58.059 -|- FATAL      -|- ParsePositionalArgs -|- 0x2ba129b8d100|| -|- Input data file does not exist: S23.flnc.bam
->|> 20190410 20:21:58.066 -|- FATAL      -|- ParsePositionalArgs -|- 0x2b4bbe9ac100|| -|- Input data file does not exist: S23.unpolished.bam
