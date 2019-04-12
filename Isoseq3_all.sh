@@ -43,6 +43,7 @@ for f in "${BAM.FILES[@]}"; do
   echo "Processing $f file..."
   output=(${SAMPLES_NAMES[count]})
   ccs --numThreads=16 --noPolish --minPasses=1 $f $output.ccs.bam
+  mv ccs_report.txt $output_ccs_report.txt
   count=$((count+1)) 
 done
 ls *ccs.bam
@@ -58,7 +59,7 @@ for lima in "${SAMPLES_NAMES[@]}"; do
   echo "Processing $lima file for demultiplexing"
   output=(${SAMPLES_NAMES[count]})
   lima "$lima.ccs.bam" $FASTA $output.demux.ccs.bam --isoseq --dump-clips --dump-removed --peek-guess
-  echo lima $output succeeded
+  echo "lima $output succeeded"
   count=$((count+1)) 
 done
 
@@ -68,7 +69,7 @@ for refine in "${SAMPLES_NAMES[@]}"; do
   echo "Processing $refine file for refine"
   output=(${SAMPLES_NAMES[count]})
   isoseq3 refine "$refine.demux.ccs.primer_5p--primer_3p.bam" $FASTA $output.flnc.bam --require-polya
-  echo refine $output succeeded
+  echo "refine $output succeeded"
   count=$((count+1)) 
 done
 
@@ -78,7 +79,7 @@ for cluster in "${SAMPLES_NAMES[@]}"; do
   echo "Processing $cluster file for cluster"
   output=(${SAMPLES_NAMES[count]})
   isoseq3 cluster "$cluster.flnc.bam" $output.unpolished.bam --verbose
-  echo cluster $output succeeded
+  echo "cluster $output succeeded"
   count=$((count+1)) 
 done
 
@@ -89,9 +90,12 @@ for polish in "${SAMPLES_NAMES[@]}"; do
   echo "Processing $polish file..."
   output=(${SAMPLES[count]})
   isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $output.polished.bam --verbose    
-  echo polish $output succeeded
+  echo "polish $output succeeded"
+  gunzip $output.polished.hq.fastq
+  echo "unzipped $output.polished.hq.fastq successful"  
   count=$((count+1)) 
 done
+
 #############################################################################################################
 source deactivate
 mv *ccs.bam* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS
