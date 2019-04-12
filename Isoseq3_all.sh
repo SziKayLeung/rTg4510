@@ -81,14 +81,15 @@ done
 
 ls *unpolished.bam
 # Isoseq3 polish 
+count=0
 for polish in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $polish file..."
   time isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $polish.polished.bam --verbose    
   echo "polish $polish succeeded"
   gunzip $polish.polished.hq.fastq
   echo "unzipped $polish.polished.hq.fastq successful"  
+  count=$((count+1))
 done
-
 #############################################################################################################
 source deactivate
 mv *ccs.bam* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS
