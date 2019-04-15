@@ -97,6 +97,7 @@ mv *demux* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/LIMA
 mv *flnc* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/REFINE
 mv *unpolished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CLUSTER
 mv *polished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
+mv *ccs.report* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS
 
 echo done
 
