@@ -1,0 +1,86 @@
+lima 1.9.0 (commit v1.9.0)
+isoseq3 3.1.2 (commit v3.1.2)
+# L22_Tg4510_TG_8months
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190306_083150.subreads.bam
+# K18_Tg4510_WT_2months
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190307_045507.subreads.bam
+# S18_Tg4510_TG_2mos
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190404_101400.subreads.bam
+# K17_Tg4510_WT_2mos
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190405_063832.subreads.bam
+# O23_Tg4510 
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190401_165425.subreads.bam# L22_Tg4510_TG_8months
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190306_083150.subreadset.xml
+# K18_Tg4510_WT_2months
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190307_045507.subreadset.xml
+# S18_Tg4510_TG_2mos
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190404_101400.subreadset.xml
+# K17_Tg4510_WT_2mos
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190405_063832.subreadset.xml
+# O23_Tg4510 
+/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190401_165425.subreadset.xml
+>primer_5p
+AAGCAGTGGTATCAACGCAGAGTACATGGG
+>primer_3p
+GTACTCTGCGTTGATACCACTGCTT
+Processing /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190306_083150.subreads.bam file...
+Processing /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190307_045507.subreads.bam file...
+Processing /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190404_101400.subreads.bam file...
+Processing /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190405_063832.subreads.bam file...
+Processing /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/rawdata/m54082_190401_165425.subreads.bam file...
+K17.ccs.bam
+K18.ccs.bam
+L22.ccs.bam
+O23.ccs.bam
+S18.ccs.bam
+Processing L22 file for demultiplexing
+lima L22 succeeded
+Processing K18 file for demultiplexing
+lima K18 succeeded
+Processing S18 file for demultiplexing
+lima S18 succeeded
+Processing K17 file for demultiplexing
+lima K17 succeeded
+Processing O23 file for demultiplexing
+lima O23 succeeded
+Processing L22 file for refine
+refine L22 succeeded
+Processing K18 file for refine
+refine K18 succeeded
+Processing S18 file for refine
+refine S18 succeeded
+Processing K17 file for refine
+refine K17 succeeded
+Processing O23 file for refine
+refine O23 succeeded
+Processing L22 file for cluster
+cluster L22 succeeded
+Processing K18 file for cluster
+cluster K18 succeeded
+Processing S18 file for cluster
+cluster S18 succeeded
+Processing K17 file for cluster
+cluster K17 succeeded
+Processing O23 file for cluster
+cluster O23 succeeded
+K17.unpolished.bam
+K18.unpolished.bam
+L22.unpolished.bam
+O23.unpolished.bam
+S18.unpolished.bam
+Processing L22 file...
+polish L22 succeeded
+unzipped L22.polished.hq.fastq successful
+Processing K18 file...
+polish K18 succeeded
+unzipped K18.polished.hq.fastq successful
+Processing S18 file...
+polish S18 succeeded
+unzipped S18.polished.hq.fastq successful
+Processing K17 file...
+polish K17 succeeded
+unzipped K17.polished.hq.fastq successful
+Processing O23 file...
+polish O23 succeeded
+unzipped O23.polished.hq.fastq successful
+done
