@@ -48,7 +48,7 @@ for f in "${BAM_FILES[@]}"; do
   echo "Processing $f file..."
   output=(${SAMPLES_NAMES[count]})
   time ccs --numThreads=16 --noPolish --minPasses=1 $f $output.ccs.bam
-  mv ccs_report.txt $output_ccs_report.txt
+  mv ccs_report.txt $output.ccs.report.txt
   count=$((count+1)) 
 done
 ls *ccs.bam
