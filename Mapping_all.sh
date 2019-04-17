@@ -28,7 +28,35 @@ for map in "${SAMPLES_NAMES[@]}"; do
   time gmap -D /gpfs/ts0/home/sl693/reference -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force $POLISH/"$map.polished.hq.fastq" > $map.isoforms.fastq.sam \
   2> $map.sam.log
   echo "Mapping $map succeeded"
-  sort -k 3,3 -k 4,4n $map.hq_isoforms.fastq.sam > $map.hq_isoforms.fastq.sorted.sam
+  sort -k 3,3 -k 4,4n $map.isoforms.fastq.sam > $map.isoforms.fastq.sorted.sam
   # different sort from recommended using samtools: https://www.biostars.org/p/93559/
-  samtools sort -O sam -T $map.sorted. -o $map.sort.sam $map.hq_isoforms.fastq.sam
+  samtools sort -O sam -T $map.sorted. -o $map.sort.sam $map.isoforms.fastq.sam
 done
+
+#############################################################################################################
+# specific to 17th April (L22 K18 S18 K17 O23)
+# 17th April: command line samtools sort as error 
+#samtools sort -O sam -T L22.sorted. -o L22.sort.sam L22.isoforms.fastq.sam
+#SAMPLES_NAMES=(K18 S18 K17 O23)
+#for map in "${SAMPLES_NAMES[@]}"; do 
+  echo "Processing $map file for mapping on GMAP"
+  samtools sort -O sam -T $map.sorted. -o $map.sort.sam $map.isoforms.fastq.sam
+#done
+# Processing K18 file for mapping on GMAP
+# Processing S18 file for mapping on GMAP
+# Processing K17 file for mapping on GMAP
+# Processing O23 file for mapping on GMAP
+
+#SAMPLES_NAMES=(L22 K18 S18 K17 O23)
+#for map in "${SAMPLES_NAMES[@]}"; do 
+  echo "Processing $map file for mapping on GMAP"
+  sort -k 3,3 -k 4,4n $map.isoforms.fastq.sam > $map.hq_isoforms.fastq.sorted.sam
+#done
+#Processing L22 file for mapping on GMAP
+#Processing K18 file for mapping on GMAP
+#Processing S18 file for mapping on GMAP
+#Processing K17 file for mapping on GMAP
+#Processing O23 file for mapping on GMAP
+
+
+
