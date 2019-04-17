@@ -17,9 +17,9 @@ module load SAMtools/1.7-foss-2018a
 samtools --version
 #############################################################################################################
 # directory for saving output
-cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/MAP
+cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/MAP
 # determine path directory for input data
-POLISH=/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
+POLISH=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/POLISH
 
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 #############################################################################################################
