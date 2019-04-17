@@ -14,10 +14,10 @@
 module load cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14
 
 # directory for saving output
-cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/ToFU
+cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/ToFU
 # determine path directory for input data
-GMAP=/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/GMAP
-POLISH=/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
+GMAP=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/GMAP
+POLISH=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/POLISH
 
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 #############################################################################################################
