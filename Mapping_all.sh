@@ -1,9 +1,9 @@
 #!/bin/sh
 #PBS -V # export all environment variables to the batch job.
-#PBS -q mrchq # submit to the serial queue
+#PBS -q sq # submit to the serial queue
 #PBS -l walltime=144:00:00 # Maximum wall time for the job.
 #PBS -A Research_Project-MRC148213
-#PBS -l procs=32 # specify number of processors.
+#PBS -l procs=1 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
 
 ##############################################################################################################
@@ -11,7 +11,7 @@
 # run GMAP for all Tg4510 samples: L22, K18, O23, S18, K17 
 # already Isoseq3
 #############################################################################################################
-module load GMAP-GSNAP/2016-11-07-foss-2016b
+module load GMAP-GSNAP/2018-07-04-foss-2018b
 gmap --version
 module load SAMtools/1.7-foss-2018a
 samtools --version
