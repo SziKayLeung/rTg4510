@@ -25,7 +25,7 @@ SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 #############################################################################################################
 for map in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $map file for mapping on GMAP"
-  gmap -D /gpfs/ts0/home/sl693/reference -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force $POLISH/"$map.polished.hq.fastq" > $map.isoforms.fastq.sam \
+  time gmap -D /gpfs/ts0/home/sl693/reference -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force $POLISH/"$map.polished.hq.fastq" > $map.isoforms.fastq.sam \
   2> $map.sam.log
   echo "Mapping $map succeeded"
   sort -k 3,3 -k 4,4n $map.hq_isoforms.fastq.sam > $map.hq_isoforms.fastq.sorted.sam
