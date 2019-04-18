@@ -1,4 +1,4 @@
-#!bin/sh
+#!/bin/sh
 #PBS -V # export all environment variables to the batch job.
 #PBS -q sq # submit to the serial queue
 #PBS -l walltime=1:00:00 # Maximum wall time for the job.
