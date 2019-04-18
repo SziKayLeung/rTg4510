@@ -6,5 +6,13 @@
 #PBS -l procs=1 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
 
-module load pandas/Python/3.6.6-foss-2018b
-module load pandas/1.12.1-intel-2016b-Python-3.5.2
+module load Python/3.6.6-foss-2018b
+module load Anaconda2
+source activate my_root
+
+# Python Module OS installation: conda install -c jmcmurray os
+# Python Module OS installation: conda install -c conda-forge glob2
+# Python Module OS installation: conda install -c menpo pathlib
+
+cd .
+python LIMA.py
