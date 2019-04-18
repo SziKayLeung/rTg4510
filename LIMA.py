@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-#PBS -V # export all environment variables to the batch job.
-#PBS -q mrchq # submit to the serial queue
-#PBS -l walltime=1:00:00 # Maximum wall time for the job.
-#PBS -A Research_Project-MRC148213
-#PBS -l procs=32 # specify number of processors.
-#PBS -m e -M sl693@exeter.ac.uk # email me at job completion
-
 ##############################################################################################################
 # Date: 16th April 2019
 # Tabulate ccs output reports into merged final output
@@ -16,7 +8,7 @@ from glob import glob
 from pathlib import Path
 
 # setting working directory
-path = Path(r'/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/LIMA')
+path = Path(r'/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/LIMA')
 os.chdir(path)
 # check in working directory
 Path.cwd()
