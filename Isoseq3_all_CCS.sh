@@ -23,7 +23,7 @@ source activate my_root
 
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 
-cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/Parameters
+cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/Parameters
 # remove comments in raw.txt (https://kvz.io/blog/2007/07/11/cat-a-file-without-the-comments/)
 head raw.txt 
 BAM_FILES=(`cat "raw.txt" | egrep -v "^\s*(#|$)"`)

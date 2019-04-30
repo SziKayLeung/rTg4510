@@ -14,10 +14,10 @@
 module load cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14
 
 # directory for saving output
-cd /gpfs/ts0/scratch/sl693/WholeTranscriptome/ToFU
+cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/ToFU
 # determine path directory for input data
-GMAP=/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/GMAP
-POLISH=/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
+GMAP=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/MAP
+POLISH=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/POLISH
 
 SAMPLES_NAMES=(L22 K18 S18 K17 O23)
 #############################################################################################################
@@ -32,7 +32,7 @@ done
 # Create Abundance Script of full-length transcripts  
 for sample in "${SAMPLES_NAMES[@]}"; do 
   echo "Processing $sample file for abundance"
-  time get_abundance_post_collapse.py "$sample.collapsed" $POLISH/"$sample.cluster_report.csv"
+  time get_abundance_post_collapse.py "$sample.collapsed" $POLISH/"$sample.polished.cluster_report.csv"
   echo "Abundance for $sample successful"
 done
  
