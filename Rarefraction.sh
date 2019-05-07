@@ -32,3 +32,4 @@ for sample in "${SAMPLES_NAMES[@]}"; do
    echo "Rarefaction of Sample $sample using MatchAnnot complete"
    python $CUPCAKE/subsample.py --by refgene --min_fl_count 2 --step 100 $sample.for_submsampling.txt  > $sample.by_refgene.rarefaction.txt
 done
+conda deactivate
