@@ -18,7 +18,7 @@ source activate anaCogent
 cd /mnt/data1/Szi/IsoSeq_WholeTranscriptome/RareFaction/MatchAnnot
 for sample in "${SAMPLES_NAMES[@]}"; do 
     echo "Processing $sample file after collapse for mapping"
-    if time gmap -D $REFERENCE -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force        $SAM/$sample.collapsed.filtered.rep.fq  > $sample.fq.sam ;then
+    if time gmap -D $REFERENCE -d GRCm38.p4 -f samse -n 0 -t 12 -z sense_force $SAM/$sample.collapsed.filtered.rep.fq  > $sample.fq.sam ; then
         echo "Mapped $sample successful"
     else
         echo "Mapped $sample failed"
