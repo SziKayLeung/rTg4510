@@ -67,3 +67,31 @@ else
 fi
 ################################################################################################################
 source deactivate
+
+## command line to organise files: 16/05/2019
+S23=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/S23
+CCS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/CCS
+LIMA=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/LIMA
+REFINE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/REFINE
+CLUSTER=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/CLUSTER
+POLISH=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/POLISH
+RAWDATA=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/rawdata
+
+cd $S23
+mv ccs_report.txt S23_ccs_report.txt
+mv polished.bam S23.polished.bam
+mv polished.bam.pbi S23.polished.bam.pbi
+mv polished.hq.fastq S23.polished.hq.fastq
+mv polished.hq.fasta.gz S23.polished.hq.fasta.gz
+mv polished.lq.fastq.gz S23.polished.lq.fastq.gz
+mv polished.transcriptset.xml S23.polished.transcriptset.xml  
+mv polished.cluster_report.csv S23.polished.cluster_report.csv
+mv m54082_190403_135102.subreads* $RAWDATA
+ 
+mv $S23/*ccs.bam* $CCS 
+mv $S23/*demux* $LIMA
+mv $S23/*flnc* $REFINE
+mv $S23/*unpolished* $CLUSTER
+mv $S23/*polished* $POLISH
+mv $S23/*ccs.report* $CCS
+mv m54082_190403_135102.subreads* $RAWDATA
