@@ -17,13 +17,13 @@ from glob import glob
 from pathlib import Path
 
 # setting working directory
-path = Path(r'/gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS')
+path = Path(r'/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/WT8_ISOSEQ/IsoSeq3.1.2/CCS')
 os.chdir(path)
 # check in working directory
-pathlib.Path.cwd()
+Path.cwd()
 
 # list all files with ccs.report 
-filenames = glob('*ccs.report.txt')
+filenames = glob('*ccs_report.txt')
 filenames
 
 # loop txt.files into one list 
@@ -33,7 +33,8 @@ dataframes
 # Generate sample names based on the names of files, extracting the first charachter of the strings delimited by ".""
 samples = []
 for f in filenames : 
-    f = f.split('.')[0]
+    f = f.split('_')[0]
+    print(f)
     samples.append(str(f))
     print(samples)
 
@@ -50,4 +51,5 @@ for df in dataframes :
     count += 1
 
 # Concentenate dataframes
-final = pd.concat([mod[0],mod[1],mod[2]],axis = 1)
+final = pd.concat([mod[0],mod[1],mod[2],mod[3],mod[4],mod[5],mod[6],mod[7]],axis = 1)
+final.to_csv("CCS_output.csv")
