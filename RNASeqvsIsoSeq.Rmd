@@ -1,0 +1,130 @@
+---
+title: "RNASeqvsIsoSeq"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Objective: To tabulate the number of full-length reads obtained per gene from Isoseq and order genes from high to low, for comparison with RNAseq data for exact sample
+
+Rationale: To evaluate whether Isoseq output comparable to RNAseq output
+
+Analysis: 1) Downloaded raw subread.bam file from Sequel output 2) CCS and Isoseq3 command line (Lima, Cluster, Polish) 3) Mapped to mouse genome using GMAP 4) Tofu Cupcake 5) Sqanti for isoform characterisation
+
+```{r packages}
+library(stringr) # Extract strings
+library(dplyr) 
+```
+## IsoSeq Preparation
+# Step 1) Annotate2Abundance
+Define function for Importing and Merging SQANTI classification file and TOFU abundance file
+
+**Input**: Sqanti_Filter Classification Output file
+  * All details of HQ-unique isoforms classified by assigning PacBio output gene Cluster ID to mouse gene name 
+**Input**: ToFU Abundance Output file
+  * Quantification of number of Full_Length per PacBio_ID
+**Output**: Merged txt file by PacBio ID 
+  * Merged txt file has the gene name by which the isoform belongs to (as identified by SQANTI) and the quantification of FL_counts (as quantified in TOFU)
+  
+```{r Annotate2Abudance, echo=TRUE}
+Annotate2Abundance_IsoSeq <- function(sample){
+  # Define directory input
+  sqanti_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/SQANTI2"
+  tofu_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/ToFU"
+  
+  # List all files in SQANTI directory and TOFU directory
+  all_classification_files <- list.files(path = sqanti_dir , pattern = ".collapsed.filtered.rep_classification.filtered_lite_classification.txt", full.names = TRUE)
+  #return(classification.files)
+  all_abundance_files <- list.files(path = tofu_dir , pattern = ".collapsed.filtered.abundance.txt", full.names = TRUE)
+  #return(abundance.files)
+  
+  # Grep specific file based on sample name
+  print(paste("Input SQANTI Filter output file for Sample", sample))
+  classification_file <- grep(sample, all_classification_files, fixed = TRUE, value = TRUE)
+  return(classification_file)
+  
+  print(paste("Input SQANTI Filter output file for Sample", sample))
+  abundance_file <- grep(sample, all_abundance_files, fixed = TRUE, value = TRUE)
+  return(abundance_dat)
+  
+  # Read specific sample file
+  classification_dat <- read.delim2(file = classification_file, header = TRUE)
+  abundance_dat <- read.delim2(file = abundance_file, header = TRUE)[-c(1:14),] #remove rows 1:14 of descriptor
+  colnames(abundance_dat) <- c("PacBio_Id","count_fl","count_nfl","count_nfl_amb","norm_fl","norm_nfl","norm_nfl_amb")
+  
+  # View specific sample file 
+  head(classification_dat)
+  head(abundance_dat)
+  
+  # Merge SQANTI_Classssification file for genename with TOFU_Abundance file for FL counts
+  Merge_IsoSeq <- merge(classification_dat,abundance_dat,by.x = "isoform", by.y = "PacBio_Id")
+  #write.csv(Merge, file = print(paste0(sample,"Merged.csv")))
+  
+  # save Merge file to workspace: https://stackoverflow.com/questions/32563153/function-save-returned-data-frame-to-workspace
+  Merge_IsoSeq <<- Merge_IsoSeq
+}
+```
+# Step 2)SumFLCounts
+Define function that the FL Counts for all transcripts per gene 
+
+**Motivation**: SQANTI Filter classification outputs one gene with multiple isoforms, thus complicates correlation with RNA-Seq Gene Expression Counts. 
+PacBio FL count is presented per isoform rather than per gene. However, FeatureCount's output from RNA-seq data is on a gene level. Therefore FL counts from IsoSeq needs to be summed for more convenient comparison: Total FL Counts of Transcripts per Gene from IsoSeq vs Raw Gene Counts from RNASeq 
+
+Alternative option: select only isoform with the highest number of FL counts, yet biased results especially given if many isoforms with similar or slgihtly smaller number of FL-counts. 
+Assumptions: RNA-seq captures expression of all RNA transcripts irrespective of isoforms
+
+```{r}
+#  %>% group_by(Genes) %>% = group/splice MCount dataframe by genes
+# In the groups, keep RNAseq Counts and PacBio ID columns as they are 
+# sum(PacBio_FL_Counts)
+library(dplyr)
+MCount_all <- MCount %>% group_by(Genes) %>%
+   summarize(RNASeq_Raw_Counts = RNASeq_Raw_Counts[1], PacBio_ID = PacBio_ID[1], 
+             PacBio_FL_Counts = sum(PacBio_FL_Counts))
+# validation
+MCount_all[which(MCount_all$Genes == "Arf3"),]
+write.csv(MCount_all,file = '//isad.isadroot.ex.ac.uk/UOE/User/My Documents/PacBio/AD_Mouse_Tg4510/2 months/Q21/MergeCount_allIsoforms.csv')
+
+```
+## Step 3)RNASeq Preparation
+
+**Input**: FeatureCounts of all RNASeq samples (STAR Aligned to mm10 genome, and annotated to Gencode Mouse V20 gtf file) at gene level 
+**Output**: FeatureCount of specific sample 
+
+```{r, echo = TRUE}
+Input_RNAseq <- function(sample){
+  # Define directory input 
+  featurecount_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/WT8_ISOSEQ/Post/FeatureCounts"
+  
+  print(paste("Input FeatureCount for Sample", sample))
+  # Import featurecount file with annotated mgisymbol names
+  featurecount_file <- list.files(path = featurecount_dir, pattern = "Final_WT8_genenames.mx", full.names = TRUE) 
+  featurecount_dat <- read.delim2(featurecount_file, row.names = 1, header = TRUE)
+  # Featurecount_dat <<- featurecount_dat #save to workspace
+  head(featurecount_dat)
+  
+  # Grep specific sample column with counts and ensembl_name (column 1)
+  RNASeq <- data.frame(featurecount_dat[,sample],row.names = (rownames(featurecount_dat)))
+  colnames(RNASeq)[1] <- paste("RNASeq",sample,"Raw Counts")
+  head(RNASeq)
+
+  # To extract the mgi_symbol separated by _ per row (carried out with a for loop)
+  Genes <- data.frame(lapply(rownames(RNASeq), function(x){gene<-word(x,2, sep = fixed ('_'))}))
+  Genes <- data.frame(t(Genes))
+  colnames(Genes)[1] <- "Mgi_Symbol"
+  
+  RNASeq <- cbind(RNASeq,Genes)
+  RNASeq <<- RNASeq
+}
+
+```
+## Step 4) Merge RNASeq and IsoSeq
+
+```{r}
+MCount <- merge(RNASeq,PacBio_Q21,by.x = 0,by.y = "mgi_symbol",all = TRUE)
+colnames(MCount) <- c("Genes","RNASeq_Raw_Counts","PacBio_ID","PacBio_FL_Counts")
+
+```
+## Step 5)Correlation
+
