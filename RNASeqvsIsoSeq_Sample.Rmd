@@ -1,0 +1,111 @@
+---
+title: "RNASeqvsIsoSeq Sample X"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Objective**: To tabulate the number of full-length reads obtained per gene from Isoseq and order genes from high to low, for comparison with RNAseq data for exact sample
+
+**Rationale**: To evaluate whether Isoseq output comparable to RNAseq output
+
+Analysis: 
+1. Downloaded raw subread.bam file from Sequel output 
+2. CCS and Isoseq3 command line (Lima, Cluster, Polish) 
+3. Mapped to mouse genome using GMAP 
+4. Tofu Cupcake 
+5. Sqanti for isoform characterisation
+
+```{r, echo = TRUE, message = FALSE}
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq3_Tg4510/RNASeqvsIsoSeq.R")
+```
+
+### Step 1) IsoSeq Preparation: Annotate2Abundance
+Define function for Importing and Merging SQANTI classification file and TOFU abundance file
+
+**Input**: Sqanti_Filter Classification Output file
+  * All details of HQ-unique isoforms classified by assigning PacBio output gene Cluster ID to mouse gene name
+  
+**Input**: ToFU Abundance Output file
+  * Quantification of number of Full_Length per PacBio_ID
+  
+**Output**: Merged txt file by PacBio ID 
+  * Merged txt file has the gene name by which the isoform belongs to (as identified by SQANTI) and the quantification of FL_counts (as quantified in TOFU) by PacBio ID
+
+```{r, echo = TRUE}
+SQANTI_input("K17")
+TOFU_input("K17")
+Annotate2Abundance_IsoSeq("K17",classification_dat,abundance_dat)
+```
+
+### Step 2) IsoSeq Preparation: SumFLCounts
+Define function that the FL Counts for all transcripts per gene 
+
+**Motivation**: SQANTI Filter classification outputs one gene with multiple isoforms, thus complicates correlation with RNA-Seq Gene Expression Counts. 
+PacBio FL count is presented per isoform rather than per gene. However, FeatureCount's output from RNA-seq data is on a gene level. Therefore FL counts from IsoSeq needs to be summed for more convenient comparison: Total FL Counts of Transcripts per Gene from IsoSeq vs Raw Gene Counts from RNASeq 
+
+Alternative option: select only isoform with the highest number of FL counts, yet biased results especially given if many isoforms with similar or slgihtly smaller number of FL-counts. 
+Assumptions: RNA-seq captures expression of all RNA transcripts irrespective of isoforms
+
+```{r, echo = TRUE}
+SumFLCounts(Merge_IsoSeq)
+```
+
+### Step 3)RNASeq Preparation
+
+**Input**: FeatureCounts of all RNASeq samples (STAR Aligned to mm10 genome, and annotated to Gencode Mouse V20 gtf file) at gene level 
+**Output**: FeatureCount of specific sample 
+
+```{r, echo = TRUE}
+Input_RNAseq("K17")
+```
+
+
+```{r, echo = TRUE}
+Validation_SumFLCounts("App",Merge_IsoSeq)
+```
+
+### Step 4) Merge RNASeq and IsoSeq
+
+**Input**: Sample-specific Isoseq (Dataframe: Merge_IsoSeq_SumFL) and RNASeq (Dataframe: RNASeq) Counts
+**Output**: Dataframe "Full_Merge": Merged Counts across IsoSeq and RNASeq by gene names
+
+Also to call out specific counts of AD-associated genes, created function AD_Counts. 
+
+```{r, echo = TRUE}
+Merge_RNASeq_Isoseq(Merge_IsoSeq_SumFL,RNASeq) # output file name = Full_Merge
+
+AD_Genes <- c("Apoe","App","Mapt","Psen1")
+AD_Counts(AD_Genes)
+```
+
+### Step 5) Data Review for Full_Merge: RNASeq vs IsoSeq
+
+**Motivation**: Within Full_Merge dataframe, interested to know which genes are detected only by IsoSeq, only by RNASeq, and alone. Also later downstream, able to plot the number of respective counts for these genes. 
+
+```{r, echo = TRUE}
+Missing_Reads_Review()
+```
+
+### Step 6) Correlation
+
+**output**: Correlation of Gene Expression of IsoSeq FL Counts vs RNASeq Raw Counts. Correlation coefficient calculated from pearson's method (assuming parametric) and considers
+
+```{r, echo = TRUE}
+Run_Corplot(Full_Merge)
+```
+
+### Step 7) Missing Reads
+
+**input**: Genes either detected by IsoSeq or RNASeq from Full_Merge dataframe (IsoSeq and RNASeq Counts/gene) 
+**output**: Plot of those genes with its respective counts
+
+```{r, echo = TRUE}
+Missing_Reads_Plot(Full_Merge)
+Missing_Genes(5000)
+```
