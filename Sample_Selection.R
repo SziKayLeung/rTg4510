@@ -68,8 +68,9 @@ datatable(all[c(headers)]) %>%
       unique(all$Age_in_months), c('orange', 'yellow',"pink","red")
     )
   )
-  
 
+#********************** Subset specifically "K Sample_ID samples"
+write.csv(all[grep("K",all$Sample.ID),],paste0(input_dir,"/Tg4510_K_Samples.csv"))
 
 # # prepare P0, P1 and P2 to separate out percentages and counts
 # Ps <- c("P0", "P1", "P2")
