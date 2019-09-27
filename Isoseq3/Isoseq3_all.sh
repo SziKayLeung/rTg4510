@@ -6,138 +6,39 @@
 #PBS -l procs=32 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
 
-##############################################################################################################
-# Date: 11th April 2019
-# 11-14th April: run Isoseq3 for all Tg4510 samples: L22, K18, O23, S18, K17 
-# 15th May: run Isoseq3 for additional WT samples for paper: C21
-# not able to access raw data for sample C20, Q21
-# already run Isoseq3 as test on S23 sample (10th April S23_Isoseq3.sh)
-#############################################################################################################
-module load Anaconda2
-source activate my_root 
+# 11-14/04/2019: run Isoseq3.1.2 for all Tg4510 samples: L22, K18, O23, S18, K17 
+# 27/09/2019: run Isoseq3.2.2 for Samples 1-16 defined in raw.txt 
 
-# Listing versions 
-ccs --version
-lima --version 
-isoseq3 --version
-#############################################################################################################
-module load Anaconda2
-source activate my_root 
-
+#************************************* DEFINE GLOBAL VARIABLES
 # File directories 
-PARAMETERS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/Parameters
-CCS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/CCS
-LIMA=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/LIMA
-REFINE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/REFINE
-CLUSTER=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/CLUSTER
-POLISH=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Isoseq3/POLISH
+FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general/IsoSeq
+Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/Isoseq3_WKD
+#cd $Isoseq3_WKD
+#mkdir CCS LIMA REFINE CLUSTER
+CCS=$Isoseq3_WKD/CCS
+LIMA=$Isoseq3_WKD/LIMA
+REFINE=$Isoseq3_WKD/REFINE
+CLUSTER=$Isoseq3_WKD/CLUSTER
 
-SAMPLES_NAMES=(L22 K18 S18 K17 O23 C21)
-# remove comments in raw.txt (https://kvz.io/blog/2007/07/11/cat-a-file-without-the-comments/)
 # ENSURE ORDER OF SAMPLE NAMES AND BAM_FILES IS THE SAME
-cd $PARAMETERS
-cat raw.txt 
-BAM_FILES=(`cat "raw.txt" | egrep -v "^\s*(#|$)"`)
+SAMPLES_NAMES=(Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24)
+cd $FUNCTIONS
+cat Isoseq_MouseRaw.txt
+# remove comments in raw.txt (https://kvz.io/blog/2007/07/11/cat-a-file-without-the-comments/)
+BAM_FILES=(`cat "Isoseq_MouseRaw.txt" | egrep -v "^\s*(#|$)"`)
 
-cat sub.txt
-SUB_FILES=(`cat "sub.txt" | egrep -v "^\s*(#|$)"`)
+#************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
+source $FUNCTIONS/Isoseq3.2.2_Functions.sh
 
-cat primer.fasta
-FASTA=$PARAMETERS/primer.fasta
+module load Miniconda2 
+source activate isoseq3
 
-#############################################################################################################
-# Generating circular consensus sequence (ccs) from subreads
-#############################################################################################################
-
+# Isoseq3.2.2
 count=0
-cd $CCS
-for f in "${BAM_FILES[@]}"; do
-  echo "Processing $f"
-  output=(${SAMPLES_NAMES[count]})
-  echo "Checking if $output.ccs.bam exists"
-  if [ -f $output.ccs.bam ]; then 
-    echo "$output.ccs.bam file already exists; CCS no need to be processed on Sample $output"
-  else 
-    echo "$output file does not exist"
-    echo "Processing CCS for sample $output"
-    time ccs --numThreads=16 --noPolish --minPasses=1 $f $output.ccs.bam
-    echo "CCS for Sample $output successful"
-    mv ccs_report.txt $output.ccs.report.txt
-  fi
-  count=$((count+1)) 
-done 
-
-#############################################################################################################
-# Isoseq3.1.2 
-#############################################################################################################
-
-# Lima 
-# removed --no pbi as this is needed for downstream polishing
-cd $LIMA
-for lima in "${SAMPLES_NAMES[@]}"; do 
-  echo "Processing $lima file for demultiplexing"
-  if [ -f $lima.demux.ccs.json ]; then 
-    echo "$lima.demux.ccs.json file already exists; LIMA no need to be processed on Sample $lima"
-  else 
-    echo "$lima.demux.ccs.bam file does not exist"
-    time lima "$lima.ccs.bam" $FASTA $lima.demux.ccs.bam --isoseq --dump-clips --dump-removed --peek-guess
-    echo "lima $lima successful"
-  fi
+for i in ${SAMPLES_NAMES[@]}; do  
+    run_CCS $CCS
+    run_LIMA $i $CCS $LIMA
+    run_REFINE $i $LIMA $REFINE 
+    run_CLUSTER $i $REFINE $CLUSTER
+    count=$((count+1))
 done
-
-## Isoseq3 refine from demuxed bam
-cd $REFINE
-for refine in "${SAMPLES_NAMES[@]}"; do 
-  echo "Processing $refine file for refine"
-  if [ -f $refine.flnc.bam ]; then
-    echo "$refine.flnc bam file already exists; Refine no need to be processed on Sample $refine"
-  else
-    echo "$refine.flnc bam file does not exist"
-    time isoseq3 refine "$refine.demux.ccs.primer_5p--primer_3p.bam" $FASTA $refine.flnc.bam --require-polya
-    echo "refine $refine successful"
-  fi
-done
-
-# Isoseq3 cluster
-cd $CLUSTER
-for cluster in "${SAMPLES_NAMES[@]}"; do 
-  echo "Processing $cluster file for cluster"
-  if [ -f $cluster.unpolished.bam ]; then
-    echo "$cluster.unpolished.bam file already exists; Cluster no need to be processed on Sample $cluster"
-  else 
-    echo "$cluster.unpolished.bam file does not exist"
-    #time isoseq3 cluster "$cluster.flnc.bam" $cluster.unpolished.bam --verbose
-    echo "cluster $cluster successful"
-  fi
-done
-
-ls *unpolished.bam
-
-# Isoseq3 polish 
-cd $POLISH
-count=0
-for polish in "${SAMPLES_NAMES[@]}"; do 
-  echo "Processing $polish file..."
-  if [ -f $polish.polished.hq.fasta ]; then
-    echo "$polish.polished.hq.fasta file already exists; Polish no need to be processed on Sample $polish"
-  else 
-    echo "$polish.polished.hq.fasta file does not exist"
-    #time isoseq3 polish "$polish.unpolished.bam" ${SUB_FILES[count]} $polish.polished.bam --verbose    
-    echo "polish $polish successful"
-    #gunzip $polish.polished.hq.fastq
-    echo "unzipped $polish.polished.hq.fastq successful" 
-  fi 
-  count=$((count+1))
-done
-#############################################################################################################
-source deactivate
-# first processing of bash loop filing; 
-#mv *ccs.bam* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS
-#mv *demux* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/LIMA
-#mv *flnc* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/REFINE
-#mv *unpolished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CLUSTER
-#mv *polished* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/POLISH
-#mv *ccs.report* /gpfs/ts0/scratch/sl693/WholeTranscriptome/Isoseq3/CCS
-
-echo IsoSeq3 done
-
