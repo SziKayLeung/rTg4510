@@ -1,0 +1,11 @@
+base
+knitr
+rmdformats
+stringr
+dplyr
+ggplot2
+magrittr
+ggpubr
+plotly
+gridExtra
+ggthemes

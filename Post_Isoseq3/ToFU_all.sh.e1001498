@@ -1,0 +1,100 @@
+Traceback (most recent call last):
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 248, in <module>
+    main(args)
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 169, in main
+    print >> sys.stderr, "Input file {0} does not exist. Abort.".format(args.fasta)
+AttributeError: 'Namespace' object has no attribute 'fasta'
+
+real	0m24.854s
+user	0m0.154s
+sys	0m0.143s
+Traceback (most recent call last):
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 248, in <module>
+    main(args)
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 169, in main
+    print >> sys.stderr, "Input file {0} does not exist. Abort.".format(args.fasta)
+AttributeError: 'Namespace' object has no attribute 'fasta'
+
+real	0m0.168s
+user	0m0.110s
+sys	0m0.056s
+Traceback (most recent call last):
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 248, in <module>
+    main(args)
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 169, in main
+    print >> sys.stderr, "Input file {0} does not exist. Abort.".format(args.fasta)
+AttributeError: 'Namespace' object has no attribute 'fasta'
+
+real	0m0.156s
+user	0m0.102s
+sys	0m0.053s
+Traceback (most recent call last):
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 248, in <module>
+    main(args)
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 169, in main
+    print >> sys.stderr, "Input file {0} does not exist. Abort.".format(args.fasta)
+AttributeError: 'Namespace' object has no attribute 'fasta'
+
+real	0m0.159s
+user	0m0.102s
+sys	0m0.055s
+Traceback (most recent call last):
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 248, in <module>
+    main(args)
+  File "/gpfs/ts0/shared/software/cDNA_Cupcake/6.9-intel-2017b-Python-2.7.14/bin/collapse_isoforms_by_sam.py", line 169, in main
+    print >> sys.stderr, "Input file {0} does not exist. Abort.".format(args.fasta)
+AttributeError: 'Namespace' object has no attribute 'fasta'
+
+real	0m0.158s
+user	0m0.107s
+sys	0m0.050s
+File L22.collapsed.group.txt does not exist. Abort!
+
+real	0m0.063s
+user	0m0.017s
+sys	0m0.019s
+File K18.collapsed.group.txt does not exist. Abort!
+
+real	0m0.034s
+user	0m0.017s
+sys	0m0.017s
+File S18.collapsed.group.txt does not exist. Abort!
+
+real	0m0.033s
+user	0m0.018s
+sys	0m0.014s
+File K17.collapsed.group.txt does not exist. Abort!
+
+real	0m0.034s
+user	0m0.015s
+sys	0m0.019s
+File O23.collapsed.group.txt does not exist. Abort!
+
+real	0m0.033s
+user	0m0.016s
+sys	0m0.017s
+File L22.collapsed.abundance.txt does not exist. Abort!
+
+real	0m0.185s
+user	0m0.075s
+sys	0m0.037s
+File K18.collapsed.abundance.txt does not exist. Abort!
+
+real	0m0.108s
+user	0m0.077s
+sys	0m0.029s
+File S18.collapsed.abundance.txt does not exist. Abort!
+
+real	0m0.111s
+user	0m0.079s
+sys	0m0.030s
+File K17.collapsed.abundance.txt does not exist. Abort!
+
+real	0m0.108s
+user	0m0.070s
+sys	0m0.037s
+File O23.collapsed.abundance.txt does not exist. Abort!
+
+real	0m0.112s
+user	0m0.081s
+sys	0m0.029s

@@ -1,0 +1,159 @@
+---
+title: "RNASeqvsIsoSeq of"
+date: "Report created: `r Sys.Date()`"
+author: "Szi Kay Leung"
+output:
+  rmdformats::readthedown
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+library(stringr) # Extract strings
+library(dplyr)   # dataframe splitting
+library("ggpubr") # correlation plot
+library(plotly) # interactive graphs
+library(ggplot2)
+library(grid) # ggplot add corr value
+library(gridExtra) # ggplot add corr value
+library(ggthemes)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=FALSE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+**Objective**: To tabulate the number of full-length reads obtained per gene from Isoseq and order genes from high to low, for comparison with RNAseq data for exact sample
+
+**Rationale**: To evaluate whether Isoseq output comparable to RNAseq output
+
+Analysis: 
+1. Downloaded raw subread.bam file from Sequel output 
+2. CCS and Isoseq3 command line (Lima, Cluster, Polish) 
+3. Mapped to mouse genome using GMAP 
+4. Tofu Cupcake 
+5. Sqanti for isoform characterisation
+
+```{r, echo = TRUE, message = FALSE}
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq3_Tg4510/RNASeqvsIsoSeq.R")
+sample <- c("O23")
+```
+
+## Step 1) IsoSeq Preparation: Annotate2Abundance
+Define function for Importing and Merging SQANTI classification file and TOFU abundance file
+
+**Input**: Sqanti_Filter Classification Output file
+  * All details of HQ-unique isoforms classified by assigning PacBio output gene Cluster ID to mouse gene name
+  
+**Input**: ToFU Abundance Output file
+  * Quantification of number of Full_Length per PacBio_ID
+  
+**Output**: Merged txt file by PacBio ID 
+  * Merged txt file has the gene name by which the isoform belongs to (as identified by SQANTI) and the quantification of FL_counts (as quantified in TOFU) by PacBio ID
+
+```{r, echo = TRUE}
+SQANTI_input(sample)
+TOFU_input(sample)
+Annotate2Abundance_IsoSeq(sample,classification_dat,abundance_dat)
+```
+
+## Step 2) IsoSeq Preparation: SumFLCounts
+Define function that the FL Counts for all transcripts per gene 
+
+**Motivation**: SQANTI Filter classification outputs one gene with multiple isoforms, thus complicates correlation with RNA-Seq Gene Expression Counts. 
+PacBio FL count is presented per isoform rather than per gene. However, FeatureCount's output from RNA-seq data is on a gene level. Therefore FL counts from IsoSeq needs to be summed for more convenient comparison: Total FL Counts of Transcripts per Gene from IsoSeq vs Raw Gene Counts from RNASeq 
+
+Alternative option: select only isoform with the highest number of FL counts, yet biased results especially given if many isoforms with similar or slgihtly smaller number of FL-counts. 
+Assumptions: RNA-seq captures expression of all RNA transcripts irrespective of isoforms
+
+```{r, echo = TRUE}
+SumFLCounts(Merge_IsoSeq)
+```
+
+## Step 3) RNASeq Preparation
+
+**Input**: FeatureCounts of all RNASeq samples (STAR Aligned to mm10 genome, and annotated to Gencode Mouse V20 gtf file) at gene level 
+**Output**: FeatureCount of specific sample 
+
+```{r, echo = TRUE}
+Input_RNAseq(sample)
+```
+
+
+```{r, echo = TRUE}
+Validation_SumFLCounts("App",Merge_IsoSeq)
+```
+
+## Step 4) Merge RNASeq and IsoSeq
+
+**Input**: Sample-specific Isoseq (Dataframe: Merge_IsoSeq_SumFL) and RNASeq (Dataframe: RNASeq) Counts
+**Output**: Dataframe "Full_Merge": Merged Counts across IsoSeq and RNASeq by gene names
+
+Also to call out specific counts of AD-associated genes, created function AD_Counts. 
+
+```{r, echo = TRUE}
+Merge_RNASeq_Isoseq(Merge_IsoSeq_SumFL,RNASeq) # output file name = Full_Merge
+
+AD_Genes <- c("Apoe","App","Mapt","Psen1")
+AD_Counts(AD_Genes)
+```
+
+## Step 5) Data Review for Full_Merge: RNASeq vs IsoSeq
+
+**Motivation**: Within Full_Merge dataframe, interested to know which genes are detected only by IsoSeq, only by RNASeq, and alone. Also later downstream, able to plot the number of respective counts for these genes. 
+
+```{r, echo = TRUE}
+Missing_Reads_Review()
+```
+
+## Step 6) Correlation of RawData
+
+**output**: Correlation of Gene Expression of IsoSeq FL Counts vs RNASeq Raw Counts. Correlation coefficient calculated from pearson's method (assuming parametric) and considers
+```{r, echo = TRUE}
+#cor.test(Full_Merge$Isoseq_FL_Counts,Full_Merge$RNASeq_Raw_Counts, method = "pearson")
+
+```
+
+```{r, echo = TRUE, warning = FALSE}
+#cor.test(Full_Merge$Isoseq_FL_Counts,Full_Merge$RNASeq_Raw_Counts, method = "pearson")
+#Log_Counts()
+
+#Run_Corplot(Full_Merge, "Isoseq_FL_Counts", "RNASeq_Raw_Counts")
+#Run_Corplot_Interactive(Full_Merge, "Isoseq_FL_Counts", "RNASeq_Raw_Counts")
+
+```
+
+## Step 7) Correlation of log(Data)
+
+**motivation**: As seen above, due to densely populated points of numbers with several extreme values, difficult to see plot. Thus, logged points for visual
+**output**: Correlation of Gene Expression of **log(10)**(IsoSeq FL Counts) vs **log(10)**(RNASeq Raw Counts). Note, correlation coefficient doesn't change. However, as it is not possible to log 0, can only consider **genes detected in both technology**.
+
+```{r, echo = TRUE}
+Run_Corplot(Log_Full_Merge,"Log_Isoseq_FL_Counts","Log_RNASeq_Raw_Counts")
+Run_Corplot_Interactive(Log_Full_Merge,"Log_Isoseq_FL_Counts","Log_RNASeq_Raw_Counts")
+density_plot(Log_Full_Merge,"Log_Isoseq_FL_Counts","Log_RNASeq_Raw_Counts")
+#hist(Full_Merge$Isoseq_FL_Counts)
+#hist(Full_Merge$RNASeq_Raw_Counts)
+```
+
+## Step 7) Missing Reads
+
+**input**: Genes either detected by IsoSeq or RNASeq from Full_Merge dataframe (IsoSeq and RNASeq Counts/gene) 
+**output**: Plot of those genes with its respective counts
+
+```{r, echo = TRUE, warning = FALSE}
+Missing_Reads_Plot(Full_Merge)
+Missing_Genes(5000)
+```
+## Session Info
+```{r, echo = FALSE}
+sessionInfo()
+```
+
