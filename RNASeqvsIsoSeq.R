@@ -1,8 +1,15 @@
 library(stringr) # Extract strings
 library(dplyr)   # dataframe splitting
 library("ggpubr") # correlation plot
+library(plotly) # interactive graphs
+library(ggplot2)
+library(grid) # ggplot add corr value
+library(gridExtra) # ggplot add corr value
+library(ggthemes) # ggplot minimum theme
 
-
+## Define all output directory
+output_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/Correlations/"
+  
 SQANTI_input <- function(sample){
   ## Define directory input
   sqanti_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/SQANTI2"
@@ -44,23 +51,22 @@ TOFU_input <- function(sample){
   abundance_dat <<- data.frame(abundance_dat)
   colnames(abundance_dat) <- c("PacBio_Id","count_fl","count_nfl","count_nfl_amb","norm_fl","norm_nfl","norm_nfl_amb")
   
-  
   # View specific sample file
   print(paste("Abundance file of Sample", sample))
   abundance_dat <<- abundance_dat 
-  return(head(abundance_dat))
+  head(abundance_dat)
 }
 
 
 Annotate2Abundance_IsoSeq <- function(sample,classification_dat,abundance_dat){
   # Merge SQANTI_Classssification file for genename with TOFU_Abundance file for FL counts
-  Merge_IsoSeq <- merge(classification_dat,abundance_dat,by.x = "isoform", by.y = "PacBio_Id")
+  Merge_IsoSeq <- merge(classification_dat,abundance_dat,by.x = "isoform", by.y = "PacBio_Id", all.x = TRUE)
   #write.csv(Merge, file = print(paste0(sample,"Merged.csv")))
   
   # save Merge file to workspace: https://stackoverflow.com/questions/32563153/function-save-returned-data-frame-to-workspace
   print(paste("Merged file of SQANTI Classification and Abundance File of Sample", sample))
   Merge_IsoSeq <<- Merge_IsoSeq
-  return(Merge_IsoSeq)
+  head(Merge_IsoSeq)
 }
 
 SumFLCounts <- function(dat){
@@ -87,7 +93,7 @@ Validation_SumFLCounts <- function(gene,dat){
   
   validation <- list(df,df2)
   validation <<- validation
-  return(validation)
+  validation
 }
 
 Input_RNAseq <- function(sample){
@@ -98,33 +104,31 @@ Input_RNAseq <- function(sample){
   # Import featurecount file with annotated mgisymbol names
   featurecount_file <- list.files(path = featurecount_dir, pattern = "Final_WT8_genenames.mx", full.names = TRUE) 
   featurecount_dat <- read.delim2(featurecount_file, row.names = 1, header = TRUE)
-  # Featurecount_dat <<- featurecount_dat #save to workspace
+  featurecount_dat <<- featurecount_dat #save to workspace
   print(head(featurecount_dat))
   
   # Grep specific sample column with counts and ensembl_name (column 1)
+  #sample_with_quotes <- c(print(sample, sep=""))
   RNASeq <- data.frame(featurecount_dat[,sample],row.names = (rownames(featurecount_dat)))
+  
   colnames(RNASeq)[1] <- paste("RNASeq",sample,"Raw Counts")
   print(paste("Input FeatureCount for Sample", sample))
   #print(head(RNASeq))
-  
+
   # To extract the mgi_symbol separated by _ per row (carried out with a for loop)
   Genes <- data.frame(lapply(rownames(RNASeq), function(x){gene<-word(x,2, sep = fixed ('_'))}))
   Genes <- data.frame(t(Genes))
   colnames(Genes)[1] <- "Mgi_Symbol"
   RNASeq <- cbind(RNASeq,Genes)
   
+  RNASeq <<- RNASeq
+
   # Set a threshold for RNA-Seq FeatureCounts 
-  RNASeq <- RNASeq[which(RNASeq$`RNASeq K17 Raw Counts` > 5),] 
+  RNASeq <- RNASeq[which(RNASeq[,1] > 5),] #refers to column 1, do not specific name of column as different for each sample
   RNASeq$Mgi_Symbol <- as.character(RNASeq$Mgi_Symbol) #essential for correct merging downstream 
   
   RNASeq <<- RNASeq
-  return(head(RNASeq))
-}
-
-Merge_RNASeq_Isoseq <- function(IsoSeq,RNASeq){
-  Full_Merge <- merge(IsoSeq,RNASeq,by.x = "associated_gene",by.y = "Mgi_Symbol",all = TRUE)
-  Full_Merge <<- Full_Merge
-  return(head(Full_Merge))
+  head(RNASeq)
 }
 
 AD_Counts <- function(AD_Genes){
@@ -137,7 +141,7 @@ AD_Counts <- function(AD_Genes){
     AD_Genes_Merged <- rbind(AD_Genes_Merged, df)
   }
   
-  return(AD_Genes_Merged)
+  AD_Genes_Merged
 }
 
 Missing_Reads_Review <- function(){
@@ -159,41 +163,173 @@ Missing_Reads_Review <- function(){
   print(paste("Total Number of Genes Detected in IsoSeq but not RNASeq:",length(which(Full_Merge$Detection == "IsoSeq_noRNASeq"))))
   print(paste("Total Number of Genes Detected in RNASeq but not IsoSeq:",length(which(Full_Merge$Detection == "noIsoSeq_RNASeq"))))
   
+  Full_Merge <<- Full_Merge #important to upFull_Mergee df 
+  head(Full_Merge)
+  
+  write.csv(Full_Merge, file = print(paste0(output_dir, sample,"_Full_Merge.csv"))) # for downstream
+}
+
+Log_Counts <- function(){
+  Log_Full_Merge <- Full_Merge
+  
+  # Correlation of Raw Data to plot 0 values
   # Substitute NA values for 0 to plot correlation
   Full_Merge$Isoseq_FL_Counts[is.na(Full_Merge$Isoseq_FL_Counts)] <- 0
   Full_Merge$RNASeq_Raw_Counts[is.na(Full_Merge$RNASeq_Raw_Counts)] <- 0
   
-  Full_Merge <<- Full_Merge #important to update df 
-  return(head(Full_Merge))
+  # Correlation of Log(Raw_Data)
+  # Unable to log 0 counts as log0 = infinity, therfore keep values as "NA"
+  Log_Full_Merge <- na.omit(Log_Full_Merge)
+  
+  # Log Counts
+  Log_Full_Merge$Log_Isoseq_FL_Counts <- log10(Log_Full_Merge$Isoseq_FL_Counts)
+  Log_Full_Merge$Log_RNASeq_Raw_Counts <- log10(Log_Full_Merge$RNASeq_Raw_Counts)
+  
+  Log_Full_Merge <<- Log_Full_Merge
+  Full_Merge <<- Full_Merge
+  print(head(Log_Full_Merge))
 }
 
-Run_Corplot <- function(dat){
-  Corplot <- ggscatter(dat, y = "RNASeq_Raw_Counts", x = "Isoseq_FL_Counts", 
-                       color = "Detection",
-                       palette = c("red", "black"," blue"),
-                       add = "reg.line", conf.int = TRUE, 
-                       cor.coef = TRUE, cor.method = "pearson", 
-                       ylab = "RNASeq_Raw_Counts", xlab = "PacBio_FL_Counts")
+
+# https://stackoverflow.com/questions/50960339/create-ggplot2-function-and-specify-arguments-as-variables-in-data-as-per-ggplot
+Run_Corplot <- function(dat,x.var,y.var){
+  corr <- grobTree(textGrob(paste("R : ", round(cor(dat[,x.var], dat[,y.var]), 4) ), x = 0.05, y = 0.97, hjust = 0, gp = gpar(col = "black", fontsize = 11, fontface = "italic")))
   
-  return(Corplot)
+  x.var <- rlang::sym(quo_name(enquo(x.var)))
+  y.var <- rlang::sym(quo_name(enquo(y.var)))
+  
+  Corplot <- ggplot(dat, aes(x = !! x.var, y = !! y.var)) + 
+    geom_point(size = 0.4) + geom_smooth(method=lm) + theme_tufte() + scale_color_manual(values=c("royalblue2", "grey40", "firebrick2")) + annotation_custom(corr) 
+
+  print(Corplot)
 }
+
+# https://stackoverflow.com/questions/50960339/create-ggplot2-function-and-specify-arguments-as-variables-in-data-as-per-ggplot
+Interactive_Log <- function(dat){
+  Corplot <- ggplot(dat, aes_string(Log_IsoSeq_FL_Counts,Log_RNASeq_Raw_Counts)) + 
+    geom_point() + geom_smooth(method=lm) + theme_tufte() 
+  
+  # plotly:https://plot.ly/ggplot2/user-guide/
+  Corplot <- ggplotly(Corplot)
+
+  Corplot <- style(Corplot, text= dat$associated_gene, hoverinfo="text+x+y")
+  print(Corplot)
+}
+
+
 
 Missing_Reads_Plot <- function(dat){
   # Only genes with either IsoSeq/RNASeq Reads
   Missing <- dat[which(dat$Detection == "noIsoSeq_RNASeq" | dat$Detection == "IsoSeq_noRNASeq" ),]
   
-  Missing_Plot <- ggscatter(Missing, y = "RNASeq_Raw_Counts", x = "Isoseq_FL_Counts", 
-                            color = "Detection",
-                            palette = c("red", " blue"),
-                            ylab = "RNASeq_Raw_Counts", xlab = "PacBio_FL_Counts")
+  
+  Missing_Plot <- ggplot(Missing, aes(x = Isoseq_FL_Counts, y = RNASeq_Raw_Counts, color = Detection)) + geom_point() + geom_smooth(method=lm) + 
+    scale_color_manual(values=c("royalblue2", "firebrick2")) 
+  
+  Missing_Plot <- Missing_Plot + theme_tufte()
+  
+  # plotly:https://plot.ly/ggplot2/user-guide/
+  Missing_Plot <- ggplotly(Missing_Plot)
+  
+  Missing_Plot <- style(Missing_Plot, text= dat$associated_gene, hoverinfo="text+x+y")
+  
   
   Missing <<- Missing # for downstream use
-  return(Missing_Plot)
+  Missing_Plot
 }
 
-Missing_Genes <- function(value){
+
+Missing_Genes <- function(dat,value){
   print(paste("Genes with no IsoSeq Reads but RNASeq RawCounts >", value))
-  print(Missing[which(Missing$RNASeq_Raw_Counts > value),1])
+  print(dat[which(dat$RNASeq_Raw_Counts > value),1])
   print("Genes with only IsoSeq Reads, and no RNASeq Reads")
-  print(Missing[which(Missing$Detection == "IsoSeq_noRNASeq"),1])
+  print(dat[which(dat$Detection == "IsoSeq_noRNASeq"),1])
+}
+
+
+density_plot <- function(dat,x.var,y.var){
+  
+  corr <- grobTree(textGrob(paste("R : ", round(cor(dat[,x.var], dat[,y.var]), 4) ), x = 0.05, y = 0.97, hjust = 0, gp = gpar(col = "black", fontsize = 11, fontface = "italic")))
+  
+  x.var <- rlang::sym(quo_name(enquo(x.var)))
+  y.var <- rlang::sym(quo_name(enquo(y.var)))
+  
+  p <- ggplot(dat, aes(x = !! x.var, y = !! y.var)) +
+    annotation_custom(corr) +
+    stat_density_2d(aes(fill = stat(level)), geom = "polygon") +
+    geom_point(size = 0.4, alpha = 0.25) +
+    scale_fill_distiller(palette=4, direction=1) +
+    theme_tufte() +
+    labs(x = "Log (Isoseq Full Length Counts)", y = "Log (RNASeq Raw Counts)") + 
+    geom_smooth(method=lm, colour = "black") 
+  
+  print(p)
+}
+
+#hist(Log_Full_Merge$Log_Isoseq_FL_Counts[Log_Full_Merge$Log_Isoseq_FL_Counts<10])
+
+Run_FSM <- function(sample,dat){
+  
+  # Merge SQANTI_Classssification file for genename with TOFU_Abundance file for FL counts
+  FSM_Merge_IsoSeq <- merge(dat,abundance_dat,by.x = "isoform", by.y = "PacBio_Id", all.x = TRUE)
+  #write.csv(Merge, file = print(paste0(sample,"Merged.csv")))
+  
+  # save Merge file to workspace: https://stackoverflow.com/questions/32563153/function-save-returned-data-frame-to-workspace
+  print(paste("Merged file of SQANTI Classification and Abundance File of Sample", sample))
+  FSM_Merge_IsoSeq <<- FSM_Merge_IsoSeq
+  
+  # sum FL Counts
+  FSM_Merge_IsoSeq_SumFL <- FSM_Merge_IsoSeq %>% group_by(associated_gene) %>%
+    summarize(PacBio_Isoform = isoform[1], PacBio_FL_Counts = sum(count_fl))
+  FSM_Merge_IsoSeq_SumFL$associated_gene <- as.character(FSM_Merge_IsoSeq_SumFL$associated_gene)
+  FSM_Merge_IsoSeq_SumFL <<- FSM_Merge_IsoSeq_SumFL
+  
+  # MERGE ISOSEQ with RNASEQ
+  FSM_Full_Merge <- merge(FSM_Merge_IsoSeq_SumFL,RNASeq,by.x = "associated_gene",by.y = "Mgi_Symbol",all = TRUE)
+  
+  print(paste("Total Number of Genes in FSM_Full_Merge of IsoSeq and RNASeq:", dim(FSM_Full_Merge)[1]))
+  
+  # Create "Detection column" in FSM_Full_Merge depending on whether reads present/absent in technology
+  colnames(FSM_Full_Merge)
+  colnames(FSM_Full_Merge) <- c("associated_gene","PacBio_Isoform_ID","Isoseq_FL_Counts","RNASeq_Raw_Counts") #double check col names
+  
+  FSM_Full_Merge$Detection_Isoseq = ifelse(is.na(FSM_Full_Merge$Isoseq_FL_Counts),"noIsoSeq","IsoSeq")
+  FSM_Full_Merge$Detection_RNAseq = ifelse(is.na(FSM_Full_Merge$RNASeq_Raw_Counts),"noRNASeq","RNASeq") 
+  FSM_Full_Merge$Detection = paste(FSM_Full_Merge$Detection_Isoseq,FSM_Full_Merge$Detection_RNAseq,sep="_") #concatenate columns
+  
+  # Check factor level for detection
+  FSM_Full_Merge$Detection <- as.factor(FSM_Full_Merge$Detection)
+  # print(levels(FSM_Full_Merge$Detection))
+  
+  print(paste("Total Number of Genes Detected in IsoSeq AND RNASeq:",length(which(FSM_Full_Merge$Detection == "IsoSeq_RNASeq"))))
+  print(paste("Total Number of Genes Detected in IsoSeq but not RNASeq:",length(which(FSM_Full_Merge$Detection == "IsoSeq_noRNASeq"))))
+  print(paste("Total Number of Genes Detected in RNASeq but not IsoSeq:",length(which(FSM_Full_Merge$Detection == "noIsoSeq_RNASeq"))))
+  
+  FSM_Full_Merge <<- FSM_Full_Merge #important to update FSM_Full_Merge df 
+  head(FSM_Full_Merge)
+  
+  #write.csv(FSM_Full_Merge, file = print(paste0(output_dir, sample,"_FSM_Full_Merge.csv"))) # for downstream
+  
+  # Log Counts
+  Log_FSM_Full_Merge <- FSM_Full_Merge
+  
+  # Correlation of Raw Data to plot 0 values
+  # Substitute NA values for 0 to plot correlation
+  FSM_Full_Merge$Isoseq_FL_Counts[is.na(FSM_Full_Merge$Isoseq_FL_Counts)] <- 0
+  FSM_Full_Merge$RNASeq_Raw_Counts[is.na(FSM_Full_Merge$RNASeq_Raw_Counts)] <- 0
+  
+  # Correlation of Log(Raw_Data)
+  # Unable to log 0 counts as log0 = infinity, therfore keep values as "NA"
+  Log_FSM_Full_Merge <- na.omit(Log_FSM_Full_Merge)
+  
+  # Log Counts
+  Log_FSM_Full_Merge$Log_Isoseq_FL_Counts <- log10(Log_FSM_Full_Merge$Isoseq_FL_Counts)
+  Log_FSM_Full_Merge$Log_RNASeq_Raw_Counts <- log10(Log_FSM_Full_Merge$RNASeq_Raw_Counts)
+  
+  Log_FSM_Full_Merge <<- Log_FSM_Full_Merge
+  FSM_Full_Merge <<- FSM_Full_Merge
+  print(head(Log_FSM_Full_Merge))
+  
+  density_plot(Log_FSM_Full_Merge,"Log_Isoseq_FL_Counts","Log_RNASeq_Raw_Counts")
+  return(density_plot)
 }
