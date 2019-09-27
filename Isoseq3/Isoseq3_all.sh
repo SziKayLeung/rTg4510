@@ -1,7 +1,7 @@
 #!/bin/sh
 #PBS -V # export all environment variables to the batch job.
 #PBS -q mrchq # submit to the serial queue
-#PBS -l walltime=144:00:00 # Maximum wall time for the job.
+#PBS -l walltime=500:00:00 # Maximum wall time for the job.
 #PBS -A Research_Project-MRC148213
 #PBS -l procs=32 # specify number of processors.
 #PBS -m e -M sl693@exeter.ac.uk # email me at job completion
@@ -30,15 +30,13 @@ BAM_FILES=(`cat "Isoseq_MouseRaw.txt" | egrep -v "^\s*(#|$)"`)
 #************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
 source $FUNCTIONS/Isoseq3.2.2_Functions.sh
 
-module load Miniconda2 
-source activate isoseq3
-
 # Isoseq3.2.2
 count=0
 for i in ${SAMPLES_NAMES[@]}; do  
+    echo $i
     run_CCS $CCS
-    run_LIMA $i $CCS $LIMA
-    run_REFINE $i $LIMA $REFINE 
-    run_CLUSTER $i $REFINE $CLUSTER
+    #run_LIMA $i $CCS $LIMA
+    #run_REFINE $i $LIMA $REFINE 
+    #run_CLUSTER $i $REFINE $CLUSTER
     count=$((count+1))
 done
