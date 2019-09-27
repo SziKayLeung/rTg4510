@@ -31,7 +31,6 @@ BAM_FILES=(`cat "Isoseq_MouseRaw.txt" | egrep -v "^\s*(#|$)"`)
 source $FUNCTIONS/Isoseq3.2.2_Functions.sh
 
 # Isoseq3.2.2
-count=0
 for i in ${SAMPLES_NAMES[@]}; do  
     echo $i
     run_CCS $CCS
