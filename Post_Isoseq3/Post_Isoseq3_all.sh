@@ -22,6 +22,10 @@ SQANTI2_output_dir=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTra
 STAR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/MAPPED/Individual
 
 #************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
+
+module load Miniconda2/4.3.21
+source activate sqanti2
+
 SAMPLES_NAMES=(Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24)
 
 # RNASeq
@@ -48,3 +52,5 @@ for i in ${SAMPLES_NAMES[@]}; do
     run_sqanti2_QC $i
     run_sqanti2_Filter $i 
 done
+
+source deactivate
