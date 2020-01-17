@@ -8,6 +8,7 @@
 
 # 10/01/2019: Created script to run Post_Isoseq3.2.2 on Mouse Targeted Run 1 (TargetedSeq1)
     # Samples K20, K18, K23, K21, K19, K17 
+# 17/01/2019: Run Post_Isoseq3.2.2 on individual samples from pooled dataset
 
 sl693=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693
 FUNCTIONS=$sl693/Scripts/general
@@ -24,6 +25,7 @@ SQANTI2_output_dir=$TS1_dir/SQANTI2
 SQANTI2_filter_output_dir=$TS1_dir/SQANTI2
 RNASEQ=$sl693/RNASeq/all_filtered
 STAR=$TS1_dir/RNASEQ
+PROBES=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Targeted/Expected_Expression/mouse
 
 #************************************* Run script
 source $FUNCTIONS/RNASeq/STAR_Functions.sh
@@ -47,8 +49,13 @@ for i in ${SAMPLES_NAMES[@]}; do
     run_sqanti2_Filter $i
 done
 
-PROBES=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Targeted/Expected_Expression/mouse
-python /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/targeted/calc_probe_hit_from_sam.py \
-         $PROBES/FINAL_MOUSE.bed $POLISHED/TargetedSeq1.polished.hq.fasta $MAPPING/TargetedSeq1.polished.hq.fastq.sam \
-         --start_base 0 --end_base 0 \
-         -o TargetedSeq1.fasta.sam.probe_hit.txt
+on_target_rate $PROBES/FINAL_MOUSE.bed $POLISHED/TargetedSeq1.polished.hq.fasta $MAPPING/TargetedSeq1.polished.hq.fastq.sam $MAPPING/TargetedSeq1.fasta.sam.probe_hit.txt
+
+for i in ${samples[@]}; do
+    convert_fa2fq $i $POLISHED
+    run_minimap2 $i
+    on_target_rate $PROBES/FINAL_MOUSE.bed $POLISHED/$i.polished.hq.fasta $MAPPING/$i.polished.hq.fastq.sam $MAPPING/$i.fasta.sam.probe_hit.txt
+    tofu $i 
+    run_sqanti2_QC $i
+    run_sqanti2_Filter $i
+done
