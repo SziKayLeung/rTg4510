@@ -8,6 +8,7 @@
 
 # 06/10/2019: Created Script to run RNASeq, FeatureCounts and Post_Isoseq3_Functions on Samples 1-16
     # note all STAR and featurecounts mapping done with gencode.vM22.annotation.gtf
+# 17/02/2020: Reran SQANTI2 (v7.2)
 
 #************************************* DEFINE GLOBAL VARIABLES
 # File directories 
@@ -24,31 +25,31 @@ STAR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/MAPPED/Individu
 #************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
 
 module load Miniconda2/4.3.21
-source activate sqanti2
+source activate sqanti2_py3
 
 SAMPLES_NAMES=(Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24)
 
 # RNASeq
-source $FUNCTIONS/RNASeq/STAR_Functions.sh
-for i in ${SAMPLES_NAMES[@]}; do
+#source $FUNCTIONS/RNASeq/STAR_Functions.sh
+#for i in ${SAMPLES_NAMES[@]}; do
     # run_star $sample $Tg4510/J20/input_directory $MAPPED_output_directory  $REFERENCE 
-    run_star $i $RNASeq_Filtered $STAR $REFERENCE
-done 
+    #run_star $i $RNASeq_Filtered $STAR $REFERENCE
+#done 
 
 # FeatureCounts
 # run_featurecounts at TRANSCRIPT level of all specified samples
 # run_featurecounts_transcript_specified <input_dir> <input_reference_dir> <output_prefix_name> <output_dir>
 # <input_dir> containing mapped, sorted bam files from STAR (RNASeq)
-source $FUNCTIONS/RNASeqvsIsoseq/Run_FeatureCounts.sh
-run_featurecounts_transcript_specified $STAR $REFERENCE All_Whole_Transcriptome $FEATURECOUNTS
+#source $FUNCTIONS/RNASeqvsIsoseq/Run_FeatureCounts.sh
+#run_featurecounts_transcript_specified $STAR $REFERENCE All_Whole_Transcriptome $FEATURECOUNTS
 
 # Post_IsoSeq3
 #cd $POLISHED; gunzip *.gz
 source $FUNCTIONS/Post_IsoSeq/Post_Isoseq3_Functions.sh
 for i in ${SAMPLES_NAMES[@]}; do 
-    convert_fa2fq $i $POLISHED
-    run_minimap2 $i
-    tofu $i
+    #convert_fa2fq $i $POLISHED
+    #run_minimap2 $i
+    #tofu $i
     run_sqanti2_QC $i
     run_sqanti2_Filter $i 
 done
