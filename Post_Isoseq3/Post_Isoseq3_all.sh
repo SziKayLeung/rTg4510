@@ -19,7 +19,7 @@ RNASeq_Filtered=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/all_
 FEATURECOUNTS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/FeatureCounts/Whole_Transcriptome
 MAPPING=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/MAPPING
 TOFU=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/TOFU
-SQANTI2_output_dir=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/SQANTI2
+SQANTI2_output_dir=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/SQANTI2_v7
 STAR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/MAPPED/Individual
 
 #************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
@@ -46,12 +46,15 @@ SAMPLES_NAMES=(Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24)
 # Post_IsoSeq3
 #cd $POLISHED; gunzip *.gz
 source $FUNCTIONS/Post_IsoSeq/Post_Isoseq3_Functions.sh
-for i in ${SAMPLES_NAMES[@]}; do 
+#for i in ${SAMPLES_NAMES[@]}; do 
     #convert_fa2fq $i $POLISHED
     #run_minimap2 $i
     #tofu $i
-    run_sqanti2_QC $i
-    run_sqanti2_Filter $i 
-done
+    #run_sqanti2_QC $i
+    #run_sqanti2_Filter $i 
+#done
+
+run_sqanti2_QC Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24
+run_sqanti2_Filter Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24
 
 source deactivate
