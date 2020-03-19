@@ -27,19 +27,19 @@ source $sl693/Scripts/general/IsoSeq/Isoseq3.2.2_Functions.sh
 
 SAMPLES_NAMES=(Q21 K17 M21 O23 S23 K23)
 
-RAW_DATA=(
+RAW_DATA_SUBREADS=(
 #1. Q21_Tg4510_WT_2mos
-$RAW_DIR/m54082_180607_173058.subreadset.xml
+$RAW_DIR/m54082_180607_173058.subreads.bam
 #4. K17_Tg4510_WT_2mos
-$RAW_DIR/m54082_190405_063832.subreadset.xml
+$RAW_DIR/m54082_190405_063832.subreads.bam
 #11. M21_Tg4510_WT_2mos
-$RAW_DIR/m54082_190430_163756.subreadset.xml
+$RAW_DIR/m54082_190430_163756.subreads.bam
 #2. O23_Tg4510_WT_8mos
-$RAW_DIR/m54082_190401_165425.subreadset.xml
+$RAW_DIR/m54082_190401_165425.subreads.bam
 #3. S23_Tg4510_WT_8mos
-$RAW_DIR/m54082_190403_135102.subreadset.xml
+$RAW_DIR/m54082_190403_135102.subreads.bam
 #12. K23_Tg4510_WT_8mos
-$RAW_DIR/m54082_190524_145911.subreadset.xml
+$RAW_DIR/m54082_190524_145911.subreads.bam
 )
 
 run_isoseq3.2.1_merge WT_Whole $Isoseq3_WKD

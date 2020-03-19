@@ -18,7 +18,9 @@ RAW_DIR=$sl693/WholeTranscriptome/rawdata
 
 #************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
 # sourcing functions script and input directories
+module load Miniconda2
 source $sl693/Scripts/general/IsoSeq/Isoseq3.2.2_Functions.sh
+source activate isoseq3
 
 ## If working on merging specific samples 
 # DEFINE SAMPLES_NAMES list in working script
@@ -27,7 +29,7 @@ source $sl693/Scripts/general/IsoSeq/Isoseq3.2.2_Functions.sh
 
 SAMPLES_NAMES=(O18 K18 S18 L22 Q20 K24)
 
-RAW_DATA=(
+RAW_DATA_SUBREADS=(
 #2.O18_Tg4510_TG_2mos
 $RAW_DIR/m54082_180605_141944.subreads.bam
 #8.K18_Tg4510_TG_2months
