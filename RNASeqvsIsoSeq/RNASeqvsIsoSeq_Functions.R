@@ -1,3 +1,7 @@
+# Szi Kay Leung 
+# Aim: Functions Script to be called for RNAseqvsIsoSeq.Rmd 
+# 19/03/2020: Cleaned up script
+
 library(stringr) # Extract strings
 library(dplyr)   # dataframe splitting
 library("ggpubr") # correlation plot
@@ -10,9 +14,9 @@ library(ggthemes) # ggplot minimum theme
 ## Define all output directory
 output_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/Correlations/"
   
-SQANTI_input <- function(sample){
+SQANTI_input <- function(sample, sqanti_input_dir){
   ## Define directory input
-  sqanti_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/SQANTI2"
+  sqanti_dir <- sqanti_input_dir
   
   #print("All Classification files from SQANTI")
   all_classification_files <- list.files(path = sqanti_dir , pattern = ".collapsed.filtered.rep_classification.filtered_lite_classification.txt", full.names = TRUE)
@@ -32,9 +36,9 @@ SQANTI_input <- function(sample){
   return(head(classification_dat))
 }
 
-TOFU_input <- function(sample){
+TOFU_input <- function(sample, tofu_input_dir){
   ## Define directory input
-  tofu_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/ToFU"
+  tofu_dir <- tofu_input_dir
   
   ## List all files in TOFU directory
   #print("All Abundance files from TOFU")
@@ -229,9 +233,9 @@ Missing_Reads_Plot <- function(dat){
   Missing_Plot <- Missing_Plot + theme_tufte()
   
   # plotly:https://plot.ly/ggplot2/user-guide/
-  Missing_Plot <- ggplotly(Missing_Plot)
+  #Missing_Plot <- ggplotly(Missing_Plot)
   
-  Missing_Plot <- style(Missing_Plot, text= dat$associated_gene, hoverinfo="text+x+y")
+  #Missing_Plot <- style(Missing_Plot, text= dat$associated_gene, hoverinfo="text+x+y")
   
   
   Missing <<- Missing # for downstream use
@@ -333,3 +337,53 @@ Run_FSM <- function(sample,dat){
   density_plot(Log_FSM_Full_Merge,"Log_Isoseq_FL_Counts","Log_RNASeq_Raw_Counts")
   return(density_plot)
 }
+
+Prepare_Gencode <- function(gencode){
+  # replace the first row as column name
+  colnames(gencode) <- as.character(unlist(gencode[1,]))
+  gencode <- gencode[-1, ]
+  # removed white space in the column for grep
+  gencode$GeneSymbol <- gsub('\\s+', '', gencode$GeneSymbol)
+  
+  print("Gencode vM20 Gene Annotation")
+  datatable(gencode)
+  
+  # Sum up the number of transcripts in gencode
+  # tabulate the freqency of unique input in GeneSymbol column  
+  gencode$GeneSymbol = as.character(gencode$GeneSymbol)
+  gencode_count <- data.frame(table(gencode$GeneSymbol))
+  colnames(gencode_count) <- c("GeneName", "Gencode_Number")
+  
+  # convert to character for merging
+  gencode_count$GeneName <- as.character(gencode_count$GeneName)
+  #removed white space in the column for later merging
+  gencode_count$GeneName <- gsub('\\s+', '', gencode_count$GeneName)
+  
+  gencode_count <<- gencode_count #save for later downstream function
+}
+
+Sum_Merge4TranscriptAbundance <- function(dat){
+  # tabulate the freqency of unique input in associated_gene column 
+  dat$associated_gene = as.character(dat$associated_gene)
+  sqanti_count = data.frame(table(dat$associated_gene))
+  
+  colnames(sqanti_count) <- c("GeneName","Isoseq_Number")
+  sqanti_count$GeneName <- as.character(sqanti_count$GeneName)
+  datatable(sqanti_count)
+  
+  Transcript_Abundance <- merge(sqanti_count, gencode_count, by="GeneName",all.x = TRUE)
+  Transcript_Abundance <- Transcript_Abundance[order(-Transcript_Abundance$Isoseq_Number),]
+  Transcript_Abundance <<- Transcript_Abundance
+  datatable(Transcript_Abundance)
+}
+
+disease_plot <- function(dat_disease){
+  
+  # gather the data for plotting; only column 2 and 3, to be sorted into Class and Number of Isoform 
+  x_dat <- gather(dat_disease,"Class","Numbers_Of_Isoform",2:3)
+  
+  p <- ggplot(x_dat, aes(x=GeneName, y=Numbers_Of_Isoform, fill=Class)) + geom_bar(stat="identity", position = "dodge")
+  
+  p + theme(axis.text.x = element_text(size = 12, angle = 45,hjust = 1),) + scale_fill_discrete(name = "Class", labels = c("Gencode", "Isoseq")) + scale_fill_brewer(palette="Spectral") + labs(x = "Genes", y = "Counts" )
+}
+
