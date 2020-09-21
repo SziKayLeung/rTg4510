@@ -1,0 +1,157 @@
+---
+title: "IsoSeq ERCC Testing"
+author: Szi Kay Leung
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { 
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=paste0("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Testing/Rmarkdowns",
+                        '/IsoSeq_ERCC_Testing.html')) })
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE) #,fig.width=14, fig.height= 7)
+#rmarkdown::render("/gpfs/ts0/home/sl693") 
+
+suppressMessages(library(ggplot2))
+suppressMessages(library(dplyr))
+suppressMessages(library(stringr)) 
+suppressMessages(library(tidyr))
+suppressMessages(library(scales))
+suppressMessages(library(rjson))
+suppressMessages(library(magrittr))
+suppressMessages(library(tibble))
+suppressMessages(library(reshape))
+suppressMessages(library(plyr))
+
+
+#font_import()
+```
+
+
+```{r input}
+suppressMessages(library(dplyr))
+suppressMessages(library(ggplot2))
+suppressMessages(library(tidyr))
+suppressMessages(library(grid))
+suppressMessages(library(waffle))
+suppressMessages(library(hrbrthemes))
+suppressMessages(library(stringr))
+suppressMessages(library(ComplexHeatmap))
+suppressMessages(library(viridis))
+suppressMessages(library(wesanderson))
+
+
+
+# TOFU 
+working_tofu_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Testing/TOFU"
+
+# collapsed group.txt
+collapsed_TOFU_grouped_reads <- list.files(working_tofu_dir, pattern = "collapsed.group.txt*$", full.names = T)
+collapsed_TOFU_grouped_reads <- lapply(collapsed_TOFU_grouped_reads, function(x) read.table(x))
+names(collapsed_TOFU_grouped_reads) <- list.files(working_tofu_dir, pattern = "collapsed.group.txt*$")
+collapsed_TOFU_grouped_reads <- bind_rows(collapsed_TOFU_grouped_reads, .id = "variable") %>% 
+  mutate(variable = paste0(word(variable, c(1), sep = fixed(".")),".", word(variable, c(2), sep = fixed("."))))
+colnames(collapsed_TOFU_grouped_reads)[2] <- "PB.ID"
+collapsed_TOFU_grouped_reads$count_collapsed <-count.fields(textConnection(collapsed_TOFU_grouped_reads$V2), sep = ",")
+
+
+# collapsed gff
+collapsed_TOFU_gff <- list.files(working_tofu_dir, pattern = "collapsed.gff*$", full.names = T)
+collapsed_TOFU_gff <- lapply(collapsed_TOFU_gff , function(x) read.table(x, header = F))
+names(collapsed_TOFU_gff) <- list.files(working_tofu_dir, pattern = "collapsed.gff*$")
+collapsed_TOFU_gff <- bind_rows(collapsed_TOFU_gff, .id = "variable") %>% 
+  mutate(variable = paste0(word(variable, c(1), sep = fixed(".")),".", word(variable, c(2), sep = fixed("."))))
+colnames(collapsed_TOFU_gff)[14] <- "PB.ID"
+
+# collapsed abundance.txt
+collapsed_TOFU_abundance_reads <- list.files(working_tofu_dir, pattern = "filtered.abundance.txt*$", full.names = T)
+collapsed_TOFU_abundance_reads  <- lapply(collapsed_TOFU_abundance_reads, function(x) read.table(x, as.is = T, sep = "\t", header = T))
+names(collapsed_TOFU_abundance_reads) <- list.files(working_tofu_dir, pattern = "filtered.abundance.txt*$")
+collapsed_TOFU_abundance_reads <- bind_rows(collapsed_TOFU_abundance_reads, .id = "variable") %>% 
+  mutate(variable = paste0(word(variable, c(1), sep = fixed(".")),".", word(variable, c(2), sep = fixed(".")))) %>% 
+  select("variable","pbid","count_fl")
+colnames(collapsed_TOFU_abundance_reads)[2] <- "PB.ID"
+
+
+# merge for full information 
+collapsed_TOFU_reads <- collapsed_TOFU_grouped_reads %>% 
+  full_join(., collapsed_TOFU_gff, by = c("PB.ID","variable")) %>% 
+  full_join(., collapsed_TOFU_abundance_reads, by = c("PB.ID","variable"))
+
+reads_heatmap <- collapsed_TOFU_reads %>% filter(V3 == "transcript") %>% group_by(variable, V1) %>% tally(count_fl) %>% 
+  spread(., variable, n) %>% 
+  column_to_rownames(., var = "V1") %>% 
+  as.matrix()
+
+
+# heatmap 
+reads_metadata <- as.data.frame(unique(collapsed_TOFU_reads$variable)) %>% 
+  `colnames<-`(c("variable")) %>%
+  mutate(num_passes = word(variable, c(2), sep = fixed("_"))) %>% 
+  mutate(RQ = word(variable, c(4), sep = fixed("_")))
+
+
+ann <- data.frame(reads_metadata$num_passes, reads_metadata$RQ)
+colnames(ann) <- c('Passes', 'RQ')
+colours <- list('Passes' = c('1' = alpha(wes_palette("Darjeeling2")[4],0.7), '2' = wes_palette("Zissou1")[2],'3' =wes_palette("Darjeeling2")[2] ),
+                'RQ' = c('0.8' = wes_palette("Chevalier1")[3], '0.9' = wes_palette("Darjeeling1")[2],
+                         '0.95' = wes_palette("Darjeeling1")[1],'0.99' = wes_palette("Darjeeling2")[5]))
+
+colAnn <- HeatmapAnnotation(df = ann,
+                            which = 'col',
+                            col = colours,
+                            annotation_width = unit(c(1, 4), 'cm'),
+                            gap = unit(1, 'mm'))
+
+
+
+ht_list <- Heatmap(log10(reads_heatmap), 
+        top_annotation = colAnn,
+        show_row_dend = FALSE, show_column_names = FALSE, col=plasma(100),
+        name = 'FL Count (Log10)',
+        row_names_gp = gpar(fontsize = 10),
+        heatmap_legend_param = list(direction = "horizontal")) 
+
+
+draw(ht_list, heatmap_legend_side = "top", annotation_legend_side = "top",merge_legend = TRUE,
+     legend_label_gp=gpar(fontsize=12))
+
+# Read in ERCC
+ERCC_conc <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/ONT/ERCC/ERCC_calculations.csv", header = T)[-1,] 
+ERCC_output <- merge(collapsed_TOFU_reads, ERCC_conc, by.x = "V1", by.y = "ERCC_ID")
+
+magic_for(silent = TRUE)
+for (i in unique(ERCC_output$variable)) {
+  df <- ERCC_output[ERCC_output$variable == i,]
+  corr <- cor(df$amount_of_ERCC, df$count_fl)
+  put(corr)
+}
+corr_output <- magic_result_as_dataframe() %>%
+  mutate(num_passes = word(i, c(2), sep = fixed("_"))) %>% 
+  mutate(RQ = word(i, c(4), sep = fixed("_"))) 
+
+levels(corr_output$num_passes) <- factor(c("1","2","3"))
+plot_line_no_reorder(corr_output, "num_passes", "corr", "Number of Passes", "Pearson's Correlation: FL Count & Amounts of ERCC","RQ") +
+  mytheme + theme(legend.position = "bottom") +
+  scale_colour_manual(values = c(wes_palette("Chevalier1")[3], wes_palette("Darjeeling1")[2], wes_palette("Darjeeling1")[1], wes_palette("Darjeeling2")[5])) 
+
+# which ERCC detected 
+df <- ERCC_output[ERCC_output$variable == "K18_1_passes_0.8",]
+for (ERCC_ID in unique(ERCC_conc$ERCC_ID)){
+  Detected <- ifelse(ERCC_ID %in% noquote(df$V1), "Yes","No")
+  put(Detected)
+}
+
+merge(magic_result_as_dataframe(), ERCC_conc, by = "ERCC_ID", all = T) %>% 
+  ggplot(., aes(x = reorder(ERCC_ID, -amount_of_ERCC), y = log2(amount_of_ERCC),colour = Detected)) + geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  mytheme + 
+  labs(x = "ERCC", y= "Log2 Stock ERCC amount")
+
+  
+```

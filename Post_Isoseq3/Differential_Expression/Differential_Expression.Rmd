@@ -116,11 +116,11 @@ collated_gene_expression <- function(dat, panel_of_genes){
 specific_gene_expression <- function(dat, gene){
   df <- dat[dat$associated_gene == gene, relevant_cols]
 
-  p <-ggplot(df, aes(x = Genotype, y = log(ISOSEQ_TPM), fill = ID)) + 
+  p <-ggplot(df, aes(x = Age, y = log(ISOSEQ_TPM), fill = ID)) + 
     geom_boxplot() +
     geom_point(aes(fill = ID), size = 2, shape = 21, position = position_jitterdodge(0.1))+
     theme_bw() + 
-    facet_wrap(~Age, scales = "free") +
+    facet_grid(~Genotype, scales = "free") +
     labs(title = gene) + 
     scale_x_discrete(drop=FALSE) +    
     ylim(log(min(dat$ISOSEQ_TPM) - 0.5),log(max(dat$ISOSEQ_TPM) + 0.5)) + 
