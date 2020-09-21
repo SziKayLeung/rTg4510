@@ -1,0 +1,113 @@
+---
+title: "Tg4510 Run Output Stats "
+author: Szi Kay Leung
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { 
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=paste0("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Rmarkdown",
+                        '/Tg4510_Run_Output_Stats.html')) })
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+```{r setup, include=FALSE, results="hide"}
+# packages
+suppressMessages(library(ggplot2))
+suppressMessages(library(wesanderson))
+suppressMessages(library(dplyr))
+suppressMessages(library(knitr))
+#library(extrafont)
+#font_install('fontcm')
+loadfonts()
+
+# plot theme
+mytheme <- theme(axis.line = element_line(colour = "black"),
+                 panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 panel.border = element_blank(),
+                 panel.background = element_blank(),
+                 text=element_text(size=14,  family="CM Roman"),
+                 axis.title.x = element_text(vjust=-0.5, colour = "black"),
+                 axis.title.y = element_text(vjust=0.5, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+                 legend.position = c(.90, 0.95),
+                 #legend.justification = c(1,1),
+                 legend.box.just = "right",
+                 legend.margin = margin(6, 6, 6, 6), 
+                 legend.text = element_text(size = 14,family="CM Roman"),
+                 axis.text.x= element_text(size=12,family="CM Roman"),
+                 axis.text.y= element_text(size=12,family="CM Roman"))
+
+# plot label colour
+label_colour <- function(genotype){
+  if(genotype == "WT"){colour = wes_palette("Royal1")[2]}else{
+    if(genotype == "TG"){colour = wes_palette("Royal1")[1]}
+  }
+  return(colour)
+}
+
+# output directory
+output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Rmarkdown"
+```
+```{r}
+# Input Sequencing
+sequencing_output <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Samples/Sequenced_mouse_output.csv")
+tg4510_samples <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Samples/Tg4510_fullsample.csv")[,c("Genotype","Sample.ID","RIN","ng.ul")]
+sequenced <- merge(sequencing_output, tg4510_samples, by.x = "Sample", by.y = "Sample.ID", all.x = TRUE)
+sequenced$Genotype <- factor(sequenced$Genotype, levels=c("WT", "TG"))
+```
+
+## Tg4510 Yield Output
+```{r}
+# sequenced refers to Tg4510 
+sequenced <- sequenced %>% filter(Genotype != "NA") 
+p1 <- sequenced %>% ggplot(., aes(x = Genotype, y = Total.Bases..GB., fill = Genotype)) + geom_boxplot() + 
+  geom_jitter(shape=17, position=position_jitter(0)) + 
+  theme_bw() + 
+  labs(x = "Genotype", y = "Total Bases (gb)") +
+  mytheme + theme(legend.position = "none") +
+  scale_fill_manual(values = c(label_colour("TG"),label_colour("WT")))
+
+p1
+# Difference between WT and TG yield 
+#with(sequenced, shapiro.test(Total.Bases..GB.[Genotype == "WT"])) # p = 0.4
+#with(sequenced, shapiro.test(Total.Bases..GB.[Genotype == "TG"])) # p = 0.7
+#res.ftest <- var.test(Total.Bases..GB.~ Genotype , data = sequenced)
+#res.ftest # p = 0.29
+res <- t.test(Total.Bases..GB.~ Genotype , data = sequenced, var.equal = TRUE)
+res
+
+```
+
+```{r}
+# RIN vs yield output
+cor.test(sequenced$RIN,sequenced$Total.Bases..GB., use = "pairwise.complete.obs")
+corr.value <- cor(sequenced$RIN,sequenced$Total.Bases..GB., use = "pairwise.complete.obs")
+
+p2 <- sequenced %>% ggplot(., aes(x = RIN, y = Total.Bases..GB., color = Genotype)) + geom_point(size = 2, shape = 17) +
+  scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) + 
+  mytheme + labs(x = "RIN", y = "Total Bases (gb)")  
+p2
+```
+```{r}
+
+
+```
+`r cat("Sum of Polymerase Reads:", sum(sequenced$Polymerase.Reads),"\n")`
+`r cat("sd of Polymerase Reads", sd(sequenced$Polymerase.Reads),"\n") `
+`r cat("Range of Polymerase Reads", min(sequenced$Polymerase.Reads),"-",max(sequenced$Polymerase.Reads),"\n")`
+
+`r cat("Sum of Total Bases (Gb):", sum(sequenced$Total.Bases..GB.),"\n") `
+`r cat("sd of Total Bases (Gb)", sd(sequenced$Total.Bases..GB.),"\n") `
+`r cat("Range of Total Bases (Gb)", min(sequenced$Total.Bases..GB.),"-",max(sequenced$Total.Bases..GB.),"\n")`
+
+```{r}
+pdf(paste0(output_plot_dir,"/Tg4510_RunStats.pdf"), family="CM Roman", width = 8.5, height = 6.5)
+p1
+p2
+dev.off()
+
+```
+
