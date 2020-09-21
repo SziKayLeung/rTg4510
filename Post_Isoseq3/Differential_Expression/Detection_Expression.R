@@ -20,6 +20,7 @@ suppressMessages(library(ggplot2))
 suppressMessages(library(wesanderson))
 suppressMessages(library(stringr))
 suppressMessages(library(tidyr))
+suppressMessages(library(viridis))
 
 
 #********************** Define variables
@@ -87,24 +88,35 @@ K17_IsoSeq <- all[all$Sample == "K17",relevant_cols]
 K17_RNASeq <- featurecount_input[,c("Geneid","Length","K17")]
 # remove input with 0 counts
 K17_RNASeq <- K17_RNASeq[K17_RNASeq$K17 > 1,]
-K17_RNASeq$RNASEQ_TPM <- log10(K17_RNASeq$K17)
-
+K17_RNASeq$K17_RNASeq_LogTPM <- log10(K17_RNASeq$K17)
+colnames(K17_RNASeq)[3] <- "K17_RNASEQ_TPM"
 
 #********************** Merge
 K17_Merge <- merge(K17_IsoSeq, K17_RNASeq, by.x = "associated_transcript", by.y = "Geneid", all = "TRUE" )
 
 colnames(K17_Merge)[13] <- "K17_RNASeq_LogTPM"
-colnames(K17_Merge)[7] <- "K17_IsoSeq_LogTPM"
 
 #********************** Separate by expression bins 
-res <- hist(log10(K17_RNASeq$K17), breaks=10)
+res <- hist(log10(K17_RNASeq$K17_RNASEQ_TPM), breaks=10)
 res$breaks
+hist(K17_RNASeq$K17_RNASEQ_TPM,breaks=20)
+
+
+K17_RNASeq %>% 
+  mutate(K17_RNASEQ_TPM_new = ifelse(K17_RNASEQ_TPM > 1000, 1000, K17_RNASEQ_TPM)) %>% 
+  ggplot(aes(K17_RNASEQ_TPM_new)) +
+  geom_histogram(binwidth = .1, col = "black", fill = "cornflowerblue")
 
 # 8 groups
-K17_Merge$Rank <- ifelse(K17_Merge$K17_RNASeq_LogTPM >= 0 & K17_Merge$K17_RNASeq_LogTPM < 1, "0-1",
-                         ifelse(K17_Merge$K17_RNASeq_LogTPM >= 1 & K17_Merge$K17_RNASeq_LogTPM < 2, "1-2",
-                                ifelse(K17_Merge$K17_RNASeq_LogTPM >= 2 & K17_Merge$K17_RNASeq_LogTPM < 3, "2-3",
-                                       ifelse(K17_Merge$K17_RNASeq_LogTPM >= 3 & K17_Merge$K17_RNASeq_LogTPM < 4, "3-4", "NA"))))
+K17_Merge$Rank <- ifelse(K17_Merge$K17_RNASeq_LogTPM >= 0 & K17_Merge$K17_RNASeq_LogTPM < 0.5, "0-0.5",
+                         ifelse(K17_Merge$K17_RNASeq_LogTPM >= 0.5 & K17_Merge$K17_RNASeq_LogTPM < 1, "0.5-1",
+                                ifelse(K17_Merge$K17_RNASeq_LogTPM >= 1 & K17_Merge$K17_RNASeq_LogTPM < 1.5, "1-1.5",
+                                       ifelse(K17_Merge$K17_RNASeq_LogTPM >= 1.5 & K17_Merge$K17_RNASeq_LogTPM < 2, "1.5-2",
+                                              ifelse(K17_Merge$K17_RNASeq_LogTPM >= 2 & K17_Merge$K17_RNASeq_LogTPM < 2.5, "2-2.5",
+                                                     ifelse(K17_Merge$K17_RNASeq_LogTPM >= 2.5 & K17_Merge$K17_RNASeq_LogTPM < 3, "2.5-3",
+                                                            ifelse(K17_Merge$K17_RNASeq_LogTPM >= 3 & K17_Merge$K17_RNASeq_LogTPM < 3.5, "3-3.5",
+                                                                   ifelse(K17_Merge$K17_RNASeq_LogTPM >= 3.5 & K17_Merge$K17_RNASeq_LogTPM < 4, "3.5-4", 
+                                                                          "NA"))))))))
 
 K17_Merge$Rank <- as.factor(K17_Merge$Rank)
 K17_Merge <- K17_Merge[order(-K17_Merge$K17_RNASeq),]
@@ -112,12 +124,12 @@ K17_Merge$Detected <- ifelse(!is.na(K17_Merge$FL), "Yes","No")
 
 
 # plot of the counts of Isoseq detected based on the expression 
-p <- ggplot(K17_Merge, aes(x = Rank, fill = Detected)) +
+p1 <- ggplot(K17_Merge, aes(x = Rank, fill = Detected)) +
   geom_bar() + 
   labs(x = "RNASeq Transcript Expression (Log10TPM)", y = "Number of Transcripts", fill = "Detected by IsoSeq") + 
   theme_bw()
 
-p
+p1
 
 # proportions of expression detected 
 a <- count(K17_Merge, vars=c("Rank","Detected"))
@@ -128,10 +140,50 @@ b <- count(K17_Merge, vars=c("Rank"))
 proportions <- merge(a,b, by = "Rank")
 proportions$perc_covered <- (proportions$Yes/proportions$freq)*100
 
-p <- ggplot(proportions, aes(x = Rank, y = perc_covered)) + 
+p2 <- ggplot(proportions, aes(x = Rank, y = perc_covered)) + 
   geom_point() + 
   labs(x = "RNASeq Transcript Expression (Log10TPM)", y = "Percentage covered in Isoseq", title = "All Isoseq") + 
   theme_bw()
 
-p
+p2
 
+# plot of the counts of Isoseq detected based on the expression (saturation curve)
+K17_Merge_sum <-K17_Merge %>%
+  group_by(K17_RNASEQ_TPM, Detected) %>%
+  tally()
+
+K17_Merge_sum <- K17_Merge_sum[!is.na(K17_Merge_sum$K17_RNASEQ_TPM),]
+p3 <- ggplot(K17_Merge_sum, aes(x = K17_RNASEQ_TPM, y= n, colour = Detected)) +
+  geom_point() + 
+  labs(x = "RNASeq Transcript Expression (TPM)", y = "Number of Transcripts", title = "Counts of Transcripts detected at that RNASeq TPM ") + 
+  theme_bw()
+
+# plot of the counts of Isoseq detected based on the expression (saturation curve) limit at 2000
+p4 <- ggplot(K17_Merge_sum, aes(x = K17_RNASEQ_TPM, y= n, colour = Detected)) +
+  geom_point() + 
+  xlim(0,2000) +
+  labs(x = "RNASeq Transcript Expression (TPM)", y = "Number of Transcripts", title = "Counts of Transcripts detected at that RNASeq TPM ") + 
+  theme_bw()
+
+## check what the NAs are
+View(K17_Merge[is.na(K17_Merge$Rank),])
+# grep info on the NA genes
+K17_Na <- all[all$associated_transcript %in% K17_Merge[is.na(K17_Merge$Rank),1] & all$Sample == "K17",]
+#K17_RNASeq[K17_RNASeq$Geneid == "ENSMUST00000000828.12",]
+p5 <- ggplot(K17_Na, aes(x = structural_category, fill = subcategory)) + 
+  geom_bar() + 
+  theme_bw() +
+  scale_fill_viridis(discrete = TRUE) + 
+  labs(x = "Structural Category", y = "Count of Transcripts", title = "Classifying Transcripts not detected by RNASeq")
+
+
+# Problem of repeated transcripts 
+#K17_Merge[K17_Merge$associated_transcript == "ENSMUST00000082402.1",]
+#all[all$associated_transcript == "ENSMUST00000082402.1" & all$Sample == "K17",]
+
+#********************** Print Plots
+print(p1)
+print(p2)
+print(p3)
+print(p4)
+print(p5)
