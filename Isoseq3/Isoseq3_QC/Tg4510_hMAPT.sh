@@ -49,5 +49,5 @@ for i in ${SAMPLES_NAMES[@]}; do
 	
 	# run_sqanti2_QC <prefix_sample> <input_tofu_dir> <coverage/genome=mm10_rnqaseq/mm10/hg38_gencode/hg38_chess> <input_kallisto_file> <output_dir> <input_rnaseq_dir> 
     run_sqanti2_QC $i $TOFU hg38_gencode NA $SQANTI2_output_dir NA 
-    run_sqanti2_Filter $i 
+    run_sqanti2_Filter $i $SQANTI2_output_dir 
 done
