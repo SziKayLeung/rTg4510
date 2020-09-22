@@ -9,7 +9,7 @@
 #SBATCH --mail-type=END # send email at job completion
 #SBATCH --mail-user=sl693@exeter.ac.uk # email address
 
-# 04/09/2020: Align all individual Tg4510 samples to hg38 genome for MAPT validation
+# 22/09/2020: Align all individual Tg4510 samples to hg38 genome for MAPT validation
 
 #************************************* DEFINE GLOBAL VARIABLES
 FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general
@@ -48,6 +48,6 @@ for i in ${SAMPLES_NAMES[@]}; do
     tofu $i $POLISHED
 	
 	# run_sqanti2_QC <prefix_sample> <input_tofu_dir> <coverage/genome=mm10_rnqaseq/mm10/hg38_gencode/hg38_chess> <input_kallisto_file> <output_dir> <input_rnaseq_dir> 
-    run_sqanti2_QC $i $TOFU mm10 NA $SQANTI2_output_dir NA 
+    run_sqanti2_QC $i $TOFU hg38_gencode NA $SQANTI2_output_dir NA 
     run_sqanti2_Filter $i 
 done
