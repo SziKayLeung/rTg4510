@@ -1,21 +1,30 @@
 #!/bin/bash
 #SBATCH --export=ALL # export all environment variables to the batch job
-#SBATCH –D . # set working directory to .
-#SBATCH –p mrcq # submit to the parallel queue
-#SBATCH --time=144:00:00 # maximum walltime for the job
-#SBATCH –A Research_Project-MRC148213 # research project to submit under
+#SBATCH -D . # set working directory to .
+#SBATCH -p mrcq # submit to the parallel queue
+#SBATCH --time=10:00:00 # maximum walltime for the job
+#SBATCH -A Research_Project-MRC148213 # research project to submit under
 #SBATCH --nodes=1 # specify number of nodes
 #SBATCH --ntasks-per-node=16 # specify number of processors per node
 #SBATCH --mail-type=END # send email at job completion
 #SBATCH --mail-user=sl693@exeter.ac.uk # email address
 
-# 23/04/2020: Created script to test different parameters on Q21 sample
+# 23/04/2020: Created Testing_CCS_Parameters.sh to test different parameters on Q21 sample
 # 04/09/2020: Rerun script on K18 sample with ERCC and keep bam files
+# 05/09/2020: Post Testing_CCS_Parameters.sh with Sample K18, to run Iso-Seq3 pipeline and align with ERCC 
+  # 29/09/2020: Merge this script (Testing_CCS_Parameters.sh) with Post_Testing_CCS_Parameters.sh
 
 #************************************* DEFINE GLOBAL VARIABLES
 # File directories 
 FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general/IsoSeq
 Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Testing
+CCS=$Isoseq3_WKD/CCS
+LIMA=$Isoseq3_WKD/LIMA
+REFINE=$Isoseq3_WKD/REFINE
+CLUSTER=$Isoseq3_WKD/CLUSTER
+MAPPING=$Isoseq3_WKD/MAPPING
+TOFU=$Isoseq3_WKD/TOFU
+SQANTI2_output_dir=$Isoseq3_WKD/SQANTI2
 
 module load Miniconda2/4.3.21
 
@@ -72,7 +81,7 @@ test_CCS(){
 }
 
 
-#************************************* APPLY FUNCTION
+#************************************* CCS across different parameters
 
 rq_parameters=(0.8 0.9 0.95 0.99)
 
@@ -82,3 +91,40 @@ for i in ${rq_parameters[@]}; do test_CCS --min-passes=1 --min-rq=$i; done
 for i in ${rq_parameters[@]}; do test_CCS --min-passes=2 --min-rq=$i; done 
 # passes = 3 
 for i in ${rq_parameters[@]}; do test_CCS --min-passes=3 --min-rq=$i; done 
+
+# mv Part1 Testing to new folder 
+cd $Isoseq3_WKD/CCS; mkdir Part1_K18 ; mv *K18* Part1_K18
+cd $Isoseq3_WKD/CLUSTER; mkdir Part1_K18 ; mv *K18* Part1_K18
+cd $Isoseq3_WKD/LIMA; mkdir Part1_K18 ; mv *K18* Part1_K18
+cd $Isoseq3_WKD/REFINE; mkdir Part1_K18 ; mv *K18* Part1_K18
+cd $Isoseq3_WKD/MAPPING; mkdir Part1_K18 ; mv *K18* Part1_K18
+cd $Isoseq3_WKD/TOFU; mkdir Part1_K18 ; mv *K18* Part1_K18
+
+
+#************************************* Run Iso-Seq3 Pipeline across different parameters  
+source $FUNCTIONS/Isoseq3.2.2_Functions.sh
+for i in $CCS/*ccs.bam; do 
+	echo "Processing $i for Lima" 
+	sample=$(basename "$i" | cut -d "_" -f 1,2,3,4 )
+	run_LIMA $sample $CCS $LIMA "no_multiplex"
+	run_REFINE $sample $LIMA $REFINE 
+	run_CLUSTER $sample $REFINE $CLUSTER
+done
+
+
+#************************************* Extract Stats of CCS and Lima for downstream analysis 
+source activate sqanti2_py3
+python $FUNCTIONS/Run_Stats/CCS.py $CCS $CCS Testing
+python $FUNCTIONS/Run_Stats/LIMA.py $LIMA $LIMA Testing
+
+
+#************************************* Post Iso-Seq3 Pipeline
+source /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general/Post_IsoSeq/Post_Isoseq3_Functions.sh
+for i in $CLUSTER/*hq.fasta; do 
+	echo "Processing $i for Mapping" 
+	sample=$(basename "$i" | cut -d "_" -f 1,2,3,4 | cut -d "." -f 1,2)
+	echo $sample
+	convert_fa2fq $sample $CLUSTER
+	run_minimap2 $sample $CLUSTER ERCC 
+	tofu $sample $CLUSTER
+done 
