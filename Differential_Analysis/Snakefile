@@ -1,6 +1,5 @@
 
 # Szi Kay Leung
-#!/usr/bin/env python
 # 30/10/2020: Adapted working script from https://github.com/nanoporetech/ont_tutorial_transcriptome.git
 
 import os
@@ -22,8 +21,6 @@ for i in range(len(config["Samples"])):
   conditionSamples = list(list(dataSlice.items())[0][1].items())
   for j in range(len(conditionSamples)):
     sequenceFile = conditionSamples[j][1]
-    sequenceFile = re.sub("RawData/","",sequenceFile) # this should be abstracted
-    #print(sequenceFile)
     Samples.append(sequenceFile)
 
 # Split the filenames into basename and extension
@@ -33,8 +30,8 @@ file_dict = {filename[0]: filename[1] if len(filename) == 2 else '' for filename
 
 rule all:
     input:
-      expand("Analysis/samtools/{seqid}.flagstat", seqid=file_dict.keys()), 
-      expand("Analysis/Salmon/{seqid}", seqid=file_dict.keys()), 
+      expand(config["output_dir"] + "samtools/{seqid}.flagstat", seqid=file_dict.keys()), 
+      expand(config["output_dir"] + "Salmon/{seqid}", seqid=file_dict.keys()), 
       config["annotation"]
       
 
@@ -42,7 +39,7 @@ rule build_minimap_index: ## build minimap2 index
     input:
         genome = config["transcriptome"]
     output:
-        index = "Analysis/Minimap2/transcriptome_index.mmi"
+        index = config["output_dir"] + "Minimap2/transcriptome_index.mmi"
     params:
         opts = config["minimap_index_opts"]
     threads: config["threads"]
@@ -53,10 +50,10 @@ rule build_minimap_index: ## build minimap2 index
 rule map_reads: ## map reads using minimap2
     input:
        index = rules.build_minimap_index.output.index,
-       fastq = lambda wc: "RawData/" + wc.seqid + "." + file_dict[wc.seqid]
+       fastq = lambda wc: config["input_dir"] + wc.seqid + "." + file_dict[wc.seqid]
     output:
-       bam = "Analysis/Minimap2/{seqid}.bam",
-       sbam = "Analysis/Minimap2/{seqid}.sorted.bam",
+       bam = config["output_dir"] + "Minimap2/{seqid}.bam",
+       sbam = config["output_dir"] + "Minimap2/{seqid}.sorted.bam",
     params:
         opts = config["minimap2_opts"],
         msec = config["maximum_secondary"],
@@ -71,19 +68,19 @@ rule map_reads: ## map reads using minimap2
 
 rule flagstat:
   input:
-    "Analysis/Minimap2/{seqid}.bam"
+    config["output_dir"] + "Minimap2/{seqid}.bam"
   output:
-    "Analysis/samtools/{seqid}.flagstat"
+    config["output_dir"] + "samtools/{seqid}.flagstat"
   shell:
     "samtools flagstat {input} > {output}"
 
 
 rule count_reads:
     input:
-        bam = "Analysis/Minimap2/{seqid}.sorted.bam",
+        bam = config["output_dir"] + "Minimap2/{seqid}.sorted.bam",
         trs = config["transcriptome"],
     output:
-        tsv = directory("Analysis/Salmon/{seqid}"),
+        tsv = directory(config["output_dir"] + "Salmon/{seqid}"),
     params:
         libtype = config["salmon_libtype"],
     threads: config["threads"]

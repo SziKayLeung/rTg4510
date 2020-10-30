@@ -1,26 +1,31 @@
 ---
+# Szi Kay Leung
+# config file for snakemake using Raw Iso-Seq fastq (from IsoSeq Cluster) as input
 
 transcriptome: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/mm10transcriptome.fa"
 
 annotation: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/gencode.vM22.annotation.gtf"
 
+input_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/Isoseq3_WKD/RawData/"
+output_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/Diff_Analysis/DTU/Isoseq_Raw"    # note this directory will be created during snakemake 
+
 Samples:
     - "WT":   # this is a group 
-        A1: "RawData/Q21.clustered.hq.fastq"    # filename pairs must be maintained - identifier and filename
-        A2: "RawData/K17.clustered.hq.fastq"
-        A3: "RawData/M21.clustered.hq.fastq"
-        A4: "RawData/O23.clustered.hq.fastq"
-        A5: "RawData/S23.clustered.hq.fastq"
-        A6: "RawData/K23.clustered.hq.fastq"
+        A1: "Q21.clustered.hq.fastq"    # filename pairs must be maintained - identifier and filename
+        A2: "K17.clustered.hq.fastq"
+        A3: "M21.clustered.hq.fastq"
+        A4: "O23.clustered.hq.fastq"
+        A5: "S23.clustered.hq.fastq"
+        A6: "K23.clustered.hq.fastq"
 
 
     - "TG":  # this is another group - names are arbitrary but must be unique
-        B1: "RawData/O18.clustered.hq.fastq"
-        B2: "RawData/K18.clustered.hq.fastq"
-        B3: "RawData/S18.clustered.hq.fastq"
-        B4: "RawData/L22.clustered.hq.fastq"
-        B5: "RawData/Q20.clustered.hq.fastq"
-        B6: "RawData/K24.clustered.hq.fastq"
+        B1: "O18.clustered.hq.fastq"
+        B2: "K18.clustered.hq.fastq"
+        B3: "S18.clustered.hq.fastq"
+        B4: "L22.clustered.hq.fastq"
+        B5: "Q20.clustered.hq.fastq"
+        B6: "K24.clustered.hq.fastq"
 
 referenceGroup: "WT"   # this name *must* match one of the group names  
 
