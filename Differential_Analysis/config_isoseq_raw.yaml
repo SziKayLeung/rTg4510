@@ -1,0 +1,56 @@
+---
+
+transcriptome: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/mm10transcriptome.fa"
+
+annotation: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/gencode.vM22.annotation.gtf"
+
+Samples:
+    - "WT":   # this is a group 
+        A1: "RawData/Q21.clustered.hq.fastq"    # filename pairs must be maintained - identifier and filename
+        A2: "RawData/K17.clustered.hq.fastq"
+        A3: "RawData/M21.clustered.hq.fastq"
+        A4: "RawData/O23.clustered.hq.fastq"
+        A5: "RawData/S23.clustered.hq.fastq"
+        A6: "RawData/K23.clustered.hq.fastq"
+
+
+    - "TG":  # this is another group - names are arbitrary but must be unique
+        B1: "RawData/O18.clustered.hq.fastq"
+        B2: "RawData/K18.clustered.hq.fastq"
+        B3: "RawData/S18.clustered.hq.fastq"
+        B4: "RawData/L22.clustered.hq.fastq"
+        B5: "RawData/Q20.clustered.hq.fastq"
+        B6: "RawData/K24.clustered.hq.fastq"
+
+referenceGroup: "WT"   # this name *must* match one of the group names  
+
+minimap_index_opts: ""
+
+minimap2_opts: ""
+
+maximum_secondary: 100
+
+secondary_score_ratio: 1.0
+
+salmon_libtype: "SF"
+
+# Count filtering options - customize these according to your experimental design:
+
+# Genes expressed in minimum this many samples:
+min_samps_gene_expr: 3
+# Transcripts expressed in minimum this many samples:
+min_samps_feature_expr: 1
+# Minimum gene counts:
+min_gene_expr: 10
+# Minimum transcript counts:
+min_feature_expr: 3
+
+
+lfcThreshold : 1            # minimum required log2 fold change for differential expression analysis
+adjPValueThreshold: 0.05    # adjusted p-value threshold for differential expression analysis
+
+
+threads: 50
+tutorialText: TRUE
+
+
