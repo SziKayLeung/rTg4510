@@ -1,4 +1,6 @@
+
 # Szi Kay Leung
+#!/usr/bin/env python
 # 30/10/2020: Adapted working script from https://github.com/nanoporetech/ont_tutorial_transcriptome.git
 
 import os
