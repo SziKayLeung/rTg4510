@@ -1,60 +1,64 @@
-#!/bin/sh
-#PBS -V # export all environment variables to the batch job.
-#PBS -q mrchq # submit to the serial queue
-#PBS -l walltime=144:00:00 # Maximum wall time for the job.
-#PBS -A Research_Project-MRC148213
-#PBS -l procs=32 # specify number of processors.
-#PBS -m e -M sl693@exeter.ac.uk # email me at job completion
+#!/bin/bash
+#SBATCH --export=ALL # export all environment variables to the batch job
+#SBATCH -D . # set working directory to .
+#SBATCH -p mrcq # submit to the parallel queue
+#SBATCH --time=10:00:00 # maximum walltime for the job
+#SBATCH -A Research_Project-MRC148213 # research project to submit under
+#SBATCH --nodes=1 # specify number of nodes
+#SBATCH --ntasks-per-node=16 # specify number of processors per node
+#SBATCH --mail-type=END # send email at job completion
+#SBATCH --mail-user=sl693@exeter.ac.uk # email address
+#SBATCH --output=Post_Isoseq3_all.output
 
-# 06/10/2019: Created Script to run RNASeq, FeatureCounts and Post_Isoseq3_Functions on Samples 1-16
-    # note all STAR and featurecounts mapping done with gencode.vM22.annotation.gtf
-# 17/02/2020: Reran SQANTI2 (v7.2)
+# 22/10/2020: Merging All, TG and WT samples after Isoseq3_all.sh
 
 #************************************* DEFINE GLOBAL VARIABLES
 # File directories 
-POLISHED=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/Isoseq3_WKD/CLUSTER # same folder as CLUSTER, used as reference for functions script to contain hq.fasta
-FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general
-REFERENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019
-RNASeq_Filtered=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/all_filtered
-FEATURECOUNTS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/FeatureCounts/Whole_Transcriptome
-MAPPING=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/MAPPING
-TOFU=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/TOFU
-SQANTI2_output_dir=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/SQANTI2_v7
-STAR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/MAPPED/Individual
+FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general/IsoSeq
+Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/Isoseq3_WKD
+REFINE=$Isoseq3_WKD/REFINE
+All_Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/All_Merged
+TG_Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/TG_Merged
+WT_Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/WT_Merged
 
 #************************************* TO RUN FUNCTIONS ON WORKING SCRIPT
+#source $FUNCTIONS/Isoseq3.2.2_Functions.sh
+merging_at_refine(){
+  module load Miniconda2/4.3.21
+  source activate isoseq3
+  isoseq3 --version #isoseq3 3.2.2 (commit v3.2.2)
 
-module load Miniconda2/4.3.21
-source activate sqanti2_py3
+  ###********************* Merging at REFINE 
+  # Define variable "Merge_Samples" as a list of all samples, in order to find the specified flnc.bam (for dataset create ConsensusReadSet) 
+  # Define variable "all_flnc_bams" for merged path-directory of all flnc samples (for dataset create ConsensusReadSet)   
+  Merge_Samples=$(echo "${@:4}")
 
-SAMPLES_NAMES=(Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24)
+  echo "Merging flnc of samples $Merge_Samples"
+  all_flnc_bams=$(
+      for i in ${Merge_Samples[@]}; do
+          flnc_bam_name=$(find $1 -name "*.flnc.bam" -exec basename \{} \; | grep ^$i )
+          flnc_bam=$(find $1 -name "*.flnc.bam" | grep "$flnc_bam_name" )
+          echo $flnc_bam
+      done
+  )
+  
+  cd $2
+  printf '%s\n' "${all_flnc_bams[@]}" > $3.flnc.fofn
+  cat $.flnc.fofn
+  
+  ###*********************
+  
+  isoseq3 cluster $3.flnc.fofn $3.clustered.bam --verbose --use-qvs
+  gunzip *.gz*
+  # convert clustered.hq.fasta to clustered.hq.fastq for 
+  source /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/general/Post_IsoSeq/Post_Isoseq3_Functions.sh
+  convert_fa2fq $3.clustered.hq.fasta .
 
-# RNASeq
-#source $FUNCTIONS/RNASeq/STAR_Functions.sh
-#for i in ${SAMPLES_NAMES[@]}; do
-    # run_star $sample $Tg4510/J20/input_directory $MAPPED_output_directory  $REFERENCE 
-    #run_star $i $RNASeq_Filtered $STAR $REFERENCE
-#done 
+  source deactivate
+}
 
-# FeatureCounts
-# run_featurecounts at TRANSCRIPT level of all specified samples
-# run_featurecounts_transcript_specified <input_dir> <input_reference_dir> <output_prefix_name> <output_dir>
-# <input_dir> containing mapped, sorted bam files from STAR (RNASeq)
-#source $FUNCTIONS/RNASeqvsIsoseq/Run_FeatureCounts.sh
-#run_featurecounts_transcript_specified $STAR $REFERENCE All_Whole_Transcriptome $FEATURECOUNTS
-
-# Post_IsoSeq3
-#cd $POLISHED; gunzip *.gz
-source $FUNCTIONS/Post_IsoSeq/Post_Isoseq3_Functions.sh
-#for i in ${SAMPLES_NAMES[@]}; do 
-    #convert_fa2fq $i $POLISHED
-    #run_minimap2 $i
-    #tofu $i
-    #run_sqanti2_QC $i
-    #run_sqanti2_Filter $i 
-#done
-
-run_sqanti2_QC Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24
-run_sqanti2_Filter Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24
-
-source deactivate
+#************************************* All samples, WT, TG merged at refine  
+# merging_at_refine <input_flnc_bam_dir> <output_directory> <output_name> <samples.....>
+merging_at_refine $REFINE $All_Isoseq3_WKD/CLUSTER All_Merged O18 K18 S18 L22 Q20 K24 Q21 K17 M21 O23 S23 K23
+merging_at_refine $REFINE $TG_Isoseq3_WKD/CLUSTER TG_Merged O18 K18 S18 L22 Q20 K24
+merging_at_refine $REFINE $WT_Isoseq3_WKD/CLUSTER WT_Merged Q21 K17 M21 O23 S23 K23
