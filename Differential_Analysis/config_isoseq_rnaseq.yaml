@@ -6,8 +6,8 @@ transcriptome: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTransc
 
 annotation: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/All_Merged/TOFU/mm10/All_Merged.collapsed.filtered.gff"
 
-input_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/all_filtered/Tg4510_filtered/MERGED"
-output_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/Diff_Analysis/DTU/Isoseq_Rnaseq"    
+input_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/all_filtered/Tg4510_filtered/MERGED/"
+output_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/Diff_Analysis/DTU/Isoseq_Rnaseq/"    
 
 Samples:
     - "WT":   # this is a group 
