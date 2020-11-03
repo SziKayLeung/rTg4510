@@ -15,6 +15,7 @@
 # 11-14/04/2019: run Isoseq3.1.2 for all Tg4510 samples: L22, K18, O23, S18, K17 
 # 27/09/2019: run Isoseq3.2.2 for Samples 1-16 defined in raw.txt 
 # 21/10/2020: Rerun with Isoseq3.4, ccs5.0, lima2.0 
+# 03/11/2020: extract stats from CCS and LIMA
 
 #************************************* DEFINE GLOBAL VARIABLES
 # File directories 
@@ -52,3 +53,6 @@ run_CCS_batch ${BAM_FILE} ${SAMPLE} $CCS
 run_LIMA ${SAMPLE} $CCS $LIMA "no_multiplex"
 run_REFINE ${SAMPLE} $LIMA $REFINE 
 run_CLUSTER ${SAMPLE} $REFINE $CLUSTER
+
+python $FUNCTIONS/Run_Stats/CCS.py $CCS "" All
+python $FUNCTIONS/Run_Stats/LIMA.py $LIMA "" All
