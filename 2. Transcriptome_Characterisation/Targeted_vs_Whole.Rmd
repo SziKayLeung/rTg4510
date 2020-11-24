@@ -1,0 +1,67 @@
+---
+title: "Mouse Transcriptome Analysis"
+author: Szi Kay Leung
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { 
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=paste0("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Isoseq_Paper/Rmarkdowns",
+                        '/Mouse_Transcriptome.html')) })
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE, results="hide"}
+knitr::opts_chunk$set(echo = TRUE,fig.width=14, fig.height= 7)
+
+list_of_packages <- c("ggplot2", "scales", "reshape", "gridExtra", "grid", "dplyr","stringr","viridis","extrafont","tidyr","purr","DT")
+req_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
+if(length(req_packages)) install.packages(req_packages, repo="http://cran.rstudio.com/")
+
+suppressMessages(library(ggplot2))
+suppressMessages(library(scales))
+suppressMessages(library(reshape2))
+suppressMessages(library(gridExtra))
+suppressMessages(library(grid))
+suppressMessages(library(dplyr))
+suppressMessages(library(stringr)) 
+suppressMessages(library(viridis)) 
+suppressMessages(library(extrafont))
+suppressMessages(library(tidyr))
+suppressMessages(library(purrr))
+suppressMessages(library(DT))
+suppressMessages(library(plotly))
+suppressMessages(library(pheatmap))
+suppressMessages(library(devtools))
+suppressMessages(library(easyGgplot2))
+
+#font_import()
+```
+```{r}
+# INPUT: SQANTI FILTERED DATA!!!
+mouse.class.file <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/WT8_ISOSEQ/IsoSeq3.1.2/SQANTI2/WT8IsoSeq.collapsed.filtered.rep_classification.filtered_lite_classification.txt"
+
+source("/gpfs/ts0/home/sl693/general/QC_Figures/Rscripts/SQANTI_General.R")
+class.file <- SQANTI_class_preparation(mouse.class.file) 
+
+
+class.file$associated_gene <- toupper(class.file$associated_gene)
+targeted_genes <- c("APP", "CLU", "APOE", "MAPT", "BIN1", "SORL1", "TARDBP", 
+                    "PICALM", "PTK2B", "FYN","SNCA", "FUS", "ABCA1",
+                    "VGF", "ABCA7", "TREM2", "ANK1", "CD33", "RHBDF2", "MAPT")
+
+p1 <- class.file[class.file$associated_gene %in% targeted_genes,] %>%
+  select(isoform, associated_gene, associated_transcript, structural_category, Log_ISOSEQ_TPM) %>%
+  ggplot(., aes(x = associated_gene, y = Log_ISOSEQ_TPM, fill = associated_gene)) + 
+  geom_boxplot() +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  theme_bw() + 
+  mytheme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y = "Isoseq Isoform Expression (Log10 TPM)", title = "Whole Transcriptome \nIsoSeq Isoform Expression per Gene\n\n\n") + 
+  theme(legend.position = "none") 
+
+```
