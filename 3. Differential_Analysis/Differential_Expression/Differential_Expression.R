@@ -1,0 +1,151 @@
+#!/bin/sh
+#PBS -V # export all environment variables to the batch job.
+#PBS -q mrchq # submit to the serial queue
+#PBS -l walltime=144:00:00 # Maximum wall time for the job.
+#PBS -A Research_Project-MRC148213
+#PBS -l procs=32 # specify number of processors.
+#PBS -m e -M sl693@exeter.ac.uk # email me at job completion
+
+# Szi Kay Leung
+# 24/09/2019: Hierachal Clustering on WT samples 
+
+list_of_packages <- c("reshape2","dplyr","ggplot2","wesanderson")
+req_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
+if(length(req_packages)) install.packages(req_packages, repo="http://cran.rstudio.com/")
+
+suppressMessages(library(reshape2))
+suppressMessages(library(dplyr))
+suppressMessages(library(ggplot2))
+suppressMessages(library(wesanderson))
+
+
+#********************** Define variables
+Tg4510_WT_2mos <- c("K17","M21","Q21")
+Tg4510_WT_8mos <- c("K23","O23","S23")
+Tg4510_TG_2mos <- c("O18","K18","S18")
+Tg4510_TG_8mos <- c("L22","Q20","K24")
+
+#********************** Prepare input sqanti classification files
+sqanti2_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/SQANTI2"
+
+filenames <- list.files(path = sqanti2_input_dir , pattern = "collapsed.filtered.rep_classification.filtered_lite_classification.txt", full.names = TRUE)
+sqanti_files <- lapply(filenames, function(x) read.table(paste(x), header = TRUE))
+
+filenames
+samples <- c("B21","C20","C21","E18","K17","K18","K23","K24","L22","M21","O18","O23","Q20","Q21","S18","S23")
+counter=1
+for (i in 1:length(sqanti_files)){
+  sqanti_files[[i]]$Sample <- print(samples[counter])
+  counter = counter + 1
+}
+
+all <- bind_rows(sqanti_files)
+
+#********************** Subset sqanti classification files
+
+# convert SQANTI FL to TPM (based on E.Tseng's SQANTI2.report https://github.com/Magdoll/SQANTI2)
+total_fl <- sum(all$FL, na.rm=T)
+all$ISOSEQ_TPM <- all$FL*(10**6)/total_fl
+
+all$Sample <- factor(all$Sample)
+all$RTS_stage <- factor(all$RTS_stage)
+all$Phenotype <-ifelse(all$Sample %in% Tg4510_WT_2mos, "WT_2mos",
+                       ifelse(all$Sample %in% Tg4510_WT_8mos, "WT_8mos", 
+                              ifelse(all$Sample %in% Tg4510_TG_2mos, "TG_2mos", 
+                                     ifelse(all$Sample %in% Tg4510_TG_8mos, "TG_8mos", "J20"))))
+
+# concatenate at to distinguish FSM_Coding+Multiexonic
+all$ID <- paste(all$associated_transcript,all$structural_category,all$subcategory,all$coding, 
+                sep = ",")
+
+
+
+#********************** Phenotype/Genotype specific genes
+
+# Analysis only rTg4510 mouse 
+Tg4510 <- all[all$Phenotype != "J20",]
+
+
+Tg4510$Phenotype <- factor(Tg4510$Phenotype, 
+                           levels = c("WT_2mos","WT_8mos","TG_2mos","TG_8mos"), 
+                           order = TRUE)
+
+Tg4510$Age <-ifelse(Tg4510$Sample %in% Tg4510_WT_2mos | 
+                      Tg4510$Sample %in% Tg4510_TG_2mos, "2mos", "8mos")
+
+Tg4510$Genotype <-ifelse(Tg4510$Sample %in% Tg4510_WT_2mos | 
+                      Tg4510$Sample %in% Tg4510_WT_8mos, "WT", "TG")
+Tg4510$Genotype <- factor(Tg4510$Genotype,
+                          levels = c("WT","TG"))
+
+Tg4510$ID <- gsub("full-splice_match","FSM",Tg4510$ID)
+Tg4510$ID <- gsub("incomplete-splice_match","ISM",Tg4510$ID)
+Tg4510$ID <- gsub("novel_in_catalog","NIC",Tg4510$ID)
+Tg4510$ID <- gsub("novel_not_in_catalog","NNIC",Tg4510$ID)
+
+# WT vs TG: Car4 higher in TG, Blnk
+phenotype_genes <- c("Car4","Blnk")
+#Tg4510 2mos vs 8mos: higher in 8 mos:- GFAP, cd68, Itgax, Clec7a, cst7
+genotype_genes <- c("Gfap","Cd68","Itgax","Clec7a","Cst7","Clec7a","App")
+interaction_genes <- c("Trem2","Frmd4a","Clu")
+relevant_cols <- c("Sample","Phenotype","isoform","chrom","associated_gene","associated_transcript","FL","ISOSEQ_TPM",
+                   "within_cage_peak","ID","Age","Genotype")
+
+
+#********************** Functions for plot
+
+collated_gene_expression <- function(dat, panel_of_genes){
+  df <- dat[dat$associated_gene %in% panel_of_genes,relevant_cols]
+  
+  specific_gene_df <<- df
+  p <- ggplot(df, aes(x = associated_gene, y = log(ISOSEQ_TPM), fill = Phenotype)) + 
+    geom_boxplot() + 
+    theme_bw() +
+    scale_x_discrete(drop=FALSE) +
+    scale_fill_manual(values=wes_palette(name="Moonrise2")) + 
+    labs(x = "Genes", y = "Log(FL) in TPM")
+  p
+}
+
+
+specific_gene_expression <- function(dat, gene){
+  df <- dat[dat$associated_gene == gene, relevant_cols]
+  print(df)
+  
+  
+  p <-ggplot(df, aes(x = Genotype, y = log(ISOSEQ_TPM), fill = ID)) + 
+    geom_boxplot() +
+    geom_point(aes(fill = ID), size = 2, shape = 21, position = position_jitterdodge(0.1))+
+    theme_bw() + 
+    facet_wrap(~Age, scales = "free") +
+    labs(title = gene) + 
+    scale_x_discrete(drop=FALSE) +    
+    ylim(log(min(dat$ISOSEQ_TPM) - 0.5),log(max(dat$ISOSEQ_TPM) + 0.5)) + 
+    labs(y = "Log(FL) in TPM")
+  
+  print(p)
+  
+}
+
+
+
+#********************** Applying function to dataset
+
+collated_gene_expression(Tg4510, genotype_genes)
+collated_gene_expression(Tg4510, phenotype_genes)
+
+for (i in genotype_genes){
+  specific_gene_expression(Tg4510, i)
+}
+
+for (i in phenotype_genes){
+  specific_gene_expression(Tg4510, i)
+}
+
+for (i in interaction_genes){
+  specific_gene_expression(Tg4510, i)
+}
+
+specific_gene_expression(Tg4510,"Cd68")
+specific_gene_expression(Tg4510,"Gfap")
+View(all[all$associated_gene == "Gfap",])
