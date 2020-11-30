@@ -1,0 +1,401 @@
+---
+title: "Targeted Sequencing 1: Pooled dataset"
+author: Szi Kay Leung
+date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) { 
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=paste0("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Targeted/Rmarkdowns",
+                        '/Targeted_Sequencing_1.html')) })
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE, results="hide"}
+knitr::opts_chunk$set(echo = TRUE,fig.width=14, fig.height= 7)
+
+list_of_packages <- c("ggplot2", "scales", "reshape", "gridExtra", "grid", "dplyr","stringr","viridis","extrafont","tidyr","purr","DT")
+req_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
+if(length(req_packages)) install.packages(req_packages, repo="http://cran.rstudio.com/")
+
+suppressMessages(library(ggplot2))
+suppressMessages(library(scales))
+suppressMessages(library(reshape2))
+suppressMessages(library(gridExtra))
+suppressMessages(library(grid))
+suppressMessages(library(dplyr))
+suppressMessages(library(stringr)) 
+suppressMessages(library(viridis)) 
+suppressMessages(library(extrafont))
+suppressMessages(library(tidyr))
+suppressMessages(library(purrr))
+suppressMessages(library(DT))
+suppressMessages(library(plotly))
+suppressMessages(library(pheatmap))
+suppressMessages(library(devtools))
+suppressMessages(library(easyGgplot2))
+suppressMessages(library(splitstackshape)) #for splitting cells into multiple columns
+
+#font_import()
+
+mytheme <- theme(axis.line = element_line(colour = "black"),
+                 panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 panel.border = element_blank(),
+                 panel.background = element_blank(),
+                 text=element_text(size=20,  family="ArialMT", colour = "black"),
+                 axis.title.x = element_text(vjust=-0.5),
+                 axis.title.y = element_text(vjust=0.5), 
+                 legend.position = "bottom")
+```
+**Aims**: Analysis of First Targeted Sequencing Run on Sequel 1:\
+1. On-Target Rate\
+2. Raw Coverage\
+  + Number of Transcripts per Gene identified\
+3. Filtering by ToFu\
+4. Number of Isoforms per Gene identified\
+
+```{r}
+Targeted_Seq_1_wkd <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Targeted/Targeted_Seq_1"
+
+Probes_Match <- read.table(paste0(Targeted_Seq_1_wkd,"/MAPPING/TargetedSeq1.fasta.sam.probe_hit.txt"), 
+                  header=T, as.is=T, sep="\t")
+```
+## On-Target Rate
+
+Using L.Tseng's script *(https://github.com/Magdoll/cDNA_Cupcake/wiki/Targeted-Iso-Seq-QC-Wiki)* to calculate the on-target rate from polished.fa file, SAM alignment, and probe BED file.\
+
+A total of **`r dim(Probes_Match)[1]`** FL transcripts identified. Only an on-target rate of **`r round(length(which(Probes_Match$num_base_overlap != "0"))/dim(Probes_Match)[1]*100,0)`**%, i.e. % of FL transcripts with at least one of its bases matching to any primer. 
+
+**Note**: This is prior to Tofu-collapse, therefore some of different FL transcripts can still be derived from the same isoform
+
+```{r}
+p1 <- ggplot(Probes_Match, aes(x = num_probe)) + 
+  geom_histogram(bins = 20) + 
+  theme_bw() + 
+  mytheme + 
+  labs(x = "Number of Probes", y = "Frequency of Transcripts", title = "On-Target Rate: Number of probes per Transcript\n\n\n" )
+p1
+
+#p <- ggplot(Probes_Match, aes(x = num_base_overlap)) + 
+  #geom_histogram(bins = 75) + 
+  #theme_bw() + 
+  #mytheme + 
+  #labs(x = "Number of Bases overlap with primers", y = "Frequency of Transcripts", title = "Number of Transcripts with bases overlapped with primers\n\n\n" )
+```
+Achieved positive correlation as expected when correlating the number of bases overlap (between transcript and probe) and the number of probes per transcript
+```{r}
+p2 <- Probes_Match %>%
+  filter(num_probe > 0) %>%
+  ggplot(., aes(x = num_probe, y = num_base_overlap)) + 
+  geom_point() + 
+  theme_bw() + 
+  mytheme + 
+  labs(x = "Number of Probes", y = "Number of bases overlap", title = "Number of bases overlap vs Probes per Transcripts \n\n\n" )
+
+p2
+```
+
+## Coverage 
+
+### Number of Transcripts per Gene 
+```{r}
+colnames(Probes_Match)[6] <- "Probes"
+Probes_Match$Gene <- word(Probes_Match$Probes,c(3),  sep = fixed ('_'))
+Probes_Match$Gene <- word(Probes_Match$Gene,c(1),  sep = fixed ('('))
+
+p3 <- Probes_Match %>%
+  filter(num_probe > 0) %>% 
+  group_by(Gene) %>% 
+  tally() %>% 
+  ggplot(., aes(x = reorder(Gene, -n), y = n)) + 
+  geom_bar(stat = "identity") + 
+  theme_bw() + 
+  mytheme + 
+  geom_text(aes(label=n), position=position_dodge(width=0.9), vjust=-0.25) +
+  labs(x = "", y = "Number of Transcripts", title = "Number of Transcripts per Gene identified \n\n\n" ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p3
+```
+
+## Filtering by ToFu 
+
+Removed transcripts due too low coverage 
+```{r}
+Tofu_ignored <- read.table(paste0(Targeted_Seq_1_wkd,"/TOFU/TargetedSeq1.ignored_ids.txt"), 
+                  header=F, as.is=T, sep="\t")
+colnames(Tofu_ignored) <- c("read_id", "Rationale")
+
+##### multiple transcripts from Polished!
+#n_occur <- data.frame(table(Tofu_ignored$read_id))
+Tofu_ignored <- aggregate(Rationale ~ read_id, data = Tofu_ignored, paste, collapse = ",")
+
+n_occur <- data.frame(table(Probes_Match$read_id))
+#n_occur[n_occur$Freq > 1,]
+#Probes_Match[Probes_Match$read_id == "transcript/954", ]
+#Probes_Match[Probes_Match$read_id == "transcript/1993", ]
+
+Probes_Match <- merge(Probes_Match,Tofu_ignored, by = "read_id", all.x = T)
+Multiple_hits <- data.frame()
+for(i in n_occur[n_occur$Freq > 1,1]){
+  Multiple_hits <- rbind(Multiple_hits, Probes_Match[Probes_Match$read_id == i,])
+}
+
+```
+### Transcripts that are removed by filtering 
+```{r}
+p4 <- Probes_Match %>%
+  filter(!is.na(Rationale)) %>%
+  ggplot(.,aes(x = Gene)) + 
+  geom_bar() + 
+  theme_bw() + 
+  mytheme + 
+  labs(x = "", y = "Number of Transcripts Removed", title = "Number of Transcripts Removed after Tofu Collapse \n\n\n" )
+
+p4
+  
+Probes_Match$Retained <- ifelse(is.na(Probes_Match$Rationale), "Yes", "No")
+
+# Number of probes for transcripts discarded 
+p5 <- ggplot(Multiple_hits, aes(x = num_probe)) + 
+  geom_bar() + 
+  theme_bw() + 
+  mytheme + 
+  labs(x = "Number of Probes", y = "Frequency of Transcripts", title = "Number of removed Transcripts vs probes\n\n\n" )
+
+p5
+
+```
+
+### Coverage post Tofu
+
+```{r}
+p6 <- Probes_Match %>%
+  filter(num_probe > 0) %>% 
+  group_by(Gene, Retained) %>% 
+  tally() %>% 
+  ggplot(., aes(x = reorder(Gene, -n), y = n, fill = Retained)) + 
+  geom_bar(stat = "identity") + 
+  theme_bw() + 
+  mytheme + 
+  labs(x = "", y = "Number of Transcripts", title = "Number of Transcripts per Gene identified \n\n\n" ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p6
+```
+
+
+```{r, warning=FALSE}
+Tofu_collapsed <- read.table(paste0(Targeted_Seq_1_wkd,"/TOFU/TargetedSeq1.collapsed.group.txt"), 
+                  header=F, as.is=T, sep="\t")
+colnames(Tofu_collapsed) <- c("pb.id", "read_id")
+
+# long to wide 
+Tofu_collapsed <- cSplit(Tofu_collapsed,"read_id", ",")
+## note warning for gather as different lengths of collapse 
+Tofu_collapsed <- gather(Tofu_collapsed, remove, read_id, read_id_01: read_id_26, factor_key=TRUE)
+Tofu_collapsed <- Tofu_collapsed[!is.na(Tofu_collapsed$read_id),]
+Tofu_collapsed <- Tofu_collapsed[,-2]
+
+Probes_Match <- merge(Probes_Match,Tofu_collapsed, by = "read_id", all = T)
+```
+
+## Post Collapse
+```{r}
+
+## how many genes still not targeted that are kept????????
+# Post Collapse
+Total_Num_Transcripts <- Probes_Match %>%
+  filter(num_probe > 0 & Retained == "Yes") %>% 
+  group_by(Gene) %>% 
+  tally() %>%
+  rename(num_total_transcripts_posttofu = n)
+
+Total_Num_Isoforms_Clustered <- Probes_Match %>%
+  filter(!is.na(Gene) & !is.na(pb.id)) %>%
+  group_by(Gene, pb.id) %>%
+  tally() %>%
+  count(Gene) %>%
+  rename(num_isoforms_clustered = n)
+
+# ggplot(Total_Num_Isoforms, aes(x = reorder(Gene, -n), y = n)) + 
+#   geom_bar(stat = "identity") +
+#   theme_bw() + 
+#   mytheme + 
+#   geom_text(aes(label=n), position=position_dodge(width=0.9), vjust=-0.25) + 
+#   labs(x = "", y = "Number of Isoforms", title = "Number of Isoforms per Gene identified post-collapse in ToFU \n\n\n" )
+
+p7 <- Total_Num_Isoforms_Clustered %>%
+  full_join(.,  Total_Num_Transcripts, by = "Gene") %>%
+  mutate(num_collapsed_transcripts= num_total_transcripts_posttofu - num_isoforms_clustered) %>%
+  select(-num_total_transcripts_posttofu) %>%
+  gather(., collapsed, number, num_isoforms_clustered:num_collapsed_transcripts, factor_key=TRUE ) %>%
+  ggplot(. ,aes(x = reorder(Gene, - number), y = number, fill = factor(collapsed, levels = c("num_collapsed_transcripts","num_isoforms")))) + 
+  geom_bar(stat = "identity") + 
+  scale_fill_discrete(name = "Collapsed", labels = c("Redundant Transcript", "Unique Transcript = Isoforms")) + 
+  theme_bw() + mytheme + 
+  labs(x = "", y = "Number of Transcripts", title = "Number of Transcripts Collapsed per Gene post Cupcake Collapse\n\n\n") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p7
+
+```
+## Post Filtering pf 5'prime degraded in Cupcake
+```{r}
+Tofu_filtered <- read.table(paste0(Targeted_Seq_1_wkd,"/TOFU/TargetedSeq1.collapsed.filtered.abundance.txt"),
+                            header=T, as.is=T, sep="\t")
+
+Probes_Match$Filtered_5prime <- ifelse(Probes_Match$pb.id %in% Tofu_filtered$pbid,"Retained_post_filtering5prime","Removed")
+
+Total_Num_Isoforms_Clustered <- Probes_Match %>%
+  filter(!is.na(Gene) & !is.na(pb.id)) %>%
+  group_by(Gene, pb.id) %>%
+  tally() %>%
+  count(Gene) %>%
+  rename(num_isoforms_clustered = n)
+
+Total_Num_Isoforms_Filtered <- Probes_Match %>%
+  filter(!is.na(Gene) & !is.na(pb.id) & Filtered_5prime == "Retained_post_filtering5prime") %>%
+  group_by(Gene, pb.id) %>%
+  tally() %>%
+  count(Gene) %>%
+  rename(num_isoforms_filtered = n)
+
+
+p8 <- Total_Num_Isoforms_Filtered %>%
+  full_join(.,  Total_Num_Isoforms_Clustered, by = "Gene") %>%
+  mutate(num_isoforms_removed= num_isoforms_clustered - num_isoforms_filtered) %>%
+  select(-num_isoforms_clustered) %>%
+  gather(., collapsed, number, num_isoforms_filtered:num_isoforms_removed, factor_key=TRUE ) %>%
+  ggplot(. ,aes(x = reorder(Gene, - number), y = number, fill = factor(collapsed, levels = c("num_isoforms_clustered","num_isoforms_filtered")))) + 
+  geom_bar(stat = "identity") + 
+  scale_fill_discrete(name = "Filtered by 5'degradation", labels = c("Removed isoform", "Retained isoform")) + 
+  theme_bw() + mytheme + 
+  labs(x = "", y = "Number of Isoforms", title = "Number of Isoforms Filtered by 5'degradation \n\n\n") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  ylim(0,200)
+
+
+```
+
+```{r, results="hide", include=FALSE}
+
+pre_sqanti <- paste0(Targeted_Seq_1_wkd,"/SQANTI2/TargetedSeq1.collapsed.filtered.rep_classification.txt") 
+sqanti <- paste0(Targeted_Seq_1_wkd,"/SQANTI2/TargetedSeq1.collapsed.filtered.rep_classification.filtered_lite_classification.txt")
+source("/gpfs/ts0/home/sl693/Scripts/human_mouse_isoseq/DownStream/SQANTI_Further_Characterisation/SQANTI_General.R")
+class.file <- SQANTI_class_preparation(sqanti)
+pre.class.file <- SQANTI_class_preparation(pre_sqanti)
+
+class.file$associated_gene <- toupper(class.file$associated_gene)
+pre.class.file$associated_gene <- toupper(pre.class.file$associated_gene)
+
+targeted_genes <- c("APP", "CLU", "APOE", "MAPT", "BIN1", "SORL1", "TARDBP", 
+                    "PICALM", "PTK2B", "FYN","SNCA", "FUS", "ABCA1",
+                    "VGF", "ABCA7", "TREM2", "ANK1", "CD33", "RHBDF2", "MAPT")
+
+# novelTranscript 
+class.file$novelTranscript <- ifelse(class.file$associated_transcript == "novel", "Novel Transcript", "Annotated Transcript")
+pre.class.file$novelTranscript <- ifelse(pre.class.file$associated_transcript == "novel", "Novel Transcript", "Annotated Transcript")
+
+p10 <- class.file[class.file$associated_gene %in% targeted_genes,] %>%
+  select(isoform, associated_gene, associated_transcript, structural_category, novelTranscript) %>%
+  group_by(associated_gene, novelTranscript) %>%
+  tally() %>%
+  ggplot(., aes(x = reorder(associated_gene, -n), y = n, fill = factor(novelTranscript, levels = c("Novel Transcript", "Annotated Transcript")))) + 
+  geom_bar(stat = "identity") +
+  theme_bw() + 
+  mytheme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y = "Isoseq Isoform Expression (Log10 TPM)", title = "Post-SQANTI filtering \nNumber of Isoform by Novel vs Annotate\n\n\n", fill = "Transcript Classification") + 
+  scale_fill_discrete(labels = c("Novel Isoform", "Annotated Isoform"))
+
+
+p9 <- pre.class.file[pre.class.file$associated_gene %in% targeted_genes,] %>%
+  select(isoform, associated_gene, associated_transcript, structural_category, novelTranscript) %>%
+  group_by(associated_gene, novelTranscript) %>%
+  tally() %>%
+  ggplot(., aes(x = reorder(associated_gene, -n), y = n, fill = factor(novelTranscript, levels = c("Novel Transcript", "Annotated Transcript")))) + 
+  geom_bar(stat = "identity") +
+  theme_bw() + 
+  mytheme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y = "Number of Isoforms", title = "Number of Isoforms by Novel vs Annotated\n\n\n", fill = "Transcript Classification") + 
+  scale_fill_discrete(labels = c("Novel Isoform", "Annotated Isoform"))
+  
+# class.file[class.file$associated_gene %in% targeted_genes,] %>%
+#   select(isoform, associated_gene, associated_transcript, structural_category, Log_ISOSEQ_TPM,) %>%
+#   ggplot(., aes(x = associated_gene, y = Log_ISOSEQ_TPM, fill = associated_gene)) + 
+#   geom_boxplot() +
+#   geom_jitter(shape=16, position=position_jitter(0.2)) +
+#   theme_bw() + 
+#   mytheme +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   labs(x = "", y = "Isoseq Isoform Expression (Log10 TPM)", title = "Targeted Transcriptome \nIsoSeq Isoform Expression per Gene\n\n\n") + 
+#   theme(legend.position = "none") 
+  
+  
+```
+
+```{r}
+## Create a plot with all the numbers of filtering at each stage
+# SQANTI_pre_filtered <- pre.class.file[pre.class.file$associated_gene %in% targeted_genes,] %>%
+#   select(isoform, associated_gene, associated_transcript, structural_category, novelTranscript) %>%
+#   count(associated_gene) %>%
+#   rename(num_isoforms_preSQANTI = n)
+# 
+# SQANTI_post_filtered <- class.file[class.file$associated_gene %in% targeted_genes,] %>%
+#   select(isoform, associated_gene, associated_transcript, structural_category, novelTranscript) %>%
+#   count(associated_gene) %>%
+#   rename(num_isoforms_postSQANTI = n)
+# 
+# Total_Num_Isoforms_Filtered %>%
+#   full_join(.,  Total_Num_Isoforms_Clustered, by = "Gene") %>%
+#   mutate(num_isoforms_removed= num_isoforms_clustered - num_isoforms_filtered) %>%
+#   select(-num_isoforms_clustered)
+# 
+# Total_Num_Isoforms_Clustered %>%
+#   full_join(.,  Total_Num_Transcripts, by = "Gene") %>%
+#   mutate(num_collapsed_transcripts= num_total_transcripts_posttofu - num_isoforms_clustered) %>%
+#   select(-num_total_transcripts_posttofu) %>%
+#   full_join(.,  Total_Num_Isoforms_Filtered, by = "Gene")
+
+
+```
+## Off Target Genes
+
+**Number of Transcript per Gene** \
+Table refers to top 25 most “isoformic” off-target gene from merged targeted sequencing data (post SQANTI filter) \
++ Off-target genes refer to non-target genes of interest \
++ Note, abundance is not considered here 
+
+```{r}
+
+off_target <- class.file[!class.file$associated_gene %in% targeted_genes,]  
+off_target_no.transcript <- off_target %>%
+  group_by(associated_gene) %>% 
+  tally(sort = TRUE)
+
+datatable(off_target_no.transcript)
+
+hist(off_target_no.transcript$n,
+     main = "Histogram of number of isoforms of off-target genes",
+     ylab = "Frequency of off-target genes",
+          xlab  = "Number of isoforms")
+
+
+```
+
+**Abundance**
+```{r}
+
+off_target_abundance <- off_target[order(-off_target$ISOSEQ_TPM),c("associated_gene","associated_transcript", "structural_category","ISOSEQ_TPM",
+                                          "coding","within_cage_peak")]
+
+datatable(off_target_abundance)
+
+```
+
