@@ -1,0 +1,105 @@
+R scripting front-end version 4.0.0 (2020-04-24)
+
+Attaching package: 'dplyr'
+
+The following object is masked from 'package:gridExtra':
+
+    combine
+
+The following object is masked from 'package:reshape':
+
+    rename
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Warning message:
+package 'dplyr' was built under R version 4.0.2 
+Loading required package: Biobase
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: 'BiocGenerics'
+
+The following objects are masked from 'package:parallel':
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from 'package:dplyr':
+
+    combine, intersect, setdiff, union
+
+The following object is masked from 'package:gridExtra':
+
+    combine
+
+The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from 'package:base':
+
+    Filter, Find, Map, Position, Reduce, anyDuplicated, append,
+    as.data.frame, basename, cbind, colnames, dirname, do.call,
+    duplicated, eval, evalq, get, grep, grepl, intersect, is.unsorted,
+    lapply, mapply, match, mget, order, paste, pmax, pmax.int, pmin,
+    pmin.int, rank, rbind, rownames, sapply, setdiff, sort, table,
+    tapply, union, unique, unsplit, which.max, which.min
+
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+Loading required package: splines
+Loading required package: Matrix
+
+Attaching package: 'Matrix'
+
+The following object is masked from 'package:reshape':
+
+    expand
+
+`summarise()` regrouping output by 'lenCat' (override with `.groups` argument)
+`summarise()` regrouping output by 'structural_category' (override with `.groups` argument)
+`summarise()` ungrouping output (override with `.groups` argument)
+`summarise()` regrouping output by 'structural_category' (override with `.groups` argument)
+`summarise()` regrouping output by 'associated_transcript' (override with `.groups` argument)
+`summarise()` regrouping output by 'associated_transcript' (override with `.groups` argument)
+Warning messages:
+1: Using alpha for a discrete variable is not advised. 
+2: Using alpha for a discrete variable is not advised. 
+3: Using alpha for a discrete variable is not advised. 
+4: Using alpha for a discrete variable is not advised. 
+null device 
+          1 
+[1] "SQANTI3 report successfully generated!"
+Error corrected FASTA /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/CHAIN/SQANTI3/all_samples.chained_corrected.fasta already exists. Using it...
+WARNING: Skipping ORF prediction because user requested it. All isoforms will be non-coding!
+WARNING: All input isoforms were predicted as non-coding
+**** Parsing Isoforms....
+**** RT-switching computation....
+**** Reading Full-length read abundance files...
+Multi-sample PacBio FL count format detected.
+Isoforms expression files not provided.
+**** Writing output files....
+**** Generating SQANTI3 report....
+Removing temporary files....
+SQANTI3 complete in 2471.185308208689 sec.
+Write arguments to /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/CHAIN/SQANTI3/all_samples.chained.params.txt...
+**** Running SQANTI3...
+**** Parsing provided files....
+Reading genome fasta /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/mm10.fa....
+**** Predicting ORF sequences...
+**** Parsing Reference Transcriptome....
+Splice Junction Coverage files not provided.
+**** Performing Classification of Isoforms....
+Number of classified isoforms: 5363630
