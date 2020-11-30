@@ -78,6 +78,11 @@ python $SQANTI3_DIR/sqanti3_qc.py
 
 cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN/SQANTI2
 python $SQANTI3_DIR/sqanti3_qc.py -t 30 ../all_samples.chained.rep.fq $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --fl_count ../all_samples.chained_count.txt --skipORF
+python $SQANTI3_DIR/sqanti3_RulesFilter.py all_samples.chained_classification.txt all_samples.chained_corrected.fasta all_samples.chained_corrected.gtf -a 0.6 -c 3
+
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/CHAIN/SQANTI3
+python $SQANTI3_DIR/sqanti3_qc.py -t 30 ../all_samples.chained.rep.fq $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --fl_count ../all_samples.chained_count.txt
+
 
 INDIVIDUAL_TOFU=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/TOFU
 L22.collapsed.filtered.abundance.txt L22.collapsed.filtered.gff L22.collapsed.filtered.rep.fq
