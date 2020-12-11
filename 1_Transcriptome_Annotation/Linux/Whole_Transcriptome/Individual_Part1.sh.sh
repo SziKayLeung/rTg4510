@@ -8,7 +8,7 @@
 #SBATCH --ntasks-per-node=16 # specify number of processors per node
 #SBATCH --mail-type=END # send email at job completion
 #SBATCH --mail-user=sl693@exeter.ac.uk # email address
-#SBATCH --array=0-15 # 16 samples
+#SBATCH --array=0-11 # 12 samples
 #SBATCH --output=Isoseq3_alls-%A_%a.o
 #SBATCH --error=Isoseq3_all-%A_%a.e
 
@@ -32,7 +32,7 @@ TG_Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscr
 WT_Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Tg4510/WT_Merged
 
 # ENSURE ORDER OF SAMPLE NAMES AND BAM_FILES IS THE SAME
-SAMPLES_NAMES=(Q21 O18 C21 E18 C20 B21 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24)
+SAMPLES_NAMES=(O18 K18 S18 L22 Q20 K24 Q21 K17 M21 O23 S23 K23)
 SAMPLE=${SAMPLES_NAMES[${SLURM_ARRAY_TASK_ID}]}
 cd $FUNCTIONS
 cat Isoseq_MouseRaw.txt
@@ -56,3 +56,14 @@ run_CLUSTER ${SAMPLE} $REFINE $CLUSTER
 
 python $FUNCTIONS/Run_Stats/CCS.py $CCS "" All
 python $FUNCTIONS/Run_Stats/LIMA.py $LIMA "" All
+
+#************************************* Individual samples
+
+# convert_fa2fq <file_name> <input_dir>
+# run_minimap2 <prefix_sample> <input_dir> <ERCC/mm10> <output_dir>
+# tofu <prefix_sample> <cluster_dir> <input_dir> <output_dir>
+
+convert_fa2fq ${SAMPLES}.clustered.hq.fasta $CLUSTER
+run_minimap2 ${SAMPLES} $CLUSTER mm10 $Individual_Isoseq3_WKD/MAPPING
+tofu ${SAMPLES} $CLUSTER $Individual_Isoseq3_WKD/MAPPING $Individual_Isoseq3_WKD/TOFU
+
