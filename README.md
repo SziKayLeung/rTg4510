@@ -2,6 +2,14 @@
 
 This directory is a repository of scripts pertaining to Whole Transcriptome and Targeted Transcriptome Iso-Seq analysis of Tg4510 mice
 
+## **Raw Data**
+* Whole Transcriptome: List of location of rawdata on ISCA to feed into Iso-Seq Analysis pipeline (Linux commands)
+* Targeted Transcriptome
+    + List of location of rawdata on ISCA
+    + Barcode Configuration Files: Samples with the relevant Pacbio barcode for demultiplexing
+    + Probes: List of probes and locations for determining off-target rate
+
+
 ---
 ## 1. **Transcriptome_Annotation**:
 Iso-Seq Analysis pipeline accurately annotates the whole and targeted transcriptome, and is performed either using Linux commands or via snakemake. Pipeline starts from IsoSeq3 tools (CCS, lima, refine, cluster), alignment to mouse transcriptome using minimap2, collapse and chaining of multiple samples with cupcake, to transcriptome annotation with SQANTI using multiple input from RNA-Seq data, CAGE peaks and polyA motifs.
@@ -30,7 +38,7 @@ There are 3 main analyses:
       <summary>Output:</summary>
 
       + ERCC detection
-      + Sequel run quality, read length differences between WT and TG 
+      + Sequel run quality, read length differences between WT and TG
     </details>
 
 <br>
@@ -45,4 +53,6 @@ There are 3 main analyses:
      + Off-target rate
      + Sample batches differences
    </details>
+
+
 ---
