@@ -9,37 +9,65 @@ library(IsoformSwitchAnalyzeR)
 options(scipen=999) # removal of scientific notation 
 
 # read in SQANTI2 classification file of all merged data
-input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN_OLD/SQANTI3/"
-class <- read.table(paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite_classification.txt"),header=T)
+input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/SQANTI3/"
+# sqanti classification file filtering removed monoexonic transcripts 
+class <- read.table(paste0(input_dir,"all_samples.chained_classification.filtered_lite_classification.txt"),header=T, as.is = T, sep = "\t")
+
+isoform_count <- class %>% group_by(associated_gene) %>% tally()
+
 
 # PacBio isoform ID, keep only columns with isoform FL counts (and convert FL counts to TPM)
-counts <- class[, c("isoform","FL.K17","FL.K18","FL.K23","FL.K24","FL.L22","FL.M21","FL.O18","FL.O23","FL.Q20","FL.Q21","FL.S18","FL.S23")] 
+counts <- me_class[, c("isoform","FL.K17","FL.K18","FL.K24","FL.L22","FL.M21","FL.O18","FL.O23","FL.Q20","FL.Q21","FL.S18","FL.S23")] 
 abundance <- cbind(counts[,1], as.data.frame(apply(counts[,-1],2, function(x) round(x/sum(x)*1000000,0))))
-colnames(counts)[1] <- c("isoform_id")
+colnames(counts)[1] <- c("isoform_id")      # column name important for input into IsoformSwitch
 colnames(abundance)[1] <- c("isoform_id")
-
-
-# design dataframe input for IsoformSwitchAnalyzeR
-myDesign <- data.frame(
-  sampleID = colnames(counts)[-1],
-  condition = c("WT", "TG", "WT", "TG","TG","WT","TG","WT","TG","WT","TG","WT")
-)
-getCDS()
-
-# failed misannotation 
-misannotated <- c("PB.429.","PB.436.","PB.5107.","PB.13705","PB.430","PB.6677")
-counts_mod <- counts[!grepl(paste(misannotated,collapse="|"),counts$isoform_id),]
-abundance_mod <- abundance[!grepl(paste(misannotated,collapse="|"),abundance$isoform_id),]
 
 # using SQANTI generated gtf and fasta, rather than gencode
 #isoformExonAnnoation = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite.gtf"),
 aSwitchList <- importRdata(
-  isoformCountMatrix   = counts_mod,
-  isoformRepExpression = abundance_mod,
+  isoformCountMatrix   = counts,
+  isoformRepExpression = abundance,
   designMatrix         = myDesign,
-  isoformExonAnnoation = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite_mod.gtf"),
-  isoformNtFasta       = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite.fasta"),
+  isoformExonAnnoation = paste0(input_dir,"all_samples.chained_classification.filtered_lite.gtf"),
+  isoformNtFasta       = paste0(input_dir,"all_samples.chained_classification.filtered_lite.fasta"),
 )
+
+
+
+############ from chaining 
+input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/TOFU/"
+counts <- read.table(paste0(input_dir,"all_samples.chained_count.txt"),header=T, as.is = T, sep = "\t")
+counts[is.na(counts)] <- 0
+abundance <- cbind(counts[,1], as.data.frame(apply(counts[,-1],2, function(x) round(x/sum(x)*1000000,0))))
+colnames(counts)[1] <- c("isoform_id")      # column name important for input into IsoformSwitch
+colnames(abundance)[1] <- c("isoform_id")
+
+# design dataframe input for IsoformSwitchAnalyzeR
+myDesign <- data.frame(
+  sampleID = colnames(counts)[-1],
+  condition = c("WT", "TG", "TG", "TG","WT","TG","WT","TG","WT","TG","WT")
+)
+
+
+# failed misannotation 
+#misannotated <- c("PB.429.","PB.436.","PB.5107.","PB.13705","PB.430","PB.6677")
+misannotated <- c("PB.13787.","PB.11204.","PB.7815.","PB.14001.","PB.2141.")
+counts_mod <- counts[!grepl(paste(misannotated,collapse="|"),counts$isoform_id),]
+abundance_mod <- abundance[!grepl(paste(misannotated,collapse="|"),abundance$isoform_id),]
+
+# python /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence/fq2fa.py all_samples.chained.rep.fq
+
+
+# using SQANTI generated gtf and fasta, rather than gencode
+#isoformExonAnnoation = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite.gtf"),
+aSwitchList <- importRdata(
+  isoformCountMatrix   = counts,
+  #isoformRepExpression = abundance,
+  designMatrix         = myDesign,
+  isoformExonAnnoation = paste0(input_dir,"all_samples.chained.gff"),
+  isoformNtFasta       = paste0(input_dir,"all_samples.chained.rep.fasta"),
+)
+
 
 
 # fudged aSwitchList to take the gene_id from the class_list rather than generated gene_id from gtf 

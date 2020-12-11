@@ -2,15 +2,34 @@
 # 23/11/2020: Compare results from Iso_Seq_Aaron_DTU.R and DESeq2_IsoseqFL_TranscriptExpression.R 
 
 library("dplyr")
+library("stringr")
 suppressMessages(library(VennDiagram))
 suppressMessages(library(cowplot))
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq3_Tg4510/Rmarkdown_Input.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Rmarkdown_Input.R")
 
-input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN_OLD/SQANTI3"
-class_file <- read.table(paste0(input_dir,"/all_samples.chained.rep_classification.filtered_lite_classification.txt"), as.is = T, header = T, sep = "\t")
+# WT 
+WT <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples_OLD/mm10/SQANTI/WT_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", as.is = T, header = T, sep = "\t")
+TG <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples_OLD/mm10/SQANTI/TG_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", as.is = T, header = T, sep = "\t")
 
-Aaron_DTU <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq3_Tg4510/Iso_Seq_Aaron_DTU_All.csv") %>% mutate("transcript_name_id" = paste0(associated_transcript,"_", isoform))
-DESeq2 <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq3_Tg4510/DESeq2_IsoseqFL_TranscriptExpression.csv")
+WT[WT$associated_gene == "ENSMUSG00000027273.13",]
+TG[TG$associated_gene == "ENSMUSG00000027273.13",]
+class_file[class_file$isoform == "PB.7138.24",]
+
+input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/SQANTI3"
+class_file <- read.table(paste0(input_dir,"/all_samples.chained_classification.filtered_lite_classification.txt"), as.is = T, header = T, sep = "\t")
+
+mm10_reference_file <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/gencode.vM22_gene_annotation_table.txt"
+mm10_reference <- read.table(mm10_reference_file,as.is = T, header=T, sep = "\t")
+DTU <- merge(DTU, mm10_reference[c("gene_id","GeneSymbol")], by.x = ("associated_gene"), by.y= "gene_id", all.x = T) %>% 
+  .[,c("isoform","GeneSymbol","associated_gene","associated_transcript","structural_category","subcategory",
+       "u","WT_mean_exp","TG_mean_exp","WT_median_exp","TG_median_exp","mean_exp_diff","Direction",FL_count_colnames)]
+
+Aaron_DTU <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/Iso_Seq_Aaron_DTU_All.csv") %>% mutate("transcript_name_id" = paste0(associated_transcript,"_", isoform))
+DESeq2 <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/DESeq2_IsoseqFL_TranscriptExpression_Updated.csv") %>% 
+  mutate(isoform = word(X, c(2), sep = fixed("_"))) %>% 
+  # some transcripts are missing as not differentially expressed 
+  left_join(., class_file[,c("isoform","associated_gene")], by = "isoform") 
+DESeq2 <- merge(DESeq2, mm10_reference[c("gene_id","GeneSymbol")], by.x = "associated_gene", by.y = "gene_id", all.x = T)
 
 # variance 
 Aaron_DTU <- Aaron_DTU %>% mutate(WT_sd_exp = apply(.[,grepl( "WT",colnames(.))], 1, function(x) sd(x))) %>%
@@ -18,7 +37,10 @@ Aaron_DTU <- Aaron_DTU %>% mutate(WT_sd_exp = apply(.[,grepl( "WT",colnames(.))]
 
 # significant expression 
 Aaron_DTU_sg <- Aaron_DTU %>% filter(u < 0.05) %>% mutate(Detection = "Aaron_DTU") %>% mutate("transcript_name_id" = paste0(associated_transcript,"_", isoform))
-DESeq2_sg <- DESeq2 %>% filter(padj < 0.05) %>% mutate(Detection = "DESeq2") 
+DESeq2_sg <- DESeq2 %>% filter(padj < 0.05) %>% mutate(Detection = "DESeq2") %>% 
+  mutate(WilcoxinRank = ifelse(.$isoform %in% Aaron_DTU_sg$isoform, "Yes","No")) # DESeq2_sg also detected in Aaron DTU 
+
+
 
 # ggplot 
 venn_diagram_plot_twocircles <- function(set1, set2, label_set1, label_set2){
@@ -107,7 +129,7 @@ p4 <- plot_parameter_distribution(DESeq2_unique,"\n","SD") # DESeq2 - SD: Transc
 p5 <- plot_parameter_distribution(common,"\n", "median") #Common - Transcripts Differentially Expressed
 p6 <- plot_parameter_distribution(common,"\n", "SD") #Common - Transcripts Differentially Expressed
 
-pdf("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Comparison_Distribution.pdf", width = 11, height = 8.5)
+pdf("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/Comparison_Distribution.pdf", width = 11, height = 8.5)
 plot_grid(p1[[1]],p2[[1]],p3[[1]],p4[[1]],p5[[1]],p6[[1]], labels = "auto", label_size = 30, label_fontfamily = "ArialMT",ncol = 2)
 plot_grid(p1[[2]],p2[[2]],p3[[2]],p4[[2]],p5[[2]],p6[[2]], labels = "auto", label_size = 30, label_fontfamily = "ArialMT",ncol = 2)
 dev.off()

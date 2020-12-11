@@ -24,8 +24,13 @@ library("tidyr") # wide to long
 source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq3_Tg4510/Isoseq3/Isoseq3_QC/Rmarkdown_Input.R")
 # output_plot_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Rmarkdown"
 ##### 1. Input SQANTI2 classification file 
-input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN_OLD/SQANTI3"
-class_file <- read.table(paste0(input_dir,"/all_samples.chained.rep_classification.filtered_lite_classification.txt"), as.is = T, header = T, sep = "\t")
+## old data
+#input_dir <- "/gpfs/ts0/home/sl693/files"
+#class_file <- read.table(paste0(input_dir,"/all_samples.chained.rep_classification.filtered_lite_classification.txt"), as.is = T, header = T, sep = "\t")
+
+# newest data 
+input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/SQANTI3"
+class_file <- read.table(paste0(input_dir,"/all_samples.chained_classification.filtered_lite_classification.txt"), as.is = T, header = T, sep = "\t")
 
 # Sample Phenotype classification
 TG <- c("O18","K18","S18","L22","Q20","K24")
@@ -195,6 +200,7 @@ plot_transcript_expression <- function(input_df, gene){
 
 
 ##### 10. Output Tables
-write.csv(DTU, file="Iso_Seq_Aaron_DTU_All.csv")  # All transcripts with wilcoxin rank sum test results 
-write.csv(dtu_list, file="Iso_Seq_Aaron_DTU_GeneExpressionBothGenotype.csv") # Only genes with significant differential expression and genes observed in both genotype 
+#write.csv(DTU, file="/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/Iso_Seq_Aaron_DTU_All.csv")  # All transcripts with wilcoxin rank sum test results 
+#write.csv(dtu_list, file="Iso_Seq_Aaron_DTU_GeneExpressionBothGenotype.csv") # Only genes with significant differential expression and genes observed in both genotype 
 
+write.csv(DTU, file="/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/Iso_Seq_Aaron_DTU_All_Updated.csv")  # All transcripts with wilcoxin rank sum test results 

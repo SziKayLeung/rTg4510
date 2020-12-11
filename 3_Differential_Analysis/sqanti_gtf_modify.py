@@ -12,9 +12,9 @@ import pandas as pd
 import csv
 import sys
 
-SQANTI_dir = sys.argv[0]
-gtf_input_file = SQANTI_dir + "all_samples.chained.rep_classification.filtered_lite.gtf"
-class_input_file = SQANTI_dir + "all_samples.chained.rep_classification.filtered_lite_classification.txt"
+SQANTI_dir = sys.argv[1]
+gtf_input_file = SQANTI_dir + "/all_samples.chained_classification.filtered_lite.gtf"
+class_input_file = SQANTI_dir + "/all_samples.chained_classification.filtered_lite_classification.txt"
 
 
 # aim: 1. read gtf file and classification file (for dictionary of isoform id and gene name)
@@ -23,7 +23,7 @@ class_input_file = SQANTI_dir + "all_samples.chained.rep_classification.filtered
 # output: additional column with replaced dataframe
 def replace_gene_id(gtf_file, class_file):
     # read Gtf file
-    gtf_df = pd.read_csv(filepath_or_buffer = gtf_file, sep='\t', header=None,
+    gtf_df = pd.read_csv(filepath_or_buffer = gtf_file, delim_whitespace=True, header=None,
         names=['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase', 'attributes'])
 
     # read classification file
@@ -41,15 +41,16 @@ def replace_gene_id(gtf_file, class_file):
     for info in gtf_df.attributes:
         # extracting the labels and names from attributes column
         gene_id_label = info.split(";")[0]
-        transcript_id = info.split(";")[1]
-        gene_id = gene_id_label.split(" ")[1]
+        print(gene_id_label)
+        #gene_id = gene_id_label.split(" ")[1]
         # replace the gene_id with the gene_name from dictionary
-        gene_name = [val for key, val in id_gene.items() if gene_id.strip('\"') in key][0]
-        print("Renaming", gene_id, "to", gene_name)
-        new_attributes.append("gene_id " + double_quote(gene_name) + ";" + transcript_id +";")
+        gene_name = [val for key, val in id_gene.items() if gene_id_label in key][0]
+        print("Renaming", gene_id_label, "to", gene_name)
+        new_attributes.append("gene_id " + double_quote(gene_name) + "; transcript_id" + gene_id_label +";")
 
     output = gtf_df.join(pd.DataFrame(new_attributes, columns = ["new_attributes"]))
     return(output)
+
 def main():
     output = replace_gene_id(gtf_input_file,class_input_file)
     final = output[["seqid","source","type","start","end","score","strand","phase","new_attributes"]]

@@ -10,16 +10,17 @@ library("tibble")
 library("vsn")
 library("pheatmap")
 library("gplots")
+library("RColorBrewer")
 
 
 # read in SQANTI2 classification file of all merged data
-class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN_OLD/SQANTI3/all_samples.chained.rep_classification.filtered_lite_classification.txt",header=T)
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/SQANTI3/all_samples.chained_classification.filtered_lite_classification.txt",header=T)
 
 # datawrangle for input to DESeq2 
 class[["transcript_name_id"]] <- paste0(class$associated_transcript,"_", class$isoform)
-countdata <- class[,c("transcript_name_id","FL.O18","FL.K18","FL.S18","FL.L22","FL.Q20","FL.K24","FL.Q21","FL.K17","FL.M21","FL.O23","FL.S23","FL.K23")] %>% column_to_rownames(., var = "transcript_name_id")
+countdata <- class[,c("transcript_name_id","FL.O18","FL.K18","FL.S18","FL.L22","FL.Q20","FL.K24","FL.Q21","FL.K17","FL.M21","FL.O23","FL.S23")] %>% column_to_rownames(., var = "transcript_name_id")
 countdata <- as.matrix(countdata)
-(condition <- factor(c(rep("TG", 6), rep("WT", 6))))
+(condition <- factor(c(rep("TG", 6), rep("WT", 5))))
 
 # Make DESeq dataset
 (coldata <- data.frame(row.names=colnames(countdata), condition))
@@ -162,13 +163,9 @@ volcanoplot <- function (res, lfcthresh=2, sigthresh=0.05, xlab="log2(Fold Chang
   with(subset(res, padj<sigthresh & abs(log2FoldChange)>lfcthresh), points(log2FoldChange, -log10(pvalue), pch=20, col="green", ...))
   legend(legendpos, xjust=1, yjust=1, legend=c(paste("p-adj<",sigthresh,sep=""), paste("|log2(FC)|>",lfcthresh,sep=""), "both"), cex=1.5, pch=20, col=c("blue","orange","green"))
 }
-volcanoplot(resdata, lfcthresh=2, sigthresh=0.05, xlim=c(-30, 30), ylim=c(0,30), legendpos="topright")
-
-mm10_reference_file <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/gencode.vM22_gene_annotation_table.txt"
-mm10_reference <- read.table(mm10_reference_file,as.is = T, header=T, sep = "\t")
-DTU <- merge(DTU, mm10_reference[c("gene_id","GeneSymbol")], by.x = ("associated_gene"), by.y= "gene_id", all.x = T) %>% 
-  .[,c("isoform","GeneSymbol","associated_gene","associated_transcript","structural_category","subcategory",
-       "u","WT_mean_exp","TG_mean_exp","WT_median_exp","TG_median_exp","mean_exp_diff","Direction",FL_count_colnames)]
+volcanoplot(resdata, lfcthresh=2, sigthresh=0.05, xlim=c(-10, 10), ylim=c(0,10), legendpos="topright")
 
 
-write.csv(as.data.frame(res), file="DESeq2_IsoseqFL_TranscriptExpression.csv")
+# old data 
+# write.csv(as.data.frame(res), file="DESeq2_IsoseqFL_TranscriptExpression.csv")
+write.csv(as.data.frame(res), file="/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/DESeq2_IsoseqFL_TranscriptExpression_Updated.csv")

@@ -1,0 +1,1 @@
+slurmstepd: error: *** JOB 223398 ON mrc-comp020 CANCELLED AT 2020-12-01T02:21:58 DUE TO TIME LIMIT ***
