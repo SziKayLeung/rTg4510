@@ -1,19 +1,21 @@
 ---
-title: "Tg4510 Run Output Stats "
+title: "Tg4510 Run Output Stats"
 author: Szi Kay Leung
 date: "`r Sys.Date()`"
-knit: (function(inputFile, encoding) { 
-      rmarkdown::render(inputFile,
-                        encoding=encoding, 
-                        output_file=paste0("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Rmarkdown",
-                        '/Tg4510_Run_Output_Stats.html')) })
 output:
-  html_document:
-    toc: true
-    toc_float: true
+  rmdformats::material:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: true
+    highlight: tango
     code_folding: hide
+    fig_caption: true
+    cards: true
 ---
 ```{r setup, include=FALSE, results="hide"}
+# 18/01/2021: Mapping quality of merged data
+
 # packages
 suppressMessages(library(ggplot2))
 suppressMessages(library(scales)) # ggplot2 y-axis scales
@@ -43,7 +45,7 @@ mytheme <- theme(axis.line = element_line(colour = "black"),
                  legend.position = c(.90, 0.95),
                  #legend.justification = c(1,1),
                  legend.box.just = "right",
-                 legend.margin = margin(6, 6, 6, 6), 
+                 legend.margin = margin(6, 6, 6, 6),
                  legend.text = element_text(size = 14,family="CM Roman"),
                  axis.text.x= element_text(size=12,family="CM Roman"),
                  axis.text.y= element_text(size=12,family="CM Roman"))
@@ -56,17 +58,17 @@ label_colour <- function(genotype){
   return(colour)
 }
 
-# apply Genotype category 
+# apply Genotype category
 genotype_classification <- function(sample){
   classified_sample <- if(sample %in% c("O18","K18","S18","L22","Q20","K24")){"TG"
   } else if (x %in% c("Q21","K17","M21","O23","S23","K23")){ "WT"
   } else {"J20"
   }
-  
+
   classified_sample <- unlist(classified_sample)
   return(classified_sample)
 }
- 
+
 
 # output directory
 output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Rmarkdown"
@@ -75,25 +77,44 @@ output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTr
 ```
 ```{r}
 # Input Sequencing
-sequencing_output <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Samples/Sequenced_mouse_output.csv")
-tg4510_samples <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Samples/Tg4510_fullsample.csv")[,c("Genotype","Sample.ID","RIN","ng.ul")]
+sequencing_output <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Sample_Description/Sequenced_mouse_output.csv")
+tg4510_samples <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Sample_Description/Tg4510_fullsample.csv")[,c("Genotype","Sample.ID","RIN","ng.ul")]
 sequenced <- merge(sequencing_output, tg4510_samples, by.x = "Sample", by.y = "Sample.ID", all.x = TRUE)
 sequenced$Genotype <- factor(sequenced$Genotype, levels=c("WT", "TG"))
+
+
+# Input IsoSeq Paths
+CCS_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/CCS"
+LiMA_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/LIMA"
+REFINE_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/REFINE"
+
+# Input Lengths Paths
+lengths_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/QC/Read_Lengths"
+
+# Input mapping paths
+mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/MOUSE/MAPPING/PAF"
+all_mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/MAPPING"
+
 ```
 
-## Tg4510 Yield Output
+# Tg4510 Yield Output
+
+## {.tabset .tabset-fade .tabset-pills}
+
+### Total Bases: WT vs TG
+
 ```{r}
-# sequenced refers to Tg4510 
-sequenced <- sequenced %>% filter(Genotype != "NA") 
-p1 <- sequenced %>% ggplot(., aes(x = Genotype, y = Total.Bases..GB., fill = Genotype)) + geom_boxplot() + 
-  geom_jitter(shape=17, position=position_jitter(0)) + 
-  theme_bw() + 
+# sequenced refers to Tg4510
+sequenced <- sequenced %>% filter(Genotype != "NA")
+p1 <- sequenced %>% ggplot(., aes(x = Genotype, y = Total.Bases..GB., fill = Genotype)) + geom_boxplot() +
+  geom_jitter(shape=17, position=position_jitter(0)) +
+  theme_bw() +
   labs(x = "Genotype", y = "Total Bases (Gb)") +
   mytheme + theme(legend.position = "none") +
   scale_fill_manual(values = c(label_colour("TG"),label_colour("WT")))
 
 p1
-# Difference between WT and TG yield 
+# Difference between WT and TG yield
 #with(sequenced, shapiro.test(Total.Bases..GB.[Genotype == "WT"])) # p = 0.4
 #with(sequenced, shapiro.test(Total.Bases..GB.[Genotype == "TG"])) # p = 0.7
 #res.ftest <- var.test(Total.Bases..GB.~ Genotype , data = sequenced)
@@ -103,13 +124,14 @@ res
 
 ```
 
+### RIN vs yield output
+
 ```{r}
-# RIN vs yield output
 cor.test(sequenced$RIN,sequenced$Total.Bases..GB., use = "pairwise.complete.obs")
 corr.value <- cor(sequenced$RIN,sequenced$Total.Bases..GB., use = "pairwise.complete.obs")
 
 p2 <- sequenced %>% ggplot(., aes(x = RIN, y = Total.Bases..GB., color = Genotype)) + geom_point(size = 2, shape = 17) +
-  scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) + 
+  scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) +
   mytheme + labs(x = "RIN", y = "Total Bases (Gb)")  
 p2
 
@@ -118,19 +140,18 @@ res <- t.test(Total.Bases..GB.~ Genotype , data = sequenced, var.equal = TRUE)
 res
 ```
 
-# Number of Reads 
+# Number of Reads
+
+## {.tabset .tabset-fade .tabset-pills}
+
+### All
 
 ```{r}
 ## Input CCS, LIMA, REFINE files
-
-# Input Directory Paths
-CCS_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/Isoseq3_WKD/CCS"
-LiMA_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/Isoseq3_WKD/LIMA"
-REFINE_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/Isoseq3_WKD/REFINE"
-# CCS, LIMA summary 
+# CCS, LIMA summary
 CCS <- read.csv(paste0(CCS_input_dir, "/All_CCS_output.csv"), header = T)
 LIMA <- read.csv(paste0(LiMA_input_dir, "/All_LIMA_summary.csv"), header = T)
-# REFINE summary input 
+# REFINE summary input
 REFINE_json_list <- list.files(paste0(REFINE_input_dir), pattern = "flnc.filter_summary.json", full.names = T)
 REFINE_list <- lapply(REFINE_json_list , function(x) as.data.frame(fromJSON(file = x)))
 names(REFINE_list) <- list.files(paste0(REFINE_input_dir), pattern = "flnc.filter_summary.json")
@@ -139,54 +160,54 @@ for(i in 1:length(names(REFINE_list))){
 }
 
 # number_of_reads
-# Aim: huge wrapper function to read in multiple files from CCS, LIMA and REFINE directory, and output 5 plots 
+# Aim: huge wrapper function to read in multiple files from CCS, LIMA and REFINE directory, and output 5 plots
 number_of_reads <- function(){
 
   ####################### CCS
-  # Extract only values from mix of values and percentage 
-  CCS_values <- cbind(as.character(CCS[,1]), apply(CCS[,-1], 2, function(x) word(x, c(1), sep = fixed("(")))) 
+  # Extract only values from mix of values and percentage
+  CCS_values <- cbind(as.character(CCS[,1]), apply(CCS[,-1], 2, function(x) word(x, c(1), sep = fixed("("))))
   colnames(CCS_values)[1] <- "Description"
-  CCS_values_mod <- as.data.frame(CCS_values) %>% melt(., id = "Description") %>% 
-    mutate(sample = word(variable, c(1), sep = fixed("_"))) 
+  CCS_values_mod <- as.data.frame(CCS_values) %>% melt(., id = "Description") %>%
+    mutate(sample = word(variable, c(1), sep = fixed("_")))
   CCS_values <<- CCS_values
- 
-   
+
+
   ####################### LIMA
   # Extract only values from the mix of values and percentage from LIMA output
-  LIMA_values <- data.frame(LIMA[,1],lapply(LIMA[,2:ncol(LIMA)], function(x) as.numeric(word(x, c(1),  sep = fixed ('(')) ))) 
+  LIMA_values <- data.frame(LIMA[,1],lapply(LIMA[,2:ncol(LIMA)], function(x) as.numeric(word(x, c(1),  sep = fixed ('(')) )))
   colnames(LIMA_values)[1] <- "Description"
-  LIMA_values_mod <- as.data.frame(LIMA_values) %>% melt(., id = "Description") %>% 
-    mutate(sample = word(variable, c(1), sep = fixed("_"))) 
+  LIMA_values_mod <- as.data.frame(LIMA_values) %>% melt(., id = "Description") %>%
+    mutate(sample = word(variable, c(1), sep = fixed("_")))
 
-  
+
   # Refine into one dataframe and data-wrangled for easy merging
   REFINE <- do.call("rbind", REFINE_list) %>%
     rownames_to_column(., var = "variable") %>%
     mutate(sample = word(variable, c(1), sep = fixed("."))) %>%
     as.data.frame() %>%
-    gather(., Description, value, 2:4, factor_key=TRUE) %>% 
+    gather(., Description, value, 2:4, factor_key=TRUE) %>%
     .[,c("Description","variable","value","sample")] %>%
     mutate(value = as.numeric(value))
-  
-  
+
+
   Reads <-   
     CCS_values_mod[CCS_values_mod$Description == "ZMWs input               ",] %>%
     bind_rows(CCS_values_mod[CCS_values_mod$Description == "ZMWs pass filters        ",],)  %>%
     mutate(value = as.numeric(value)) %>%
-    bind_rows(REFINE) %>% 
+    bind_rows(REFINE) %>%
     mutate(Description = as.character(Description))
 
   Reads$Description <- revalue(Reads$Description, c("ZMWs input               "="Polymerase Reads", "ZMWs pass filters        "="CCS Reads",
                                "num_reads_fl"="FL Reads", "num_reads_flnc"="FLNC reads",
                                "num_reads_flnc_polya" = "Poly-A FLNC reads"))
   levels(Reads$Description) <- c("Polymerase Reads","CCS Reads","FL Reads","FLNC reads","Poly-A FLNC reads")
-  
-  ### To calculate proportions to generate plots 
-  # total failed ccs reads 
+
+  ### To calculate proportions to generate plots
+  # total failed ccs reads
   failed_CCS_reads <- as.data.frame(CCS_values) %>% melt(., id = "Description") %>% filter(Description %in% c("ZMWs filtered       (C)  "))
   failed_LIMA_reads <- as.data.frame(LIMA_values) %>% melt(., id = "Description") %>% filter(Description %in% c("ZMWs below any threshold  (C) "))
-  
-  
+
+
   # classify Genotype in Reads
   Reads$Genotype <- lapply(Reads$sample, function(x)
   if(x %in% c("O18","K18","S18","L22","Q20","K24")){"TG"
@@ -196,7 +217,7 @@ number_of_reads <- function(){
   )
   Reads$Genotype <- unlist(Reads$Genotype)
 
-  # classify Genotype in CCS_values_mod for downstream plotting 
+  # classify Genotype in CCS_values_mod for downstream plotting
   CCS_values_mod$Genotype <- lapply(CCS_values_mod$sample, function(x)
   if(x %in% c("O18","K18","S18","L22","Q20","K24")){"TG"
   } else if (x %in% c("Q21","K17","M21","O23","S23","K23")){ "WT"
@@ -213,54 +234,87 @@ number_of_reads <- function(){
 Reads <- number_of_reads()
 
 
-# Plot total number of reads across WT and TG 
-p3 <- 
-  Reads %>% 
-  filter(Genotype != "J20") %>% 
-  ggplot(., aes(x = reorder(Description, -value), y = value, group = sample, colour = Genotype)) + 
+# Plot total number of reads across WT and TG
+p3 <-
+  Reads %>%
+  filter(Genotype != "J20") %>%
+  ggplot(., aes(x = reorder(Description, -value), y = value, group = sample, colour = Genotype)) +
       geom_line() + geom_point() +  mytheme + theme(legend.position = "bottom") + labs(x = "", y = "Number of Reads (Thousands)") +
-  scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) + 
-  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) 
+  scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3))
 
-p3 
+p3
 ```
 
+### Q21, O18
 
 ```{r}
-# Reason for Q21 and O18 failure 
+# Reason for Q21 and O18 failure
 failed_CCS_reads <- as.data.frame(CCS_values) %>% melt(., id = "Description") %>% filter(Description %in% c("ZMWs fail filters        "))
 
-p4 <- 
-  CCS_values_mod %>% 
+p4 <-
+  CCS_values_mod %>%
     filter(!Description %in% c("ZMWs input               ", "ZMWs pass filters        ", "ZMWs fail filters        ")) %>%
     filter(Genotype != "J20") %>%
     full_join(., failed_CCS_reads, by = "variable") %>%
     mutate(Perc = as.numeric(value.x)/as.numeric(value.y) * 100) %>%
-    filter(as.numeric(value.x) != 0) %>% 
+    filter(as.numeric(value.x) != 0) %>%
   ggplot(., aes(x = Perc, y = reorder(Description.x, Perc))) + geom_boxplot() + geom_jitter(aes(colour = Genotype)) +
-  mytheme + theme(legend.position = c(0.9,0.5)) + 
-  labs(x = "Failed polymerase reads (%)", y = "Rationale") + 
+  mytheme + theme(legend.position = c(0.9,0.5)) +
+  labs(x = "Failed polymerase reads (%)", y = "Rationale") +
   scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
   geom_text(x=73, y=11.5, label="O18",family="CM Roman")
 
 ```
 
+# Mapping
+
+## {.tabset .tabset-fade .tabset-pills}
+
+### Merged
+
+```{r}
+Merged_mapping <- read.table(paste0(mapping_input_dir,"/All_Merged_reads_with_alignment_statistics.txt"))
+
+# plot of Alignable length and identity
+pMergedMap <- Merged_mapping %>%
+  mutate(identity = V8 * 100) %>%
+  mutate(length = V6 * 100) %>%
+  ggplot(., aes(x = length, y = identity)) +
+  stat_density_2d(aes(fill = stat(level)), geom = "polygon") +
+  geom_point(size = 0.4, alpha = 0.25) +
+  scale_fill_distiller(palette=4, direction=1, name = "Density") +
+  mytheme + labs(x = "Alignment Length (%)", y = "Alignment Identity (%)", title = "\n\n") +
+  theme(legend.position = "none")
+
+pMergedMap
+```
 # Read Length Distribution across Samples
+
+`r cat("Sum of Polymerase Reads:", sum(sequenced$Polymerase.Reads),"\n")`
+`r cat("sd of Polymerase Reads", sd(sequenced$Polymerase.Reads),"\n") `
+`r cat("Range of Polymerase Reads", min(sequenced$Polymerase.Reads),"-",max(sequenced$Polymerase.Reads),"\n")`
+
+`r cat("Sum of Total Bases (Gb):", sum(sequenced$Total.Bases..GB.),"\n") `
+`r cat("sd of Total Bases (Gb)", sd(sequenced$Total.Bases..GB.),"\n") `
+`r cat("Range of Total Bases (Gb)", min(sequenced$Total.Bases..GB.),"-",max(sequenced$Total.Bases..GB.),"\n")`
+
+## {.tabset .tabset-fade .tabset-pills}
 
 ```{r}
 parse_lengths <- function(suffix_name, type){
-  
+
   # read in list of files ending with the input suffix name
   filenames <- as.list(list.files(path = lengths_input_dir, pattern = paste0(suffix_name,"$"), full.names = TRUE))
   files <- lapply(filenames, read.table)
   names(files) <- list.files(path = lengths_input_dir, pattern = paste0(suffix_name,"$"))
-  
+
   # differentiate files prior to merging by creating column with the name of the file
   for(i in 1:length(files)){files[[i]]$File <- names(files)[[i]]}
-  
-  # bind all files 
+
+  # bind all files
   all <- bind_rows(files)
-  
+
   # create column for sample (note the separator varies between files for CCS and collapsed)
   if(type == "CCS"){
     all <- all %>% mutate(Sample = word(File, c(1), sep = fixed("_"))) %>% mutate(Type = "CCS")
@@ -271,54 +325,73 @@ parse_lengths <- function(suffix_name, type){
   } else {
     print("Type argument either CCS or clustered or collapsed")
   }
-  
+
   # create column for genotype depending on the sample column
   all$Genotype <- ifelse(all$Sample %in% c("O18","K18","S18","L22","Q20","K24"), "TG","WT")
-  
+
   return(all)
 }
 
 violin_plot <- function(input_dat, type){
-  
+
   y_var <- if (type == "CCS"){ "CCS Read Length (kb)"
   } else if (type == "clustered"){ "Poly-A FLNC Read Length (kb)"
   } else if (type == "collapsed"){ "Collapsed Reads (Transcripts) (kb)"
   } else { print("Type argument either CCS or clustered or collapsed")
   }
-  
-  p <- input_dat %>% 
+
+  p <- input_dat %>%
     filter(!Sample %in% c("All_Merged","WT_Merged","TG_Merged")) %>%
-    ggplot(., aes(x=reorder(Sample,V2, median), y=V2, fill = Genotype)) + 
-    geom_violin(trim=FALSE) + 
+    ggplot(., aes(x=reorder(Sample,V2, median), y=V2, fill = Genotype)) +
+    geom_violin(trim=FALSE) +
     geom_boxplot(width=0.1) +
-    labs(y = y_var, x = "") + 
+    labs(y = y_var, x = "") +
     theme_bw() + mytheme +
     theme(legend.title = element_blank(), legend.position = c(0.9, 0.9)) +
-    scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) + 
+    scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
     scale_fill_manual(values = c(label_colour("WT"),label_colour("TG")))
-  
+
   return(p)
-  
+
 }
 
 all_ccs <- parse_lengths("ccs.fastq.seqlengths.txt","CCS")
 all_clustered <- parse_lengths("clustered.hq.fastq.seqlengths.txt","clustered")
 all_collapsed <- parse_lengths("collapsed.filtered.rep.fq.seqlengths.txt","collapsed")
+```
 
+### CCS
+
+```{r}
 # WT and TG CCS read lengths (individual samples)
 p5 <- violin_plot(all_ccs, "CCS")
+p5
+```
+
+### Isoseq3 Cluster
+
+```{r}
 p6 <- violin_plot(all_clustered, "clustered")
+p6
+```
+
+### Collapsed
+
+```{r}
 p7 <- violin_plot(all_collapsed, "collapsed")
+```
 
+### All
 
+```{r}
 # merged samples of CCS reads
-p8 <- bind_rows(all_ccs, all_clustered, all_collapsed) %>% 
-  ggplot(., aes(x = Type, y = V2, fill = Genotype)) + geom_violin() + 
-  geom_violin() + 
-  labs(y = "Read Length (kb)", x = "") + 
+p8 <- bind_rows(all_ccs, all_clustered, all_collapsed) %>%
+  ggplot(., aes(x = Type, y = V2, fill = Genotype)) + geom_violin() +
+  geom_violin() +
+  labs(y = "Read Length (kb)", x = "") +
   theme_bw() + mytheme +
   theme(legend.title = element_blank(), legend.position = c(0.9, 0.9)) +
-  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) + 
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
   scale_fill_manual(values = c(label_colour("WT"),label_colour("TG"))) +
   scale_x_discrete(breaks=c("CCS","Clustered","Collapsed"),
                    labels=c("CCS Reads", "Poly-A FLNC Reads", "Collapsed Reads (Transcripts)"))
@@ -326,13 +399,6 @@ p8 <- bind_rows(all_ccs, all_clustered, all_collapsed) %>%
 
 
 ```
-`r cat("Sum of Polymerase Reads:", sum(sequenced$Polymerase.Reads),"\n")`
-`r cat("sd of Polymerase Reads", sd(sequenced$Polymerase.Reads),"\n") `
-`r cat("Range of Polymerase Reads", min(sequenced$Polymerase.Reads),"-",max(sequenced$Polymerase.Reads),"\n")`
-
-`r cat("Sum of Total Bases (Gb):", sum(sequenced$Total.Bases..GB.),"\n") `
-`r cat("sd of Total Bases (Gb)", sd(sequenced$Total.Bases..GB.),"\n") `
-`r cat("Range of Total Bases (Gb)", min(sequenced$Total.Bases..GB.),"-",max(sequenced$Total.Bases..GB.),"\n")`
 
 ```{r}
 pdf(paste0(output_plot_dir,"/Tg4510_RunStats.pdf"), family="CM Roman", width = 8.5, height = 6.5)
@@ -344,7 +410,7 @@ p5
 p6
 p7
 p8
+pMergedMap
 dev.off()
 
 ```
-
