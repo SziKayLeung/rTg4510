@@ -1,5 +1,5 @@
 # Szi Kay Leung
-# Aim: To run differential gene expression using DESeq2 on Iso-Seq data alone 
+# Aim: To run differential gene expression using DESeq2 on Iso-Seq data alone
 # 02/11/2020: Using output from SQANTI3 (chained data as input) with FL read count for differential gene expression analysis
 
 library("dplyr")
@@ -11,13 +11,13 @@ library("vsn")
 library("pheatmap")
 library("gplots")
 
-
+input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Merged/SQANTI/"
 # read in SQANTI2 classification file of all merged data
-class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN_OLD/SQANTI3/all_samples.chained.rep_classification.filtered_lite_classification.txt",header=T)
+class <- read.table(paste0(input_dir,"WholeIsoSeq.collapsed.filtered_classification.filtered_lite_classification.txt"),header=T)
 
-# datawrangle for input to DESeq2 
+# datawrangle for input to DESeq2
 class[["transcript_name_id"]] <- paste0(class$associated_transcript,"_", class$isoform)
-countdata <- class[,c("transcript_name_id","FL.O18","FL.K18","FL.S18","FL.L22","FL.Q20","FL.K24","FL.Q21","FL.K17","FL.M21","FL.O23","FL.S23","FL.K23")] %>% column_to_rownames(., var = "transcript_name_id")
+countdata <- class[,c("transcript_name_id","FL.O18_TG","FL.K18_TG","FL.S18_TG","FL.L22_TG","FL.Q20_TG","FL.K24_TG","FL.Q21_WT","FL.K17_WT","FL.M21_WT","FL.O23_WT","FL.S23_WT","FL.K23_WT")] %>% column_to_rownames(., var = "transcript_name_id")
 countdata <- as.matrix(countdata)
 (condition <- factor(c(rep("TG", 6), rep("WT", 6))))
 
@@ -35,7 +35,7 @@ dds <- DESeq(dds)
 res <- DESeq2::results(dds)
 res
 
-# shrink 
+# shrink
 resLFC <- lfcShrink(dds, coef="condition_WT_vs_TG", type="apeglm")
 resLFC
 
@@ -129,7 +129,7 @@ percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(x = PC1, y = PC2, color=condition)) +
   geom_point(size=3) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) +
   coord_fixed()
 
 library("pheatmap")
@@ -162,11 +162,11 @@ volcanoplot <- function (res, lfcthresh=2, sigthresh=0.05, xlab="log2(Fold Chang
   with(subset(res, padj<sigthresh & abs(log2FoldChange)>lfcthresh), points(log2FoldChange, -log10(pvalue), pch=20, col="green", ...))
   legend(legendpos, xjust=1, yjust=1, legend=c(paste("p-adj<",sigthresh,sep=""), paste("|log2(FC)|>",lfcthresh,sep=""), "both"), cex=1.5, pch=20, col=c("blue","orange","green"))
 }
-volcanoplot(resdata, lfcthresh=2, sigthresh=0.05, xlim=c(-30, 30), ylim=c(0,30), legendpos="topright")
+volcanoplot(resdata, lfcthresh=2, sigthresh=0.05, legendpos="none")
 
 mm10_reference_file <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/gencode.vM22_gene_annotation_table.txt"
 mm10_reference <- read.table(mm10_reference_file,as.is = T, header=T, sep = "\t")
-DTU <- merge(DTU, mm10_reference[c("gene_id","GeneSymbol")], by.x = ("associated_gene"), by.y= "gene_id", all.x = T) %>% 
+DTU <- merge(DTU, mm10_reference[c("gene_id","GeneSymbol")], by.x = ("associated_gene"), by.y= "gene_id", all.x = T) %>%
   .[,c("isoform","GeneSymbol","associated_gene","associated_transcript","structural_category","subcategory",
        "u","WT_mean_exp","TG_mean_exp","WT_median_exp","TG_median_exp","mean_exp_diff","Direction",FL_count_colnames)]
 
