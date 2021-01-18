@@ -1,59 +1,80 @@
 # Szi Kay Leung
 # Aim: To run differential transcript usage using IsoformSwitchAnalyze.R
-# 23/11/2020: Using output from SQANTI3 (chained data as input) with FL read count for differential transcript usage
-# Prequisite: Run sqanti_gtf_modify.py --> all_samples.chained.rep_classification.filtered_lite_mod.gtf
+# 16/12/2020: Using SQANTI2 data from Whole Transcriptome 12 Tg4510 Samples
 
+##### Analysis #####
+# 1. Input SQANTI2 classification file, and prepare counts and abundance
+# 2. Importdata into IsoformSwitchAnalyzeR
+# 3. Filtering on Gene Expression and Isoform Expression level
+# 4. IsoformSwitchTestDEXSeq: Statiscal test for identifying Isoform Switching
+#*******************
+
+# Packages
 library(dplyr)
 library(IsoformSwitchAnalyzeR)
+options(scipen=999) # removal of scientific notation
 
-options(scipen=999) # removal of scientific notation 
+input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Merged/DEMUX_CUSTOM_ADJUST/"
 
-# read in SQANTI2 classification file of all merged data
-input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq/CHAIN_OLD/SQANTI3/"
-class <- read.table(paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite_classification.txt"),header=T)
+##### 1. Input #####
+##### Input SQANTI2 classification file, and prepare counts and abundance
 
-# PacBio isoform ID, keep only columns with isoform FL counts (and convert FL counts to TPM)
-counts <- class[, c("isoform","FL.K17","FL.K18","FL.K23","FL.K24","FL.L22","FL.M21","FL.O18","FL.O23","FL.Q20","FL.Q21","FL.S18","FL.S23")] 
-abundance <- cbind(counts[,1], as.data.frame(apply(counts[,-1],2, function(x) round(x/sum(x)*1000000,0))))
+# Read in SQANTI2 classification file of all merged data
+class <- read.table(paste0(input_dir,"SQANTI_TAMA_FILTER/WholeIsoSeq.collapsed_sqantitamafiltered.classification.txt"),header=T)
+
+# Prepare Counts: keep only PacBio isoform ID and columns with isoform FL counts
+samples <- c("K17_WT","O23_WT","K23_WT","M21_WT","S23_WT","Q21_WT","K18_TG", "O18_TG","Q20_TG","S18_TG","K24_TG","L22_TG")
+counts <- class[, c("isoform",paste("FL",samples, sep = "."))]
 colnames(counts)[1] <- c("isoform_id")
+
+# Prepare Abundance: Determine total FL reads and calculate TPM from counts
+# Read in abundance file generated from demultiplexing of read_stats.file
+input_abundance <- read.table(paste0(input_dir,"TOFU/WholeIsoSeq.Demultiplexed_Abundance.txt"),header=T, sep = ",")
+# Rearrange columns of abundance file to be the same as the counts file (sample order)
+input_abundance <- input_abundance[,c("id",samples)]
+# Check the input abundance file is the same as the counts file
+#counts %>% filter(isoform_id == "PB.100.15")
+#input_abundance %>% filter(id == "PB.100.15")
+
+# Determine total read counts from abundance file (with correct order as class file), minus the first col of isoform id
+total <- as.data.frame(colSums(input_abundance[,-1])) %>% rownames_to_column(., var = "sample") %>%
+  `colnames<-`(c("sample", "total")) %>%
+  spread(., sample, total)
+
+abundance <- as.data.frame(cbind(as.character(counts[,1]),mapply('/', counts[,-1], total) * 1000000))
 colnames(abundance)[1] <- c("isoform_id")
+# change from factor to numeric
+abundance[2:13] <- sapply(abundance[2:13],as.numeric)
 
+# check abundance correctly determined
+#abundance[abundance$isoform_id == "PB.1000.2",c("FL.K17_WT")]
+#counts[,c("isoform_id","FL.K17_WT")] %>% mutate(K17_abundance = FL.K17_WT / total$K17_WT * 1000000) %>% filter(isoform_id == "PB.1000.2")
 
+##### 2. ImportData #####
+##### ImportData into IsoformSwitchAnalyzeR
 # design dataframe input for IsoformSwitchAnalyzeR
 myDesign <- data.frame(
   sampleID = colnames(counts)[-1],
-  condition = c("WT", "TG", "WT", "TG","TG","WT","TG","WT","TG","WT","TG","WT")
+  condition = c("WT", "WT", "WT", "WT","WT","WT", "TG","TG","TG","TG","TG", "TG")
 )
-getCDS()
-
-# failed misannotation 
-misannotated <- c("PB.429.","PB.436.","PB.5107.","PB.13705","PB.430","PB.6677")
-counts_mod <- counts[!grepl(paste(misannotated,collapse="|"),counts$isoform_id),]
-abundance_mod <- abundance[!grepl(paste(misannotated,collapse="|"),abundance$isoform_id),]
+myDesign$age <- factor(c('2','8','8','2','8','2','2',"2","8","2","8","8"))
 
 # using SQANTI generated gtf and fasta, rather than gencode
 #isoformExonAnnoation = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite.gtf"),
 aSwitchList <- importRdata(
-  isoformCountMatrix   = counts_mod,
-  isoformRepExpression = abundance_mod,
+  isoformCountMatrix   = counts,
+  isoformRepExpression = abundance,
   designMatrix         = myDesign,
-  isoformExonAnnoation = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite_mod.gtf"),
-  isoformNtFasta       = paste0(input_dir,"all_samples.chained.rep_classification.filtered_lite.fasta"),
+  isoformExonAnnoation = paste0(input_dir,"/SQANTI_TAMA_FILTER/WholeIsoSeq.collapsed_sqantitamafiltered.classification.gtf"),
+  isoformNtFasta       = paste0(input_dir,"/SQANTI_TAMA_FILTER/WholeIsoSeq_sqantifiltered_tamafiltered_classification.fasta"),
 )
 
-
-# fudged aSwitchList to take the gene_id from the class_list rather than generated gene_id from gtf 
-#df <- merge(aSwitchList[["isoformFeatures"]], class[,c("isoform","associated_gene")], by.x = "isoform_id", by.y = "isoform")
-#df <- df[,c(2,30,1,30,5:29)]
-#colnames(df)[2] <- "gene_ref"
-#colnames(df)[4] <- "gene_id" 
-#df$gene_ref <- as.character(df$gene_ref)
-#df$gene_id <- as.character(df$gene_id)
-#aSwitchList[["isoformFeatures"]] <- df
-
-
-# isoformExpressionCutoff =, filtering on isoform expression allows removal of non-used isoforms that only appear in the switchAnalyzeRlist because they were in the isoform/gene annotation used. Furthermore, the expression filtering allows removal of lowly expressed isoforms where the expression levels might be untrustworthy. The filtering on gene expression allows for removal of lowly expressed genes which causes the calculations of the Isoform Fractions (IF) to become untrustworthy
-# removeSingleIsoformGenes = TRUE: Removal of single isoform genes is the default setting in preFilter() since these genes, per definition, cannot have changes in isoform usage.
+##### 3. Filtering #####
+##### Filtering on Gene Expression and Isoform Expression level
+# isoformExpressionCutoff = removal of lowly-expressed isoforms with potential untrustworthy expression levels
+# geneExpressionCutoff = removal of lowly-expressed genes, which cause untrustworthy calculations of the Isoform Fractions (IF)
+# removeSingleIsoformGenes = removal of single isoform genes that cannot have changes in isoform usage
+# The filtering removed 36475 ( 95.98% of ) transcripts. There is now 1526 isoforms left
 SwitchListFiltered <- preFilter(
   switchAnalyzeRlist = aSwitchList,
   geneExpressionCutoff = 5,
@@ -61,20 +82,25 @@ SwitchListFiltered <- preFilter(
   removeSingleIsoformGenes = TRUE)
 
 
-SwitchListAnalyzed <- isoformSwitchTestDEXSeq(
-  switchAnalyzeRlist = SwitchListFiltered,
-  reduceToSwitchingGenes=TRUE
-)
-
+##### 4. IsoformSwitch #####
+##### IsoformSwitchTestDEXSeq: Statiscal test for identifying Isoform Switching
+# reduceToSwitchingGenes = reduce/subset the switchAnalyzeRlist to genes which each contains at least one differential used isoform, as indicated by the alpha and dIFcutoff cutoffs, to speed up rest of workflow
+# reduceFurtherToGenesWithConsequencePotential = FALSE; i.e. do not further reduce/subset genes that only have differential used isoforms with consequences (i.e. protein domains) for curiousity
+# alpha = cutoff for fdr correct p-values to determine significant switches
+# dIFcutoff = cutoff for changes in absolute isoform usage to be considered switching
 SwitchListAnalyzed_Sg <- isoformSwitchTestDEXSeq(
   switchAnalyzeRlist = SwitchListFiltered,
   reduceToSwitchingGenes=TRUE,
-  reduceFurtherToGenesWithConsequencePotential = FALSE,
-  alpha = 0.05,
-  dIFcutoff = 0.1,
+  alpha = 0.05, # Default
+  dIFcutoff = 0.01, # Default (10%)
   onlySigIsoforms = FALSE
 )
 
+SwitchListAnalyzed_DrimSg <- isoformSwitchTestDRIMSeq(
+  switchAnalyzeRlist = SwitchListFiltered,
+  testIntegration='isoform_only',
+  reduceToSwitchingGenes=TRUE
+)
 
 extractSwitchSummary(SwitchListAnalyzed)
 SwitchListAnalyzed <- analyzeORF(
@@ -84,7 +110,7 @@ SwitchListAnalyzed <- analyzeORF(
 )
 
 SwitchListAnalyzed <- extractSequence(
-  SwitchListAnalyzed, 
+  SwitchListAnalyzed,
   writeToFile=TRUE,
   alsoSplitFastaFile=TRUE,
   filterAALength=TRUE
@@ -135,30 +161,30 @@ SwitchListAnalyzed <- analyzeSwitchConsequences(
 extractSwitchSummary(SwitchListAnalyzed, filterForConsequences = FALSE)
 extractSwitchSummary(SwitchListAnalyzed, dIFcutoff = 0.4, filterForConsequences = FALSE)
 extractTopSwitches(
-  SwitchListAnalyzedSubset, 
-  filterForConsequences = TRUE, 
-  n = NA, 
+  SwitchListAnalyzedSubset,
+  filterForConsequences = TRUE,
+  n = NA,
   sortByQvals = FALSE
 )
 
 SwitchListAnalyzedSubset <- subsetSwitchAnalyzeRlist(
-  SwitchListAnalyzed, 
+  SwitchListAnalyzed,
   SwitchListAnalyzed$isoformFeatures$condition_1 == 'TG'
 )
 
-SwitchListAnalyzedSubset 
+SwitchListAnalyzedSubset
 extractTopSwitches(
-  SwitchListAnalyzedSubset, 
-  filterForConsequences = TRUE, 
-  n = 2, 
+  SwitchListAnalyzedSubset,
+  filterForConsequences = TRUE,
+  n = 2,
   sortByQvals = TRUE
 )
 
 switchPlotTopSwitches(
-  switchAnalyzeRlist = SwitchListAnalyzed, 
-  n = Inf,                                          
+  switchAnalyzeRlist = SwitchListAnalyzed,
+  n = Inf,
   filterForConsequences = FALSE,
-  fileType = "pdf",                                 
+  fileType = "pdf",
   pathToOutput = "dtu-plots"
 )
 
@@ -204,7 +230,7 @@ ggplot(data=SwitchListAnalyzed$isoformFeatures, aes(x=gene_log2_fold_change, y=d
   geom_point(
     aes( color=abs(dIF) > 0.1 & isoform_switch_q_value < 0.05 ), # default cutoff
     size=1
-  ) + 
+  ) +
   facet_wrap(~ condition_2) +
   #facet_grid(condition_1 ~ condition_2) + # alternative to facet_wrap if you have overlapping conditions
   geom_hline(yintercept = 0, linetype='dashed') +
