@@ -12,7 +12,8 @@
 #SBATCH --error=All_Demultiplex.e
 
 # 15/12/2020: Merge all Samples and then demultiplex later for count matrix
-# 06/01/2020: Rerun with reduced coverage for cupcake parameters and TAMA filte
+# 06/01/2020: Rerun with reduced coverage for cupcake parameters and TAMA filter
+# 18/01/2021: Rerun with further reduced coverage to 85%
 
 #************************************* DEFINE GLOBAL VARIABLES
 All_Merged=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Merged
@@ -179,22 +180,7 @@ run_sqanti2(){
     fi
 
     mkdir Unfiltered_PNG
-    mv *png* Unfiltered_PNG/
-
-run_sqanti2(){
-    source activate sqanti2_py3
-
-    SQANTI2_DIR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/SQANTI2
-    CUPCAKE_SEQUENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence
-    REFERENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019
-    CAGE_DIR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/CAGE
-
-    echo "Processing Sample $1 for SQANTI2 QC"
-    cd $2
-
-    export PYTHONPATH=$PYTHONPATH:$CUPCAKE_SEQUENCE
-    python $SQANTI2_DIR/sqanti_qc2.py -v
-
+    mv *png* Unfiltered_PNG
 
     if python $SQANTI2_DIR/sqanti_filter2.py \
         $1"_classification.txt" \
@@ -224,6 +210,9 @@ tofu_params(){
     elif [ $5 = "reduced" ]; then
 	    echo "Processing Sample $1 for TOFU, with coverage 95% and identity 95%"
       collapse_isoforms_by_sam.py -c 0.95 -i 0.95 --input $2/$1.clustered.hq.fastq --fq -s $3/$1.sorted.sam --dun-merge-5-shorter -o $1 &> $1.collapse.log
+    elif [ $5 = "sigreduced" ]; then
+	    echo "Processing Sample $1 for TOFU, with coverage 85% and identity 95%"
+      collapse_isoforms_by_sam.py -c 0.85 -i 0.95 --input $2/$1.clustered.hq.fastq --fq -s $3/$1.sorted.sam --dun-merge-5-shorter -o $1 &> $1.collapse.log
 	  else
         echo "5th parameter has to be set to default or reduced"
     fi
@@ -279,17 +268,17 @@ TAMA_remove_fragments(){
 	  source deactivate
 }
 
-# TAMA_sqanti_filter <TAMA_remove_fragments.output> <sqanti_filtered_dir> <sqanti_output_name> <output_dir>
+# TAMA_sqanti_filter <TAMA_remove_fragments.output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_fasta> <output_prefix_name> <output_dir>
 TAMA_sqanti_filter(){
   source activate sqanti2_py3
   GENERALFUNC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/General/2_Transcriptome_Annotation
-  # Rscript .R <path/tama_filtered_output> <sqanti_filtered_dir> <sqanti_output_name> <output_dir>
-  Rscript $GENERALFUNC/tama_sqanti_classgtfsubset.R $1 $2 $3 $4
+  #Rscript .R <path/tama_filtered_output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <output_prefix_name> <output_dir>
+  Rscript $GENERALFUNC/TAMA/tama_sqanti_classgtfsubset.R $1 $2 $3 $4 $6 $7
   # extract fasta sequence based on the pbid (https://www.biostars.org/p/319099/)
   # script.py <path/sqanti_filtered.fasta> <path/retained_pbid_tama.txt> <path/output.fasta>
-  cd $4
+  cd $7
   awk '{ print $4 }' $1| cut -d ";" -f 2  > tama_retained_pbid.txt
-  python $GENERALFUNC/tama_sqanti_fastasubset.py $2/$3".filtered_classification.filtered_lite.fasta" $4/tama_retained_pbid.txt $4/$3"_sqantifiltered_tamafiltered_classification.fasta"
+  python $GENERALFUNC/TAMA/tama_sqanti_fastasubset.py $2/$5 $7/tama_retained_pbid.txt $7/$6"_sqantifiltered_tamafiltered_classification.fasta"
 }
 
 #************************************* Initial run (15/12/2021)
@@ -352,6 +341,19 @@ demux $All_Merged/DEMUX_CUSTOM_ADJUST/TOFU/WholeIsoSeq.collapsed.read_stat.txt $
 run_sqanti2 WholeIsoSeq.collapsed.filtered $All_Merged/DEMUX_CUSTOM_ADJUST/SQANTI $All_Merged/DEMUX_CUSTOM_ADJUST/TOFU/WholeIsoSeq.collapsed.filtered.gff $All_Merged/DEMUX_CUSTOM_ADJUST/TOFU/WholeIsoSeq.Demultiplexed_Abundance.txt
 TAMA_remove_fragments $All_Merged/DEMUX_CUSTOM_ADJUST/SQANTI/WholeIsoSeq.collapsed.filtered_classification.filtered_lite.gtf WholeIsoSeq $All_Merged/DEMUX_CUSTOM_ADJUST/TAMA_Filter
 
+#************************************* Rerun with changed cupcake parameters to 85% (08/01/2021)
+cd $All_Merged; mkdir DEMUX_c85; cd DEMUX_c85; mkdir TOFU TAMA_Filter SQANTI SQANTI_TAMA_FILTER
+# tofu <prefix_sample> <input_CLUSTERED_dir> <input_MAPPING_dir> <output_dir> <default/reduced/sigreduced>
+# demux <input path read.stat file> <input path of samples file> <path of output>
+# run_sqanti2 <sample_name> <working_directory> <collapsed.gtf> <count.txt>
+# TAMA_remove_fragments <input_collapsed.filtered.gff> <input/output_prefix_name> <input/output_dir>
+# TAMA_sqanti_filter <TAMA_remove_fragments.output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_fasta> <output_prefix_name> <output_dir>
+tofu_params WholeIsoSeq $All_Merged/IsoSeq $All_Merged/MAPPING $All_Merged/DEMUX_c85/TOFU sigreduced
+demux $All_Merged/DEMUX_c85/TOFU/WholeIsoSeq.collapsed.read_stat.txt $SAMPLES_LIST/Demultiplex_IsoSeq_Whole.csv $All_Merged/DEMUX_c85/TOFU/WholeIsoSeq.Demultiplexed_Abundance.txt
+run_sqanti2 WholeIsoSeq.collapsed.filtered $All_Merged/DEMUX_c85/SQANTI $All_Merged/DEMUX_c85/TOFU/WholeIsoSeq.collapsed.filtered.gff $All_Merged/DEMUX_c85/TOFU/WholeIsoSeq.Demultiplexed_Abundance.txt
+TAMA_remove_fragments $All_Merged/DEMUX_c85/SQANTI/WholeIsoSeq.collapsed.filtered_classification.filtered_lite.gtf WholeIsoSeq $All_Merged/DEMUX_c85/TAMA_Filter
+TAMA_sqanti_filter $All_Merged/DEMUX_c85/TAMA_Filter/WholeIsoSeq.bed $All_Merged/DEMUX_c85/SQANTI WholeIsoSeq.collapsed.filtered_classification.filtered_lite_classification.txt WholeIsoSeq.collapsed.filtered_classification.filtered_lite_classification.gtf WholeIsoSeq.collapsed.filtered_classification.filtered_lite_classification.fasta WholeIsoSeq $All_Merged/DEMUX_c85/SQANTI_TAMA_FILTER
+
 # check number  of isoforms from TAMA filter and retained match that from SQANTI
 wc -l $All_Merged/DEMUX_CUSTOM_ADJUST/TAMA_Filter/WholeIsoSeq.bed
 wc -l $All_Merged/DEMUX_CUSTOM_ADJUST/TAMA_Filter/WholeIsoSeq_discarded.txt
@@ -408,7 +410,7 @@ WT_SQANTI=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Tran
 demux $WT_TOFU/WT_Merged.collapsed.read_stat.txt $SAMPLES_LIST/Demultiplex_IsoSeq_Mouse_WT_Whole.csv $WT_SQANTI/WT.Demultipled_Abundance.txt
 run_sqanti2 WT_Merged.collapsed.filtered $WT_SQANTI $WT_TOFU/WT_Merged.collapsed.filtered.gff $WT_SQANTI/WT.Demultipled_Abundance.txt
 TAMA_remove_fragments $WT_SQANTI/WT_Merged.collapsed.filtered_classification.filtered_lite.gtf WT_Merged $WT_SQANTI
-TAMA_sqanti_filter $WT_SQANTI/WT_Merged.bed $WT_SQANTI WT_Merged.collapsed $WT_SQANTI
+TAMA_sqanti_filter $WT_SQANTI/WT_Merged.bed $WT_SQANTI WT_Merged.collapsed.filtered_classification.filtered_lite_classification.txt WT_Merged.collapsed.filtered_classification.filtered_lite_classification.gtf WT_Merged.collapsed.filtered_classification.filtered_lite_classification.fasta WT_Merged $WT_SQANTI
 
 ################ NCAM1 QC
 cd $All_Merged/DEMUX_CUSTOM_ADJUST/TOFU

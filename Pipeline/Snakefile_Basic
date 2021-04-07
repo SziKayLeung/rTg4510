@@ -1,0 +1,222 @@
+shell.executable("/bin/bash")
+
+import os
+import sys
+
+# https://stackoverflow.com/questions/40398091/how-to-do-a-partial-expand-in-snakemake
+rule all:
+    input:
+        expand(config["post_isoseq_output_dir"] + "/TOFU/{sample}/Sample.collapsed.filtered.rep.fa", sample=config["samples"].keys()),
+        config["post_isoseq_output_dir"] + "/TOFU/all_samples.chained.rep.fq",
+        config["post_isoseq_output_dir"] + "/SQANTI3/Sqanti.qc.log",
+        config["post_isoseq_output_dir"] + "/SQANTI3/Sqanti.filter.log"
+
+##### IsoSeq3
+rule ccs:
+    input:
+       subreads_bam = lambda wc: config["raw_dir"] + "/" + config["samples"][wc.sample]
+    output:
+       ccs_bam = config["isoseq_output_dir"] + "/CCS/{sample}_ccs.bam",
+       ccs_report_file = config["isoseq_output_dir"] + "/CCS/{sample}_ccs_report.txt"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    params:
+       cpasses = config["ccs_passes"],
+       minrq = config["min_rq"]
+    shell:"""
+       echo "Processing CCS on {input.subreads_bam}, called to {wildcards.sample}";
+       ccs --num-threads=32 --noPolish --minPasses={params.cpasses} --min-rq {params.minrq} {input.subreads_bam} {output.ccs_bam} --reportFile {output.ccs_report_file}
+    """
+
+rule lima:
+    input:
+       ccs_bam = config["isoseq_output_dir"] + "/CCS/{sample}_ccs.bam",
+       primer_fasta = config["primer_fasta"]
+    output:
+       fl_bam = config["isoseq_output_dir"] + "/LIMA/{sample}_fl.primer_5p--primer_3p.bam"
+    params:
+       output_dir = directory(config["isoseq_output_dir"] + "/LIMA/")
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+       cd {params.output_dir};
+       lima {input.ccs_bam} {input.primer_fasta} {wildcards.sample}_fl.bam --isoseq --dump-clips --dump-removed --peek-guess
+    """
+
+rule refine:
+    input:
+       fl_bam = config["isoseq_output_dir"] + "/LIMA/{sample}_fl.primer_5p--primer_3p.bam",
+       primer_fasta = config["primer_fasta"]
+    output:
+       flnc_bam = config["isoseq_output_dir"] + "/REFINE/{sample}_flnc.bam",
+       log_file = config["isoseq_output_dir"] + "/REFINE/{sample}_refine.log"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+       isoseq3 refine {input.fl_bam} {input.primer_fasta} {output.flnc_bam} --require-polya 2> {output.log_file}
+    """
+
+rule cluster:
+    input:
+       flnc_bam = config["isoseq_output_dir"] + "/REFINE/{sample}_flnc.bam"
+    output:
+       clustered_report = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.cluster_report.csv",
+       clustered_fastq = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.hq.fasta"
+    params:
+       output_dir = config["post_isoseq_output_dir"] + "/CLUSTER/"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    threads: 8
+    log:
+       config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_cluster.log"
+    shell:"""
+       cd {params.output_dir};
+       isoseq3 cluster {input.flnc_bam} {wildcards.sample}_clustered.bam --verbose --use-qvs ;
+       gunzip {wildcards.sample}_clustered.hq.fasta.gz;
+    """
+
+rule fasta2fastq:
+    input:
+       clustered_fasta = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.hq.fasta"
+    output:
+       clustered_fastq = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.hq.fastq"
+    params:
+       cupcake_sequence = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+       python {params.cupcake_sequence}/fa2fq.py {input.clustered_fasta} > {output.clustered_fastq}
+    """
+
+##################################### Post-IsoSeq3
+##### Mapping with Minimap2
+
+rule minimap2_index:
+    input:
+       reference_fa = config["transcriptome"]
+    output:
+       reference_mmi = config["post_isoseq_output_dir"] + "/MAPPING/mm10.mmi"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    params:
+        output_dir = config["post_isoseq_output_dir"] + "/MAPPING/",
+        reference_name = "mm10.mmi"
+    shell:"""
+       cd {params.output_dir};
+       minimap2 -d {params.reference_name} {input.reference_fa}
+    """
+
+
+rule map_reads:
+    input:
+       reference = config["post_isoseq_output_dir"] + "/MAPPING/mm10.mmi",
+       fastq = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.hq.fastq"
+    output:
+       mapped_sam = config["post_isoseq_output_dir"] + "/MAPPING/{sample}.clustered.hq.fastq.sam",
+       log_file = config["post_isoseq_output_dir"] + "/MAPPING/{sample}.clustered.hq.fastq.sam.log"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    params:
+       output_dir = config["post_isoseq_output_dir"] + "/MAPPING/"
+    shell:"""
+       cd {params.output_dir};
+       minimap2 -t 8 -ax splice -uf --secondary=no -C5 -O6,24 -B4 {input.reference} {input.fastq} > {output.mapped_sam} 2> {output.log_file}
+    """
+
+rule sort_map_reads:
+    input:
+        mapped_sam = config["post_isoseq_output_dir"] + "/MAPPING/{sample}.clustered.hq.fastq.sam"
+    output:
+        sorted_mapped_sam = config["post_isoseq_output_dir"] + "/MAPPING/{sample}.clustered.hq.fastq.sorted.sam"
+    params:
+       output_dir = config["post_isoseq_output_dir"] + "/MAPPING/"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+       cd {params.output_dir};
+       sort -k 3,3 -k 4,4n {input.mapped_sam} > {output.sorted_mapped_sam}
+    """
+
+##### TOFU Collapse
+rule tofu_collapse:
+    input:
+        fq = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.hq.fastq",
+        sorted_mapped_sam = config["post_isoseq_output_dir"] + "/MAPPING/{sample}.clustered.hq.fastq.sorted.sam",
+        clustered_report = config["post_isoseq_output_dir"] + "/CLUSTER/{sample}_clustered.cluster_report.csv"
+    output:
+        config["post_isoseq_output_dir"] + "/TOFU/{sample}/Sample.collapsed.filtered.rep.fa"
+    params:
+        output_dir = config["post_isoseq_output_dir"] + "/TOFU/{sample}",
+        cupcake = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/cupcake/tofu"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+       cd {params.output_dir};
+       python {params.cupcake}/collapse_isoforms_by_sam.py --fq --input {input.fq} -s {input.sorted_mapped_sam} --dun-merge-5-shorter -o Sample &> collapse_log_file;
+       python {params.cupcake}/get_abundance_post_collapse.py Sample.collapsed {input.clustered_report} 2> abundance_log_file;
+       python {params.cupcake}/filter_away_subset.py Sample.collapsed 2> filter_log_file;
+       seqtk seq -a Sample.collapsed.filtered.rep.fq > Sample.collapsed.filtered.rep.fa;
+    """
+
+rule chain_collapse:
+    input:
+        config_file = config["chain_config"],
+        tofu = expand(rules.tofu_collapse.output, sample=config["samples"].keys()) # ensure only run after tofu collapse
+    output:
+        log_file = config["isoseq_output_dir"] + "/TOFU/Chained_Configuration.log",
+        chained_fa = config["post_isoseq_output_dir"] + "/TOFU/all_samples.chained.rep.fq",
+        chained_gtf = config["post_isoseq_output_dir"] + "/TOFU/all_samples.chained.gff",
+        chained_abundance = config["post_isoseq_output_dir"] + "/TOFU/all_samples.chained_count.txt"
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    params:
+        cupcake_counting = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/cupcake/tofu/counting",
+        output_dir = config["post_isoseq_output_dir"] + "/TOFU/"
+    shell: """
+        cd {params.output_dir};
+        python {params.cupcake_counting}/chain_samples.py {input.config_file} count_fl --dun-merge-5-shorter 2> {output.log_file}
+    """
+
+rule sqanti_qc:
+    input:
+        chained_gtf = config["post_isoseq_output_dir"] + "/TOFU/all_samples.chained.gff",
+        chained_abundance = config["post_isoseq_output_dir"] + "/TOFU/all_samples.chained_count.txt",
+        reference_fa = config["transcriptome"],
+        reference_gtf = config["annotation"]
+    output:
+        log_file = config["post_isoseq_output_dir"] + "/SQANTI3/Sqanti.qc.log",
+        sqanti_classification = config["post_isoseq_output_dir"] + "/SQANTI3/all_samples.chained_classification.txt",
+        sqanti_fasta = config["post_isoseq_output_dir"] + "/SQANTI3/all_samples.chained_corrected.fasta",
+        sqanti_gtf = config["post_isoseq_output_dir"] + "/SQANTI3/all_samples.chained_corrected.gtf",
+    params:
+        cupcake_sequence = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence",
+        sqanti_dir = config["post_isoseq_output_dir"] + "/SQANTI3/",
+        sqanti_software_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/SQANTI3",
+        cage_peak = config["cage_peaks"],
+        polyA = config["polyA_motif"]
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+        cd {params.sqanti_dir};
+        export PYTHONPATH=$PYTHONPATH:{params.cupcake_sequence};
+        python {params.sqanti_software_dir}/sqanti3_qc.py -t 30 --gtf {input.chained_gtf} {input.reference_gtf} {input.reference_fa} -fl {input.chained_abundance} --cage_peak {params.cage_peak} --polyA_motif_list {params.polyA} 2> {output.log_file}
+    """
+
+rule sqanti_filter:
+    input:
+        sqanti_classification = config["post_isoseq_output_dir"] + "/SQANTI3/all_samples.chained_classification.txt",
+        sqanti_fasta = config["post_isoseq_output_dir"] + "/SQANTI3/all_samples.chained_corrected.fasta",
+        sqanti_gtf = config["post_isoseq_output_dir"] + "/SQANTI3/all_samples.chained_corrected.gtf",
+    output:
+        log_file = config["post_isoseq_output_dir"] + "/SQANTI3/Sqanti.filter.log"
+    params:
+        cupcake_sequence = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence",
+        sqanti_dir = config["isoseq_output_dir"] + "/SQANTI3/",
+        sqanti_software_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/SQANTI3",
+    conda:
+       "sqanti2_py3_snakemake.yaml"
+    shell:"""
+        cd {params.sqanti_dir};
+        export PYTHONPATH=$PYTHONPATH:{params.cupcake_sequence};
+        python {params.sqanti_software_dir}/sqanti3_RulesFilter.py -a 0.6 -c 3 {input.sqanti_classification} {input.sqanti_fasta} {input.sqanti_gtf} 2> {output.log_file}
+    """

@@ -1,0 +1,57 @@
+---
+raw_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Rawdata"
+cupcake_sequence: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence"
+sqanti: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/SQANTI3"
+
+isoseq_output_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Testing/Snakemake"
+post_isoseq_output_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Testing/Snakemake"
+
+transcriptome: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/mm10.fa"
+annotation: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/gencode.vM22.annotation.gtf"
+
+
+samples:
+    O18: m54082_180605_141944.subreads.bam   # 2. Tg4510_WT_2mos
+    K18: m54082_190307_045507.subreads.bam   # 4. Tg4510_TG_2mos
+
+
+## CCS Parameters
+ccs_passes: 1
+min_rq: 0.9
+
+## LIMA, REFINE Parameters
+primer_fasta: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/primer.fasta"
+
+## Chaining
+#cat << EOF > /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Testing/Snakemake/Chained_Configuration.txt
+#SAMPLE=O18;/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Testing/Snakemake/TOFU/O18
+#SAMPLE=K18;/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Testing/Snakemake/TOFU/K18
+
+#GROUP_FILENAME=Sample.collapsed.group.txt
+#GFF_FILENAME=Sample.collapsed.filtered.gff
+#COUNT_FILENAME=Sample.collapsed.filtered.abundance.txt
+#FASTQ_FILENAME=Sample.collapsed.filtered.rep.fq
+#EOF
+chain_config: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/1_Transcriptome_Annotation/Snakemake/Chain_Configuration.txt"
+
+RNASeq_Filtered_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/RNASeq/all_filtered/Tg4510_filtered"
+RNASeq_STAR_dir: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Testing/RNASeq"
+
+RNASeq_Expression_Samples: [Q21 O18 L22 K18 O23 S23 S18 K17 M21 K23 Q20 K24]
+RNASeq_STAR_files: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/Q21/Q21.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/O18/O18.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/L22/L22.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/K18/K18.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/O23/O23.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/S23/S23.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/S18/S18.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/K17/K17.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/M21/M21.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/K23/K23.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/Q20/Q20.SJ.out.bed,\
+/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual_Samples/RNASeq/K24/K24.SJ.out.bed"
+
+cage_peaks: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/CAGE/mm10.cage_peak_phase1and2combined_coord.bed"
+polyA_motif: "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/human.polyA.list.txt"
+
+Kallisto_Output_Name: "All"
