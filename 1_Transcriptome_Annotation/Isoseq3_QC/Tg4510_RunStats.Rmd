@@ -71,7 +71,11 @@ genotype_classification <- function(sample){
 
 
 # output directory
+<<<<<<< HEAD
 output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/WholeTranscriptome/Rmarkdown"
+=======
+output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Rmarkdown"
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 
 ```
@@ -84,6 +88,7 @@ sequenced$Genotype <- factor(sequenced$Genotype, levels=c("WT", "TG"))
 
 
 # Input IsoSeq Paths
+<<<<<<< HEAD
 CCS_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/IsoSeq/CCS"
 LiMA_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/IsoSeq/LIMA"
 REFINE_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/IsoSeq/REFINE"
@@ -100,6 +105,19 @@ all_mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Is
 # sample run 
 sample_run <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/IsoSeq_Processing/Mouse/All_Tg4510_Demultiplex.csv")
 
+=======
+CCS_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/CCS"
+LiMA_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/LIMA"
+REFINE_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/REFINE"
+
+# Input Lengths Paths
+lengths_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/QC/Read_Lengths"
+
+# Input mapping paths
+mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/MOUSE/MAPPING/PAF"
+all_mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/MAPPING"
+
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 # Tg4510 Yield Output
@@ -154,8 +172,13 @@ res
 ```{r}
 ## Input CCS, LIMA, REFINE files
 # CCS, LIMA summary
+<<<<<<< HEAD
 CCS <- read.csv(paste0(CCS_input_dir, "/WholeIsoSeqAll_CCS_output.csv"), header = T)
 LIMA <- read.csv(paste0(LiMA_input_dir, "/WholeIsoSeqAll_LIMA_summary.csv"), header = T)
+=======
+CCS <- read.csv(paste0(CCS_input_dir, "/All_CCS_output.csv"), header = T)
+LIMA <- read.csv(paste0(LiMA_input_dir, "/All_LIMA_summary.csv"), header = T)
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 # REFINE summary input
 REFINE_json_list <- list.files(paste0(REFINE_input_dir), pattern = "flnc.filter_summary.json", full.names = T)
 REFINE_list <- lapply(REFINE_json_list , function(x) as.data.frame(fromJSON(file = x)))
@@ -163,6 +186,7 @@ names(REFINE_list) <- list.files(paste0(REFINE_input_dir), pattern = "flnc.filte
 for(i in 1:length(names(REFINE_list))){
   REFINE_list[[i]]$Sample <- names(REFINE_list)[[i]]
 }
+<<<<<<< HEAD
 # CLUSTER summary input
 CLUSTER_list_names <- list.files(paste0(CLUSTER_input_dir), pattern = ".cluster_report.csv", full.names = T)
 CLUSTER_list <- lapply(CLUSTER_list_names, function(x) read.csv(x))
@@ -181,6 +205,8 @@ transcript_per_sample <- CLUSTER_merge %>% mutate(sample = word(read_id, c(1), s
 transcript_per_sample <- merge(transcript_per_sample,sample_run, by.x = "sample", by.y = "run_id")
 res <- t.test(n ~ phenotype , data = transcript_per_sample, var.equal = TRUE)
 res
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 # number_of_reads
 # Aim: huge wrapper function to read in multiple files from CCS, LIMA and REFINE directory, and output 5 plots
@@ -212,6 +238,7 @@ number_of_reads <- function(){
     .[,c("Description","variable","value","sample")] %>%
     mutate(value = as.numeric(value))
 
+<<<<<<< HEAD
   
   CLUSTER <- do.call("rbind",CLUSTER_list) %>% 
     rownames_to_column(., var = "variable") %>%
@@ -223,19 +250,30 @@ number_of_reads <- function(){
     .[,c(3,4,2,1)] 
   colnames(CLUSTER)[3] <- "value"
   
+=======
+
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
   Reads <-   
     CCS_values_mod[CCS_values_mod$Description == "ZMWs input               ",] %>%
     bind_rows(CCS_values_mod[CCS_values_mod$Description == "ZMWs pass filters        ",],)  %>%
     mutate(value = as.numeric(value)) %>%
     bind_rows(REFINE) %>%
+<<<<<<< HEAD
     bind_rows(CLUSTER) %>%
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
     mutate(Description = as.character(Description))
 
   Reads$Description <- revalue(Reads$Description, c("ZMWs input               "="Polymerase Reads", "ZMWs pass filters        "="CCS Reads",
                                "num_reads_fl"="FL Reads", "num_reads_flnc"="FLNC reads",
+<<<<<<< HEAD
                                "num_reads_flnc_polya" = "Poly-A FLNC reads",
                                "Clustered_transcripts" = "Transcripts"))
   levels(Reads$Description) <- c("Polymerase Reads","CCS Reads","FL Reads","FLNC reads","Poly-A FLNC reads","Transcripts")
+=======
+                               "num_reads_flnc_polya" = "Poly-A FLNC reads"))
+  levels(Reads$Description) <- c("Polymerase Reads","CCS Reads","FL Reads","FLNC reads","Poly-A FLNC reads")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
   ### To calculate proportions to generate plots
   # total failed ccs reads
@@ -268,17 +306,26 @@ number_of_reads <- function(){
 
 Reads <- number_of_reads()
 
+<<<<<<< HEAD
 # Plot total number of reads across WT and TG
 p3 <-
   Reads %>%
   filter(Genotype != "J20") %>% 
   filter(Description != "Transcripts") %>% 
+=======
+
+# Plot total number of reads across WT and TG
+p3 <-
+  Reads %>%
+  filter(Genotype != "J20") %>%
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
   ggplot(., aes(x = reorder(Description, -value), y = value, group = sample, colour = Genotype)) +
       geom_line() + geom_point() +  mytheme + theme(legend.position = "bottom") + labs(x = "", y = "Number of Reads (Thousands)") +
   scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
   scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3))
 
 p3
+<<<<<<< HEAD
 
 Reads %>%
   filter(Genotype != "J20") %>% 
@@ -303,6 +350,10 @@ Total - `r sum(Reads[Reads$Description == "Transcripts","value"])
 Mean - `r mean(Reads[Reads$Description == "Transcripts","value"])/1000`K (sd: `r round(sd(Reads[Reads$Description == "Transcripts","value"])/1000,5)`, `r round(min(Reads[Reads$Description == "Transcripts","value"])/1000,5)` -
 `r round(max(Reads[Reads$Description == "Transcripts","value"])/1000,5)`)
 
+=======
+```
+
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ### Q21, O18
 
 ```{r}
@@ -331,6 +382,7 @@ p4 <-
 ### Merged
 
 ```{r}
+<<<<<<< HEAD
 Merged_mapping <- read.table(paste0(mapping_input_dir,"/WholeIsoSeq_reads_with_alignment_statistics.txt"))
 
 # duplicated multi-mapping
@@ -339,6 +391,9 @@ nrow(Merged_Mapping_dup[Merged_Mapping_dup$n > 1,])
 
 # Threshold 
 Merged_mapping %>% filter(V8 > 0.85 & V6 > 0.95) %>% nrow()
+=======
+Merged_mapping <- read.table(paste0(mapping_input_dir,"/All_Merged_reads_with_alignment_statistics.txt"))
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 # plot of Alignable length and identity
 pMergedMap <- Merged_mapping %>%
@@ -366,7 +421,11 @@ pMergedMap
 ## {.tabset .tabset-fade .tabset-pills}
 
 ```{r}
+<<<<<<< HEAD
 parse_lengths <- function(lengths_input_dir,suffix_name, type){
+=======
+parse_lengths <- function(suffix_name, type){
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
   # read in list of files ending with the input suffix name
   filenames <- as.list(list.files(path = lengths_input_dir, pattern = paste0(suffix_name,"$"), full.names = TRUE))
@@ -381,7 +440,11 @@ parse_lengths <- function(lengths_input_dir,suffix_name, type){
 
   # create column for sample (note the separator varies between files for CCS and collapsed)
   if(type == "CCS"){
+<<<<<<< HEAD
     all <- all %>% mutate(Sample = word(File, c(1), sep = fixed("."))) %>% mutate(Type = "CCS")
+=======
+    all <- all %>% mutate(Sample = word(File, c(1), sep = fixed("_"))) %>% mutate(Type = "CCS")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
   } else if(type == "clustered"){
     all <- all %>% mutate(Sample = word(File, c(1), sep = fixed("."))) %>% mutate(Type = "Clustered")
   } else if(type == "collapsed"){
@@ -419,9 +482,15 @@ violin_plot <- function(input_dat, type){
 
 }
 
+<<<<<<< HEAD
 all_ccs <- parse_lengths(ccs_lengths_input_dir,"ccs.fasta.seqlengths.txt","CCS")
 all_clustered <- parse_lengths(cluster_lengths_input_dir,"clustered.hq.fasta.seqlengths.txt","clustered")
 #all_collapsed <- parse_lengths("collapsed.filtered.rep.fq.seqlengths.txt","collapsed")
+=======
+all_ccs <- parse_lengths("ccs.fastq.seqlengths.txt","CCS")
+all_clustered <- parse_lengths("clustered.hq.fastq.seqlengths.txt","clustered")
+all_collapsed <- parse_lengths("collapsed.filtered.rep.fq.seqlengths.txt","collapsed")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 ### CCS
@@ -436,7 +505,11 @@ p5
 
 ```{r}
 p6 <- violin_plot(all_clustered, "clustered")
+<<<<<<< HEAD
 #p6
+=======
+p6
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 ### Collapsed

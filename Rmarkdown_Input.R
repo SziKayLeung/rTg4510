@@ -46,9 +46,12 @@ label_colour <- function(genotype){
   return(colour)
 }
 
+<<<<<<< HEAD:Rmarkdown_Input.R
 # To scale axis into 1000s
 ks <- function(x){ format(x/1000, big.mark=",")} 
 
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:Rmarkdown_Input.R
 #
 input_multiple_csv <- function(input_dir_path, str_pattern){
   dat_files <- list.files(paste0(input_dir_path), pattern = str_pattern, full.names = T)
@@ -82,6 +85,7 @@ plot_boxplot <- function(dat, x_var, y_var, xlabel, ylabel, group_var){
 
   return(p)
 
+<<<<<<< HEAD:Rmarkdown_Input.R
 }
 
 # read_merge_gtf
@@ -122,6 +126,48 @@ read_gtf <- function(gtf_input){
   return(input)
 }
 
+=======
+}
+
+# read_merge_gtf
+# Aim: Extract coordinates with output sqanti2 filtered gtf file and merge with sqanti2 classification.txt using PBID
+# Input: sqanti2.classification.gtf and sqanti2_classification file (already read)
+# Output: dataframe with 3 columns: V9 from input gtf file, genome coordinates, isoform (pacbio id)
+read_merge_gtf <- function(gtf_input, sqanti2_class){
+  # read in gff
+  input <- read.delim(gtf_input, header=F, comment.char="#") %>%
+    # filter only transcripts in column 3
+    filter(V3 == "transcript") %>%
+    # take only chromosome (V1), start coordinates (V4), end coordinates (v5)
+    mutate(gtf_coordinates = paste(V1,":", V4,"-", V5)) %>%
+    .[,-c(1:8)]
+
+  # create separate column for merging
+  input$isoform <- word(input$V9,2, sep = ";")
+  input$isoform <- word(input$isoform,3, sep = " ")
+  input$isoform <- gsub('"', '', input$isoform)
+
+  final_merge <- merge(input, sqanti2_class, by = "isoform", all.y = TRUE)
+  return(final_merge)
+}
+
+read_gtf <- function(gtf_input){
+  input <- read.delim(gtf_input, header=F, comment.char="#") %>%
+    # filter only transcripts in column 3
+    filter(V3 == "transcript") %>%
+    # take only chromosome (V1), start coordinates (V4), end coordinates (v5)
+    mutate(gtf_coordinates = paste(V1,":", V4,"-", V5)) %>%
+    .[,-c(1:8)]
+
+  # create separate column for merging
+  input$isoform <- word(input$V9,2, sep = ";")
+  input$isoform <- word(input$isoform,3, sep = " ")
+  input$isoform <- gsub('"', '', input$isoform)
+
+  return(input)
+}
+
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:Rmarkdown_Input.R
 
 plot_line <- function(dat, x_var, y_var, xlabel, ylabel, group_var){
 
@@ -326,6 +372,7 @@ venn_diagram_plot_twocircles <- function(set1, set2, label_set1, label_set2){
 
 }
 
+<<<<<<< HEAD:Rmarkdown_Input.R
 venn_diagram_plot_threecircles <- function(set1, set2, set3, label_set1, label_set2, label_set3){
   
   # not to generate log file
@@ -366,5 +413,7 @@ venn_diagram_plot_threecircles <- function(set1, set2, set3, label_set1, label_s
 
 
 
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:Rmarkdown_Input.R
 # output directory
 output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/QC/Rmarkdown"

@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+<<<<<<< HEAD
 # script.R <refine_dir> <input_cluster_report> <input_tofu_readstat> <output_path_file>
 # script.R /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/IsoSeq/REFINE /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/All_Targeted_Merged/CLUSTER/All_Targeted_Merged.clustered.cluster_report.csv /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/All_Targeted_Merged/TOFU/All_Targeted_Merged.collapsed.read_stat.txt
 
@@ -17,6 +18,16 @@ output_path_file <- args[4]
 flnc_report <- list.files(path = refine_dir, pattern = "*flnc.report.csv", full.names = T)
 flnc_report_names <- list.files(path = refine_dir, pattern = "*flnc.report.csv")
 cat("Processing:", flnc_report, "\n")
+=======
+
+library("stringr")
+library("dplyr")
+library("tidyr")
+
+refine_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/IsoSeq/REFINE"
+flnc_report <- list.files(path = refine_dir, pattern = "*flnc.report.csv", full.names = T)
+flnc_report_names <- list.files(path = refine_dir, pattern = "*flnc.report.csv")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 report <- lapply(flnc_report, function(x) read.csv(x))
 names(report) <- flnc_report_names
@@ -28,8 +39,12 @@ n_occur <- data.frame(table(all$id))
 n_occur[n_occur$Freq > 1,]
 
 # check ids from flnc report is within the clustered.csv
+<<<<<<< HEAD
 cat("Using:", input_cluster_report, "\n")
 cluster_report <- read.csv(input_cluster_report)
+=======
+cluster_report <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/All_Targeted_Merged/CLUSTER/All_Targeted_Merged.clustered.cluster_report.csv")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 # clusterd report contains a subset if id from flnc report
 # not included ids are lowly clustered
@@ -37,8 +52,13 @@ setdiff(all$id, cluster_report$read_id)
 setdiff(cluster_report$read_id,all$id)
 
 # check ids from flnc report same as the read_stats.txt from All merged data
+<<<<<<< HEAD
 cat("Using:", input_tofu_readstat, "\n")
 read_stats <- read.table(input_tofu_readstat, header = TRUE)
+=======
+read_stats <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/All_Targeted_Merged/TOFU/All_Targeted_Merged.collapsed.read_stat.txt",
+                         header = TRUE)
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 # id from clustered report same as the read_stats
 setdiff(cluster_report$read_id, read_stats$id)
@@ -55,5 +75,10 @@ final_output <- spread(final_counts, sample,n)
 colnames(final_output)[1] <- "id"
 final_output[is.na(final_output)] <- 0
 
+<<<<<<< HEAD
 cat("Output:", output_path_file, "\n")
 write.csv(final_output,output_path_file,row.names = FALSE, quote = FALSE)
+=======
+write.csv(final_output,"/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/All_Targeted_Merged/TOFU/All_Targeted_Merged.Demultipled_Abundance.txt",
+          row.names = FALSE, quote = FALSE)
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5

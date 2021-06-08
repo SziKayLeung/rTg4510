@@ -51,8 +51,11 @@ targeted_genes <- c("Abca1","Abca7","Ank1","Apoe","App","Bin1","Cd33","Clu","Fus
 **Previously using ERCC**, demonstrated with ERCC that cupcake's coverage default parameter at 99% is too stringent, with 20 lowly-expressed ERCCs discarded. 
 **therefore**, reran demux pipeline on merged whole transcriptome data (n = 12) but using a lower coverage threshold (95%).  
 
+<<<<<<< HEAD
 **Mapping alignment of merged whole transcriptome data** further showed signicant number of transcripts that had a lower coverage, and would have been discarded, **therefore**, reran demux pipeline on merged whole transcriptome data (n = 12) but using a lower coverage threshold (85%).
 
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 # Method
 
 Checking the number of transcripts throughout pipeline from alignment with mouse genome (Minimap2):  
@@ -122,6 +125,7 @@ all_read <- function(root_dir){
 }
 
 # coverage threshold at 99%
+<<<<<<< HEAD
 testing_para <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Merged/Testing_Parameters"
 c99_dir <- paste0(testing_para,"/DEMUX_CUSTOM/")
 c99 <- all_read(c99_dir)
@@ -134,12 +138,25 @@ c95 <- all_read(c95_dir)
 c85_dir <-  paste0(testing_para,"/DEMUX_c85/")
 c85 <- all_read(c85_dir)
 
+=======
+c99_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Merged/DEMUX_CUSTOM/"
+c99 <- all_read(c99_dir)
+
+# coverage threshold at 95%
+c95_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Merged/DEMUX_CUSTOM_ADJUST/"
+c95 <- all_read(c95_dir)
+
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 # Mapping
 
 ```{r}
+<<<<<<< HEAD
 mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/MOUSE/MAPPING/PAF"
+=======
+
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 Merged_mapping <- read.table(paste0(mapping_input_dir,"/All_Merged_reads_with_alignment_statistics.txt"))
 
 # plot of Alignable length and identity
@@ -174,23 +191,35 @@ As expected, all the transcripts discarded in 95% coverage dataset are within th
 #### Numbers 
 ```{r}
 num <- bind_rows(sapply(c99, nrow) %>% melt() %>% rownames_to_column(., var = "fileinput") %>% mutate(type = "coverage_99"),
+<<<<<<< HEAD
           sapply(c95, nrow) %>% melt() %>% rownames_to_column(., var = "fileinput") %>% mutate(type = "coverage_95"), 
           sapply(c85, nrow) %>% melt() %>% rownames_to_column(., var = "fileinput") %>% mutate(type = "coverage_85")) 
+=======
+          sapply(c95, nrow) %>% melt() %>% rownames_to_column(., var = "fileinput") %>% mutate(type = "coverage_95")) 
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 num %>% filter(fileinput == "cup_coll_ign") %>% 
   ggplot(., aes(x = fileinput, y = value, fill = type)) + geom_bar(stat = "identity", position = position_dodge()) + 
   labs(y = "Number of Transcripts Discarded", x = "") + mytheme +
   scale_x_discrete(labels=c("Cupcake Collapse")) +
+<<<<<<< HEAD
   scale_fill_discrete(labels = c("85% Coverage","95% Coverage","99% Coverage"), name = "")
+=======
+  scale_fill_discrete(labels = c("95% Coverage","99% Coverage"), name = "")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 ```
 
 #### Overlap
 
 ```{r}
+<<<<<<< HEAD
 # intentional mislabelling due to misleading labelling from venn diagram otherwise
 grid.draw(venn_diagram_plot_threecircles(c95$cup_coll_ign$V1,c85$cup_coll_ign$V1,c99$cup_coll_ign$V1,"99% Coverage","85% Coverage","95% Coverage"))
 #grid.draw(venn_diagram_plot_twocircles(c95$cup_coll_ign$V1,c99$cup_coll_ign$V1,"95% Coverage","99% Coverage"))
+=======
+grid.draw(venn_diagram_plot_twocircles(c99$cup_coll_ign$V1,c95$cup_coll_ign$V1,"99% Coverage","95% Coverage"))
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 ### Number of unique isoforms
@@ -202,7 +231,11 @@ ggplot(df, aes(x = fileinput, y = value, fill = type)) +
   geom_bar(stat = "identity", position = position_dodge()) + 
   labs(y = "Number of Isoforms", x = "") + mytheme +
   scale_x_discrete(labels=c("Cupcake Collapse","Cupcake Filter","Sqanti","Sqanti Filter","Post Tama")) +
+<<<<<<< HEAD
   scale_fill_discrete(labels = c("85% Coverage", "95% Coverage","99% Coverage"), name = "") +
+=======
+  scale_fill_discrete(labels = c("95% Coverage","99% Coverage"), name = "") +
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
 
@@ -217,7 +250,10 @@ Cupcake filter removes any 5' degraded products. Interestingly, while cupcake co
 
 ```{r}
 grid.draw(venn_diagram_plot_twocircles(c99$cup_fil$pbid,c95$cup_fil$pbid,"99% Coverage","95% Coverage"))
+<<<<<<< HEAD
 grid.draw(venn_diagram_plot_threecircles(c99$cup_fil$pbid,c85$cup_fil$pbid,c95$cup_fil$pbid,"99% Coverage","85% Coverage","95% Coverage"))
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 ### Sqanti {.tabset .tabset-pills}
@@ -225,8 +261,12 @@ grid.draw(venn_diagram_plot_threecircles(c99$cup_fil$pbid,c85$cup_fil$pbid,c95$c
 #### Overlap
 
 ```{r}
+<<<<<<< HEAD
 #grid.draw(venn_diagram_plot_twocircles(c99$sq$gtf_coordinates,c95$sq$gtf_coordinates,"99% Coverage","95% Coverage"))
 grid.draw(venn_diagram_plot_threecircles(c99$sq$gtf_coordinates,c85$sq$gtf_coordinates,c95$sq$gtf_coordinates,"99% Coverage","85% Coverage","95% Coverage"))
+=======
+grid.draw(venn_diagram_plot_twocircles(c99$sq$gtf_coordinates,c95$sq$gtf_coordinates,"99% Coverage","95% Coverage"))
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 #### 99% Coverage {.tabset .tabset-pills}
@@ -283,6 +323,7 @@ UCSC genome browser track of isoforms annotated to **a)** *Ncam1* gene and **b)*
 Isoforms that were unique to the coverage-99% dataset are multi-exonic transcripts that align well with the reference genome.
 ![](/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Images/cupcakefilter.png)
 
+<<<<<<< HEAD
 #### 85% Coverage {.tabset .tabset-pills}
 
 In 85%, but not in 99% or 95% coverage
@@ -303,6 +344,8 @@ c85$sq %>% filter(gtf_coordinates %in% setdiff(c85$sq$gtf_coordinates,c(c99$sq$g
 datatable(c85$sq %>% filter(gtf_coordinates %in% setdiff(c85$sq$gtf_coordinates,c(c99$sq$gtf_coordinates,c95$sq$gtf_coordinates))) %>% group_by(associated_gene) %>% tally() %>% arrange(desc(n)), caption = "Genes with isoforms present in 85% but not in 99% or 95% coverage")
 ```
 
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ### Sqanti Filter {.tabset .tabset-pills}
 
 #### Overlap
@@ -372,8 +415,12 @@ TAMA filtering removed redundant 5' partial transcripts in both datasets. Howeve
 ### NCAM1
 
 ```{r}
+<<<<<<< HEAD
 NCAM1 <- function(){
   c99$sq %>% filter(gtf_coordinates %in% setdiff(c99$sq$gtf_coordinates,c95$sq$gtf_coordinates)) %>% 
+=======
+c99$sq %>% filter(gtf_coordinates %in% setdiff(c99$sq$gtf_coordinates,c95$sq$gtf_coordinates)) %>% 
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
   filter(associated_gene == "Ncam1")
 
 # transcripts discarded by 99%, but kept in the 95% during cupcake collapse
@@ -451,14 +498,23 @@ c95$cup_readstat <- read.table(paste0(c95_dir,"TOFU/WholeIsoSeq.collapsed.read_s
 
 c99$cup_readstat %>% filter(pbid == "PB.80.7")
 c95$cup_readstat %>% filter(pbid == "PB.83.6")
+<<<<<<< HEAD
 }
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 
 # Human MAPT
 ```{r}
+<<<<<<< HEAD
 hMAPTid = read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/QC/Human_Mapt/Sequences/Whole/All_Merged.clustered.hq_Ids.txt")
 
 map <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/MOUSE/MAPPING/PAF/All_Merged_reads_with_alignment_statistics.txt")
+=======
+hMAPTid = read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/QC/Human_Mapt/Sequences/All_Merged.clustered.hq_Ids.txt")
+
+map <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/MOUSE/MAPPING/PAF/All_Merged_reads_with_alignment_statistics.txt")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 hmapt_alignment <- map %>% 
   filter(V1 %in% hMAPTid$V1) %>%
@@ -473,5 +529,9 @@ hmapt_alignment <- map %>%
   annotate("rect", xmin = 95, xmax = 100, ymin = 95, ymax = 100, fill = "palegreen", alpha = 0.2)
 
 colnames(map) <- c("name_of_read","chrom","start","read_length","alignment_length","alignment length(%)","length_of_target_seq_alignment","alignment identity(%","strand","num_mismatches","num_insertions","num_deletions")
+<<<<<<< HEAD
+=======
+View(map %>% filter(name_of_read == c("transcript/6355")))
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 ```
