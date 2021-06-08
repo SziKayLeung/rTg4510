@@ -46,6 +46,9 @@ label_colour <- function(genotype){
   return(colour)
 }
 
+# To scale axis into 1000s
+ks <- function(x){ format(x/1000, big.mark=",")} 
+
 #
 input_multiple_csv <- function(input_dir_path, str_pattern){
   dat_files <- list.files(paste0(input_dir_path), pattern = str_pattern, full.names = T)
@@ -322,6 +325,46 @@ venn_diagram_plot_twocircles <- function(set1, set2, label_set1, label_set2){
   return(p)
 
 }
+
+venn_diagram_plot_threecircles <- function(set1, set2, set3, label_set1, label_set2, label_set3){
+  
+  # not to generate log file
+  flog.threshold(ERROR)
+  
+  
+  p <- venn.diagram(
+    x = list(set1, set2, set3),
+    category.names = c(label_set1,label_set2, label_set3),
+    filename = NULL,
+    output=FALSE,
+    
+    # Circles
+    lwd = 0.2,
+    lty = 'blank',
+    fill = c("#B3E2CD","#FDCDAC","#CBD5E8"),
+    
+    # Numbers
+    cex = 1,
+    fontface = "bold",
+    fontfamily = "ArialMT",
+    
+    # Set names
+    cat.cex = 1,
+    cat.default.pos = "text",
+    cat.pos = c(-27, 27, 135),
+    cat.dist = c(0.055, 0.055, 0.055),
+    cat.fontfamily = "ArialMT",
+    rotation = 1,
+    main = "\n\n\n\n",
+    
+    print.mode = "raw"
+  )
+  
+  return(p)
+  
+}
+
+
 
 # output directory
 output_plot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/QC/Rmarkdown"

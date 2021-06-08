@@ -49,6 +49,7 @@ loadfonts()
 source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Rmarkdown_Input.R")
 ERCC_conc <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/ONT/ERCC/ERCC_calculations.csv", header = T)[-1,] 
 
+# cannot load magic for; magic library otherwise error in loops
 ```
 
 
@@ -68,7 +69,7 @@ This was performed by merging only WT (n = 6), only TG (n = 6) and all the sampl
 ```{r}
 
 # Read in sqanti classification file mapped to ERCC (post chaining WT and TG)
-class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTI/all_samples.chained_classification.filtered_lite_classification.txt", 
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/SQANTI/all_samples.chained_classification.filtered_lite_classification.txt", 
                     header = T, as.is = T, sep = "\t")
 
 datatable(head(class), options = list(scrollX = TRUE))
@@ -144,7 +145,7 @@ p3
 
 ```{r}
 # Read in sqanti classification file mapped to ERCC (post chaining WT and TG)
-class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIAll/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", header = T, as.is = T, sep = "\t")
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/SQANTIAll/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", header = T, as.is = T, sep = "\t")
 
 datatable(head(class), options = list(scrollX = TRUE))
 
@@ -202,7 +203,7 @@ Note: only 10 samples had ERCCs
 
 ```{r}
 
-class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIDEMUX/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") %>% 
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/SQANTIDEMUX/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") %>% 
   mutate(Total_FL = .[,46:55] %>% rowSums(na.rm = TRUE))
  
 datatable(head(class), options = list(scrollX = TRUE))
@@ -284,7 +285,7 @@ p8
 To use TAMA's tama_remove_fragment_models.py to remove shorter redundant "isoforms" from the same ERCCs. Script is applied after SQANTI filtering.
 
 ```{r}
-TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU/TAMA_Filter/"
+TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU/TAMA_Filter/"
 tama_retained <- read.table(paste0(TAMA,"All_Merged_postsqanti.bed")) %>% mutate(TAMA = "Retained") 
 tama_discard <- read.table(paste0(TAMA,"All_Merged_postsqanti_discarded.txt")) %>% mutate(TAMA = "Discarded")
 tama <- bind_rows(tama_retained, tama_discard) %>% mutate(isoform = word(.$V4, c(2),sep = ";"))
@@ -342,7 +343,7 @@ p12
 #### Merged
 
 ```{r}
-All_Samples_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/"
+All_Samples_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/"
 
 # ERCC_mapped, ERCC_unmapped, Mouse all, Mouse mapped, mouse unmapped
 Merged_mapping <- list(
@@ -382,6 +383,8 @@ total_num <- total_num %>% melt() %>% mutate(perc = value/total_num$total_fl * 1
   mutate(perc = total_reads/all_reads * 100) %>%
   mutate(dataset = "merged")
 
+total_num
+
 
 ```
 
@@ -389,8 +392,8 @@ total_num <- total_num %>% melt() %>% mutate(perc = value/total_num$total_fl * 1
 
 ```{r}
 ############# Individual
-Individual_Mouse_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/MAPPING"
-Individual_ERCC_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/ERCC_MAPPING"
+Individual_Mouse_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/Individual/MAPPING"
+Individual_ERCC_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/Individual/ERCC_MAPPING"
 
 Individual_Mapping <- list(
   # ERCC 
@@ -515,7 +518,7 @@ Cupcake's parameters: minimum alignment coverage = 0.99, minimum alignment ident
 discarded_ERCC <- cluster[cluster$Status == "Discard" & cluster$Num_Isoform == "1",]
 discarded_transcript <- filter_map[filter_map$V2 %in% discarded_ERCC$ERCC_ID,]
 
-cupcake_discard <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU/All_Merged.ignored_ids.txt", as.is = T, sep = "\t") %>% `colnames<-`(c("transcript", "status"))
+cupcake_discard <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU/All_Merged.ignored_ids.txt", as.is = T, sep = "\t") %>% `colnames<-`(c("transcript", "status"))
 
 p15 <- cupcake_discard %>% filter(transcript %in% discarded_transcript$V1) %>% 
   left_join(., discarded_transcript[,c("V1","V2")], by = c("transcript" = "V1")) %>% 
@@ -539,7 +542,7 @@ Reduced cupcake's collapse default parameters (0.99) to 0.95
 
 
 ```{r}
-class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU_ADJUST/SQANTI/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") 
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU_ADJUST/SQANTI/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") 
 
 class <- class %>% mutate(Total_FL = .[,46:55] %>% rowSums(na.rm = TRUE))
 
@@ -604,7 +607,7 @@ p18
 To use TAMA's tama_remove_fragment_models.py to remove shorter redundant "isoforms" from the same ERCCs. Script is applied after SQANTI filtering.
 
 ```{r}
-TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU_ADJUST/TAMA_Filter/"
+TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU_ADJUST/TAMA_Filter/"
 tama_retained_adjusted <- read.table(paste0(TAMA,"All_Merged_postsqanti.bed")) %>% mutate(TAMA = "Retain") 
 tama_discard <- read.table(paste0(TAMA,"All_Merged_postsqanti_discarded.txt")) %>% mutate(TAMA = "Discard")
 tama <- bind_rows(tama_retained_adjusted, tama_discard) %>% mutate(isoform = word(.$V4, c(2),sep = ";"))
@@ -669,17 +672,13 @@ p22
 
 
 ```{r}
-
 # outputs
-pdf(paste0(output_plot_dir,"/ERCC.pdf"), width = 15, height = 11.5)
-plot_grid(p6,p16,p12,p22, labels = c("a","b","c"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95)
-top_row <- plot_grid(p8,p10, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold")
-plot_grid(top_row,p9, labels = c('', 'c'), label_size = 25, ncol = 1,label_fontfamily = "CM Roman", label_fontface = "bold", scale = 0.95)
-plot_grid(p13,p21, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95, ncol = 1)
-plot_grid(pmousemap,pERCCmap, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95)
-dev.off()
-
-
-
+#pdf(paste0(output_plot_dir,"/ERCC.pdf"), width = 15, height = 11.5)
+#plot_grid(p6,p16,p12,p22, labels = c("a","b","c"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95)
+#top_row <- plot_grid(p8,p10, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold")
+#plot_grid(top_row,p9, labels = c('', 'c'), label_size = 25, ncol = 1,label_fontfamily = "CM Roman", label_fontface = "bold", scale = 0.95)
+#plot_grid(p13,p21, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95, ncol = 1)
+#plot_grid(pmousemap,pERCCmap, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95)
+#dev.off()
 ```
 

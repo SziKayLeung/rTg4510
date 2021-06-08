@@ -5,3 +5,6 @@
 .oe.tar.gz
 /Images/*
 /Output/*
+*.e*
+*.o*
+*.pdf*
