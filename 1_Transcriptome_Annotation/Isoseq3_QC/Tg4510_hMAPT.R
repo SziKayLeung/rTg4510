@@ -24,9 +24,12 @@ source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg45
 
 ########### Read in hMAPT.header from TG mice (counts of human-specific MAPT sequences)
 <<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
+<<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 hMAPT_input <- list.files(path = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/QC/Human_Mapt/Sequences/Whole/Individual_Clustered", pattern = "hMAPT2.header", full.names = T)
 cluster_reads <- list.files("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/CLUSTER", pattern = "cluster_report.csv", full.names = T)
 =======
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 hMAPT_input <- list.files(path = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/Isoseq3_WKD/CLUSTER/hMAPT", pattern = "hMAPT2.header", full.names = T)
 ccs_reads <- list.files("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/WholeTranscriptome/Individual/Isoseq3.2.1/Isoseq3_WKD/CLUSTER", pattern = "cluster_report.csv", full.names = T)
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
@@ -45,7 +48,11 @@ names(file_input) <- lapply(file_input_names, function(x) word(x,c(13),  sep = f
 # Tabulate the number of CCS reads for each @transcriptX/@transcriptY and then sum across all transcripts per sample (as above, same transcript even though named diferently due to redundancy of collapse)
 # split V2 from hMAPT.header to extract the number of CCS reads
 <<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
+<<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 file_input <- lapply(file_input, function(x) x %>% mutate(cluster_reads = word(V2, c(1), sep = ";")) %>% mutate(cluster_reads = as.numeric(word(cluster_reads, c(2), sep = "="))))
+=======
+file_input <- lapply(file_input, function(x) x %>% mutate(CCS_reads = word(V2, c(1), sep = ";")) %>% mutate(CCS_reads = as.numeric(word(CCS_reads, c(2), sep = "="))))
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 =======
 file_input <- lapply(file_input, function(x) x %>% mutate(CCS_reads = word(V2, c(1), sep = ";")) %>% mutate(CCS_reads = as.numeric(word(CCS_reads, c(2), sep = "="))))
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
@@ -62,6 +69,7 @@ hMAPT_reads <- magic_result_as_dataframe() %>% mutate(sample = word(sample, c(1)
 ########### Tally the total number of successfully generated CCS reads per sample for normalisation
 # read in cluster_report.csv from all 12 samples, combine as one big dataframe and use "sample" identifier from file name
 <<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
+<<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 cluster_reads_input <- lapply(cluster_reads, function(x) read.table(x, header = T))
 names(cluster_reads_input) <- lapply(cluster_reads, function(x) word(x,c(12),  sep = fixed ('/')))
 cluster_reads_input_all <- do.call(rbind, cluster_reads_input)
@@ -70,6 +78,8 @@ cluster_reads_input_all <- setDT(cluster_reads_input_all, keep.rownames = TRUE)[
 # tally the number of CCS reads per sample
 total_cluster_reads <- cluster_reads_input_all %>% group_by(sample) %>% tally() %>% as.data.frame()
 =======
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 ccs_reads_input <- lapply(ccs_reads, function(x) read.table(x, header = T))
 names(ccs_reads_input) <- lapply(ccs_reads, function(x) word(x,c(12),  sep = fixed ('/')))
 ccs_reads_input_all <- do.call(rbind, ccs_reads_input)
@@ -87,7 +97,11 @@ WT <- c("K17","M21","Q21","K23","O23","S23")
 
 # Prepare plot by merging counts of human-specific MAPT reads and total reads
 <<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
+<<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 plot_reads <- merge(hMAPT_reads, total_cluster_reads, by = "sample", all = T) %>% select(-i) %>%
+=======
+plot_reads <- merge(hMAPT_reads, total_ccs_reads, by = "sample", all = T) %>% select(-i) %>%
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 =======
 plot_reads <- merge(hMAPT_reads, total_ccs_reads, by = "sample", all = T) %>% select(-i) %>%
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
@@ -98,7 +112,11 @@ plot_reads <- merge(hMAPT_reads, total_ccs_reads, by = "sample", all = T) %>% se
   mutate(Genotype = ifelse(grepl(paste(WT,collapse="|"), sample),"WT","TG")) %>%
   # note WT would not have human-specifici MAPT reads therefore replace NA with 0
 <<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
+<<<<<<< HEAD:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
   mutate(sum_cluster_reads = replace_na(sum_cluster_reads, 0)) %>%
+=======
+  mutate(sum_ccs_reads = replace_na(sum_ccs_reads, 0)) %>%
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R
 =======
   mutate(sum_ccs_reads = replace_na(sum_ccs_reads, 0)) %>%
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5:1_Transcriptome_Annotation/Isoseq3_QC/Tg4510_hMAPT.R

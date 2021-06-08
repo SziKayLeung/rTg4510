@@ -50,7 +50,10 @@ source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg45
 ERCC_conc <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/ONT/ERCC/ERCC_calculations.csv", header = T)[-1,] 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # cannot load magic for; magic library otherwise error in loops
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
@@ -73,7 +76,11 @@ This was performed by merging only WT (n = 6), only TG (n = 6) and all the sampl
 
 # Read in sqanti classification file mapped to ERCC (post chaining WT and TG)
 <<<<<<< HEAD
+<<<<<<< HEAD
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/SQANTI/all_samples.chained_classification.filtered_lite_classification.txt", 
+=======
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTI/all_samples.chained_classification.filtered_lite_classification.txt", 
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTI/all_samples.chained_classification.filtered_lite_classification.txt", 
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -153,7 +160,11 @@ p3
 ```{r}
 # Read in sqanti classification file mapped to ERCC (post chaining WT and TG)
 <<<<<<< HEAD
+<<<<<<< HEAD
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/SQANTIAll/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", header = T, as.is = T, sep = "\t")
+=======
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIAll/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", header = T, as.is = T, sep = "\t")
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIAll/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt", header = T, as.is = T, sep = "\t")
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -215,7 +226,11 @@ Note: only 10 samples had ERCCs
 ```{r}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/SQANTIDEMUX/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") %>% 
+=======
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIDEMUX/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") %>% 
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIDEMUX/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") %>% 
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -301,7 +316,11 @@ To use TAMA's tama_remove_fragment_models.py to remove shorter redundant "isofor
 
 ```{r}
 <<<<<<< HEAD
+<<<<<<< HEAD
 TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU/TAMA_Filter/"
+=======
+TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU/TAMA_Filter/"
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU/TAMA_Filter/"
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -363,7 +382,11 @@ p12
 
 ```{r}
 <<<<<<< HEAD
+<<<<<<< HEAD
 All_Samples_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/"
+=======
+All_Samples_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/"
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 All_Samples_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/"
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -407,8 +430,11 @@ total_num <- total_num %>% melt() %>% mutate(perc = value/total_num$total_fl * 1
   mutate(dataset = "merged")
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 total_num
 
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
@@ -419,8 +445,13 @@ total_num
 ```{r}
 ############# Individual
 <<<<<<< HEAD
+<<<<<<< HEAD
 Individual_Mouse_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/Individual/MAPPING"
 Individual_ERCC_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/Individual/ERCC_MAPPING"
+=======
+Individual_Mouse_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/MAPPING"
+Individual_ERCC_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/ERCC_MAPPING"
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 Individual_Mouse_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/MAPPING"
 Individual_ERCC_Mapping_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/Individual/ERCC_MAPPING"
@@ -550,7 +581,11 @@ discarded_ERCC <- cluster[cluster$Status == "Discard" & cluster$Num_Isoform == "
 discarded_transcript <- filter_map[filter_map$V2 %in% discarded_ERCC$ERCC_ID,]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 cupcake_discard <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU/All_Merged.ignored_ids.txt", as.is = T, sep = "\t") %>% `colnames<-`(c("transcript", "status"))
+=======
+cupcake_discard <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU/All_Merged.ignored_ids.txt", as.is = T, sep = "\t") %>% `colnames<-`(c("transcript", "status"))
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 cupcake_discard <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU/All_Merged.ignored_ids.txt", as.is = T, sep = "\t") %>% `colnames<-`(c("transcript", "status"))
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -578,7 +613,11 @@ Reduced cupcake's collapse default parameters (0.99) to 0.95
 
 ```{r}
 <<<<<<< HEAD
+<<<<<<< HEAD
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU_ADJUST/SQANTI/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") 
+=======
+class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU_ADJUST/SQANTI/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") 
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 class <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU_ADJUST/SQANTI/All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt",header = T, as.is = T, sep = "\t") 
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -647,7 +686,11 @@ To use TAMA's tama_remove_fragment_models.py to remove shorter redundant "isofor
 
 ```{r}
 <<<<<<< HEAD
+<<<<<<< HEAD
 TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/OLD_2020/All_Samples/ERCC/TOFU_ADJUST/TAMA_Filter/"
+=======
+TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU_ADJUST/TAMA_Filter/"
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 TAMA <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU_ADJUST/TAMA_Filter/"
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -716,6 +759,7 @@ p22
 
 ```{r}
 <<<<<<< HEAD
+<<<<<<< HEAD
 # outputs
 #pdf(paste0(output_plot_dir,"/ERCC.pdf"), width = 15, height = 11.5)
 #plot_grid(p6,p16,p12,p22, labels = c("a","b","c"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95)
@@ -725,6 +769,8 @@ p22
 #plot_grid(pmousemap,pERCCmap, labels = c("a","b"), label_size = 25, label_fontfamily = "CM Roman", label_fontface = "bold",scale = 0.95)
 #dev.off()
 =======
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 # outputs
 pdf(paste0(output_plot_dir,"/ERCC.pdf"), width = 15, height = 11.5)
@@ -737,6 +783,9 @@ dev.off()
 
 
 
+<<<<<<< HEAD
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
+=======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 ```
 

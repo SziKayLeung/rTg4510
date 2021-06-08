@@ -14,7 +14,10 @@
 # 14/12/2020: Merging All, TG and WT samples and processing to CHAIN
 # 04/01/2021: Rerunning chaining with latest v18.1 cupcake
 <<<<<<< HEAD
+<<<<<<< HEAD
 # 22/01/2021: Rerun ERCC with new pipeline (skip cupcake filter, include TAMA filter)
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
@@ -184,6 +187,7 @@ run_sqanti2(){
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # TAMA_sqanti_filter <TAMA_remove_fragments.output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_fasta> <output_prefix_name> <output_dir>
 TAMA_sqanti_filter(){
   source activate sqanti2_py3
@@ -200,6 +204,8 @@ TAMA_sqanti_filter(){
 
 =======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 #1. chained
 #run_pipeline_to_chain All_Merged O18 K18 S18 L22 Q20 K24 Q21 K17 M21 O23 S23 K23
@@ -213,7 +219,11 @@ TAMA_sqanti_filter(){
 TOFU=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/MOUSE/TOFU
 SQANTI=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/MOUSE/SQANTI_POSTTOFU
 <<<<<<< HEAD
+<<<<<<< HEAD
 #run_sqanti2 All_Merged $SQANTI $TOFU/All_Merged.collapsed.filtered.gff $TOFU/All_Merged_demultiplexed_abundance.csv
+=======
+run_sqanti2 All_Merged $SQANTI $TOFU/All_Merged.collapsed.filtered.gff $TOFU/All_Merged_demultiplexed_abundance.csv
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 run_sqanti2 All_Merged $SQANTI $TOFU/All_Merged.collapsed.filtered.gff $TOFU/All_Merged_demultiplexed_abundance.csv
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
@@ -222,6 +232,7 @@ run_sqanti2 All_Merged $SQANTI $TOFU/All_Merged.collapsed.filtered.gff $TOFU/All
 SQANTI=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIDEMUX
 SQANTIAll=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIAll
 TOFU=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/TOFU
+<<<<<<< HEAD
 <<<<<<< HEAD
 #run_sqanti2 All_Merged.collapsed.filtered $SQANTI $TOFU/All_Merged.collapsed.filtered.gff $SQANTI/Mouse.Demultiplexed_Abundance.txt ERCC
 #run_sqanti2 All_Merged.collapsed.filtered $SQANTIAll $TOFU/All_Merged.collapsed.filtered.gff $TOFU/All_Merged.collapsed.filtered.abundance.txt ERCC
@@ -236,6 +247,8 @@ TOFU=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcrip
 #TAMA_sqanti_filter $All_Samples/ERCC/TOFU/TAMA_Filter/All_Merged_postsqanti.bed $All_Samples/ERCC/SQANTIDEMUX All_Merged.collapsed.filtered_classification.filtered_lite_classification.txt All_Merged.collapsed.filtered_classification.filtered_lite_classification.gtf All_Merged.collapsed.filtered_classification.filtered_lite_classification.fasta All_Merged $All_Samples/ERCC/TOFU/TAMA_SQANTI_FILTER
 
 =======
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 run_sqanti2 All_Merged.collapsed.filtered $SQANTI $TOFU/All_Merged.collapsed.filtered.gff $SQANTI/Mouse.Demultiplexed_Abundance.txt ERCC
 run_sqanti2 All_Merged.collapsed.filtered $SQANTIAll $TOFU/All_Merged.collapsed.filtered.gff $TOFU/All_Merged.collapsed.filtered.abundance.txt ERCC
 
@@ -244,11 +257,15 @@ run_sqanti2 All_Merged.collapsed.filtered $SQANTIAll $TOFU/All_Merged.collapsed.
 cd $All_Samples/ERCC/TOFU;mkdir TAMA_Filter
 TAMA_remove_fragments $All_Samples/ERCC/TOFU/All_Merged.collapsed.filtered.gff All_Merged $All_Samples/ERCC/TOFU/TAMA_Filter
 TAMA_remove_fragments $All_Samples/ERCC/SQANTIDEMUX/All_Merged.collapsed.filtered_classification.filtered_lite.gtf All_Merged_postsqanti $All_Samples/ERCC/TOFU/TAMA_Filter
+<<<<<<< HEAD
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
+=======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 # some ERCCS in minimap2 output but not CUPCAKE
 CLUSTER=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/CLUSTER
 REFERENCE_ERCC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/ERCC
+<<<<<<< HEAD
 <<<<<<< HEAD
 #cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/MAPPING
 #minimap2 -t 32 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $REFERENCE_ERCC/ERCC92.fa $CLUSTER/All_Merged.clustered.hq.fastq > All_Merged.clustered.hq.fastq.paf 2> All_Merged.clustered.hq.fastq.paf.log
@@ -258,6 +275,8 @@ REFERENCE_ERCC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_20
 #awk -F'\t' '{if ($6!="*") {print $0}}' All_Merged.clustered.hq.fastq.paf > All_Merged.filtered.clustered.hq.fastq.paf
 #awk -F'\t' '{print $1,$6,$8+1,$2,$4-$3,($4-$3)/$2,$10,($10)/($4-$3),$5,$13,$15,$17}' All_Merged.filtered.clustered.hq.fastq.paf | sed -e s/"mm:i:"/""/g -e s/"in:i:"/""/g -e s/"dn:i:"/""/g | sed s/" "/"\t"/g > All_Merged_reads_with_alignment_statistics.txt
 =======
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 cd /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/MAPPING
 minimap2 -t 32 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $REFERENCE_ERCC/ERCC92.fa $CLUSTER/All_Merged.clustered.hq.fastq > All_Merged.clustered.hq.fastq.paf 2> All_Merged.clustered.hq.fastq.paf.log
 
@@ -265,6 +284,9 @@ htsbox samview -pS All_Merged.clustered.hq.fastq.sam > All_Merged.clustered.hq.f
 awk -F'\t' '{if ($6=="*") {print $0}}' All_Merged.clustered.hq.fastq.paf > All_Merged.notread.clustered.hq.fastq.paf
 awk -F'\t' '{if ($6!="*") {print $0}}' All_Merged.clustered.hq.fastq.paf > All_Merged.filtered.clustered.hq.fastq.paf
 awk -F'\t' '{print $1,$6,$8+1,$2,$4-$3,($4-$3)/$2,$10,($10)/($4-$3),$5,$13,$15,$17}' All_Merged.filtered.clustered.hq.fastq.paf | sed -e s/"mm:i:"/""/g -e s/"in:i:"/""/g -e s/"dn:i:"/""/g | sed s/" "/"\t"/g > All_Merged_reads_with_alignment_statistics.txt
+<<<<<<< HEAD
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
+=======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 
 #2d. cupcake collapse coverage (0.95) and identity (0.95 - default) readjustment
@@ -290,6 +312,7 @@ tofu_params(){
     source deactivate
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 # TAMA_remove_fragments <input_collapsed.filtered.gff> <input/output_prefix_name> <input/output_dir>
 # remove short fragments from post tofu
@@ -428,6 +451,8 @@ run_revised_pipeline_ERCC(){
 run_revised_pipeline_ERCC All_Merged $All_Samples/CLUSTER $All_Samples/ERCC/MAPPING $ERCC_ALT/TOFU/c99 0.99 $ERCC_ALT/SQANTI/c99 $ERCC_ALT/TAMA_Filter/c99 $ERCC_ALT/SQANTI_TAMA_FILTER/c99 O18 K18 S18 L22 Q20 K24 Q21 K17 M21 O23 S23 K23
 #run_revised_pipeline_ERCC All_Merged $All_Samples/CLUSTER $All_Samples/ERCC/MAPPING $ERCC_ALT/TOFU/c85 0.85 $ERCC_ALT/SQANTI/c85 $ERCC_ALT/TAMA_Filter/c85 $ERCC_ALT/SQANTI_TAMA_FILTER/c85 O18 K18 S18 L22 Q20 K24 Q21 K17 M21 O23 S23 K23
 =======
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 cd $All_Samples/ERCC;mkdir TOFU_ADJUST
 cd TOFU_ADJUST; mkdir SQANTI
 DEMUX_ERCC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Samples/ERCC/SQANTIDEMUX
@@ -436,4 +461,7 @@ run_sqanti2 All_Merged $All_Samples/ERCC/TOFU_ADJUST/SQANTI $All_Samples/ERCC/TO
 
 cd $All_Samples/ERCC/TOFU_ADJUST;mkdir TAMA_Filter
 TAMA_remove_fragments $All_Samples/ERCC/TOFU_ADJUST/SQANTI/All_Merged.collapsed.filtered_classification.filtered_lite.gtf All_Merged_postsqanti $All_Samples/ERCC/TOFU_ADJUST/TAMA_Filter
+<<<<<<< HEAD
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
+=======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5

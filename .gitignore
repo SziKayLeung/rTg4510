@@ -6,8 +6,11 @@
 /Images/*
 /Output/*
 <<<<<<< HEAD
+<<<<<<< HEAD
 *.e*
 *.o*
 *.pdf*
+=======
+>>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
 =======
 >>>>>>> c34b526e4f39c14e6ca6579cf2dd5726cda490a5
