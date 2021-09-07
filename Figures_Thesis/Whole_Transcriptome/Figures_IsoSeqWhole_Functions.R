@@ -19,14 +19,31 @@ mytheme <- theme(axis.line = element_line(colour = "black"),
                  axis.text.x= element_text(size=16,family="CM Roman"),
                  axis.text.y= element_text(size=16,family="CM Roman"))
 
+legend_theme <- theme(panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(),
+                      legend.position="right",
+                      legend.justification=c(0,1),
+                      legend.margin=unit(1,"cm"),
+                      legend.box="vertical",
+                      legend.box.just = "left",
+                      legend.key.size=unit(1,"lines"),
+                      legend.text.align=0,
+                      legend.background=element_blank())
+
+
+
+
+
 # plot label colour
 label_colour <- function(genotype){
   if(genotype == "WT"){colour = wes_palette("Royal1")[2]}else{
-    if(genotype == "TG"){colour = wes_palette("Royal1")[1]}else{
-      if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
-        if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
-          if(genotype == "known"){colour = wes_palette("Darjeeling1")[5]}else{
-    }}}}}
+    if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
+      if(genotype == "TG"){colour = wes_palette("Royal1")[1]}else{
+        if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
+          if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
+            if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
+              if(genotype == "known"){colour = wes_palette("Darjeeling1")[5]}else{
+    }}}}}}}
   return(colour)
 }
 
@@ -226,7 +243,6 @@ QC_yield_plot <- function(){
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   
-  
   p4 <- Reads %>%
     filter(Genotype != "J20") %>% 
     filter(Description == "Transcripts") %>% 
@@ -236,6 +252,17 @@ QC_yield_plot <- function(){
     scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) + theme(legend.position = "none") +
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3,accuracy = 1), limits = c(30000,35000))
   
+  ### Correlations 
+  # Difference between WT and TG yield
+  #with(sequenced, shapiro.test(Total.Bases..GB.[Genotype == "WT"])) # p = 0.4
+  #with(sequenced, shapiro.test(Total.Bases..GB.[Genotype == "TG"])) # p = 0.7
+  #res.ftest <- var.test(Total.Bases..GB.~ Genotype , data = sequenced)
+  #res.ftest # p = 0.29
+  res <- t.test(RIN ~ Genotype , data = sequenced, var.equal = TRUE)
+  res
+  
+  res <- t.test(Total.Bases..GB.~ Genotype , data = sequenced, var.equal = TRUE)
+  res
   
   return(list(p1,p2,p3,p4))
 }
@@ -396,7 +423,7 @@ no_of_isoforms_sample <- function(class){
   # number of samples with detected expression of isoform
   # prerequisite: demultiplexing with numver of counts per sample
   # across each row (i.e isoform, count the number of occurences where reads are != 0)
-  dat <- class %>% select(starts_with("FL.")) %>% 
+  dat <- class %>% dplyr::select(starts_with("FL.")) %>% 
     mutate(median_FL = apply(.,1, function(x) median(x)), num_samples = apply(.,1, function(x) length(x[which(x != "0")]))) 
   table(dat$num_samples)
   table(dat$num_samples)/sum(table(dat$num_samples))

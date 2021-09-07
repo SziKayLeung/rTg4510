@@ -2,6 +2,7 @@
 # Global files for analysis 
 
 source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/Output/SQANTI_General.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/Alternative_Splicing/AS_Events.R")
 
 # Phenotypes
 twomos <- c("K18","O18","S18", "K17","M21","Q21")

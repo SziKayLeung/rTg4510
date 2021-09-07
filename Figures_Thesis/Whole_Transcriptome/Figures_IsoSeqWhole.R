@@ -24,6 +24,7 @@ suppressMessages(library(VennDiagram))
 suppressMessages(library(directlabels))
 suppressMessages(library(cowplot))
 suppressMessages(library(data.table))
+suppressMessages(library(readxl))
 
 detach("package:plyr")
 library(extrafont)
@@ -31,11 +32,11 @@ library(extrafont)
 loadfonts()
 
 output_helpfig_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures"
-output_plot_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis"
+output_plot_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Whole_Transcriptome"
 # results from Whole transcriptome paper
 input_table_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/Output/Tables"
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Figures_IsoSeqWhole_InputVariables.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Figures_IsoSeqWhole_Functions.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Whole_Transcriptome/Figures_IsoSeqWhole_InputVariables.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Whole_Transcriptome/Figures_IsoSeqWhole_Functions.R")
 
 rarefaction_files()
 ERCC_sqanti_files()
@@ -80,6 +81,3 @@ plot_grid(Lengths[[1]],Lengths[[2]],Lengths[[3]],labels = "auto", label_size = 3
 plot_grid(humanMAPT_plots[[1]],humanMAPT_plots[[2]],NULL,NULL,NULL,NULL,labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", ncol = 2, scale = 0.9)
 rnaseqisoseq 
 dev.off()
-
-
-
