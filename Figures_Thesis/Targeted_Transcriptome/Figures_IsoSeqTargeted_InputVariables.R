@@ -39,6 +39,9 @@ targeted.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl6
 targeted.gtf.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/OLD2021/All_Targeted_Merged/Alternative_Pipeline/SQANTI_TAMA_FILTER/All_Targeted_Merged_sqantitamafiltered.classification.gtf"
 targeted.class.files <- SQANTI_class_preparation(targeted.class.names.files,"standard")
 
+# SQANTI, TAMA further collapsed files
+collapsed.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis/COLLAPSE_FILTER/AllMouseTargeted_sqantisubset.classification.txt"
+coll.class.files <- SQANTI_class_preparation(collapsed.class.names.files,"standard")
 
 # SQANTI filtered files
 targeted_sqfil_reason <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SQANTI2/AllMouseTargeted.collapsed_classification.filtered_lite_reasons.txt", sep = ",", header = T) %>%  mutate(PBId = paste0("PB.",word(.$filtered_isoform, c(2), sep = fixed("."))))
@@ -103,5 +106,11 @@ Filtered_data_staged <- function(){
 tappasiso_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/TAPPAS/Results/IsoSeq"
 tappasrna_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/TAPPAS/Results/RNASeq"
 tappas_phenotype <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Raw_Data/Targeted_Transcriptome/TargetedMouse_PhenotypeTAPPAS.txt", header = T) %>% mutate(col_names = paste0(group,".",sample))
+
+# Output from Tappas_DEA.R
+tappassig <- excel_sheets("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures/DifferentialGeneExpression_Analysis.xlsx") %>%  set_names() %>%
+  purrr::map(read_excel, path = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures/DifferentialGeneExpression_Analysis.xlsx")
+
+
 
 

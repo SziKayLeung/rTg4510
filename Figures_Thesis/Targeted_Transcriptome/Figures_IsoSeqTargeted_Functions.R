@@ -20,6 +20,19 @@ mytheme <- theme(axis.line = element_line(colour = "black"),
                  axis.text.x= element_text(size=16,family="CM Roman"),
                  axis.text.y= element_text(size=16,family="CM Roman"))
 
+
+legend_theme <- theme(panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(),
+                      legend.position="right",
+                      legend.justification=c(0,1),
+                      legend.margin=unit(1,"cm"),
+                      legend.box="vertical",
+                      legend.box.just = "left",
+                      legend.key.size=unit(1,"lines"),
+                      legend.text.align=0,
+                      legend.background=element_blank())
+
+
 # plot label colour
 label_colour <- function(genotype){
   if(genotype == "WT"){colour = wes_palette("Royal1")[1]}else{
@@ -30,7 +43,9 @@ label_colour <- function(genotype){
             if(genotype == "targeted"){colour = wes_palette("Darjeeling1")[2]}else{
               if(genotype == "whole"){colour = wes_palette("Darjeeling1")[1]}else{
                 if(genotype == "whole+targeted"){colour = wes_palette("Darjeeling2")[1]}else{
-                }}}}}}}}
+                  if(genotype == "isoseq"){colour = wes_palette("Darjeeling2")[2]}else{
+                    if(genotype == "rnaseq"){colour = wes_palette("Darjeeling2")[1]}else{
+                }}}}}}}}}}
   return(colour)
 }
 # To scale axis into 1000s
@@ -232,6 +247,12 @@ QC_yield_plot <- function(){
   
   cat("Sum number (Thousand) of Poly-A FLNC Reads across all Batches:", 
       sum(Reads_plot[Reads_plot$Description == "Poly-A FLNC Reads","value"])/1000,"\n")
+  cat("Mean number (Thousand) of Poly-A FLNC Reads across all Batches:", 
+      mean(Reads_plot[Reads_plot$Description == "Poly-A FLNC Reads","value"])/1000,"\n")
+  cat("Min number (Thousand) of Poly-A FLNC Reads across all Batches:", 
+      min(Reads_plot[Reads_plot$Description == "Poly-A FLNC Reads","value"])/1000,"\n")
+  cat("Max number (Thousand) of Poly-A FLNC Reads across all Batches:", 
+      max(Reads_plot[Reads_plot$Description == "Poly-A FLNC Reads","value"])/1000,"\n")
   for(i in 1:3){cat("Sum number (Thousand) of Poly-A FLNC Reads in Batch",i,":", 
                     sum(Reads_plot[Reads_plot$Description == "Poly-A FLNC Reads" & Reads_plot$Batch == i,"value"])/1000,"\n")}
   
@@ -309,21 +330,58 @@ level2filter <- function(){
   return(pNumfil)
 }
 
-final_num_iso <- function(sq_df){
-  ### number of novel vs Known isoforms 
-  dat <- sq_df %>% filter(toupper(associated_gene) %in% TargetGene) %>% 
+# final_num_iso <sqanti_dataframe> <type == structural_category/associated_transcript
+final_num_iso <- function(sq_df,type){
+  dat = sq_df %>% filter(toupper(associated_gene) %in% TargetGene) %>% 
     select(isoform, structural_category, associated_gene, associated_transcript, subcategory) %>% 
-    mutate(transcript_type = ifelse(.$associated_transcript == "novel","Novel","Known")) %>% 
-    mutate(transcript_type = factor(transcript_type, levels = c("Novel","Known"))) %>% 
-    group_by(associated_gene,transcript_type) %>% tally() %>% spread(., transcript_type, n) %>%
-    mutate(total = rowSums(.[,c("Novel","Known")])) 
+    mutate(structural_category = factor(structural_category, levels = c("NNC","NIC","ISM","FSM"))) 
+  
+  if(type == "structural_category"){
+    print("Structural Category")
+    ### number of novel vs Known isoforms 
+    dat1 <- dat %>% 
+      mutate(transcript_type = ifelse(.$associated_transcript == "novel","Novel","Known")) %>% 
+      mutate(transcript_type = factor(transcript_type, levels = c("Novel","Known"))) %>% 
+      group_by(associated_gene,transcript_type) %>% tally() %>% spread(., transcript_type, n) %>%
+      mutate(total = rowSums(.[,c("Novel","Known")])) 
+    
+    cat("Number of total isoforms across 20 genes:", sum(dat1$total))
+
+    ### number of novel vs Known isoforms by subcategory
+    dat2 <- dat %>% group_by(associated_gene, structural_category) %>% tally()
+  }else if(type == "associated_transcript"){
+    dat_at = dat %>%  mutate(Transcript_ID = ifelse(associated_transcript != "novel",associated_transcript,paste0(isoform,"_",structural_category))) %>% 
+      group_by(associated_gene,Transcript_ID) %>% tally()
+    
+    dat1 <- dat_at %>% 
+      mutate(transcript_type = ifelse(grepl("PB",Transcript_ID),"Novel","Known")) %>% 
+      mutate(transcript_type = factor(transcript_type, levels = c("Novel","Known"))) %>% 
+      group_by(associated_gene,transcript_type) %>% tally() %>% 
+      spread(.,transcript_type,n) %>%
+      mutate(total = rowSums(.[,c("Novel","Known")])) 
+    
+    cat("Number of total isoforms across 20 genes:", sum(dat1$total))
+    
+    for(i in 1:nrow(dat_at)){
+      if(grepl("ENSMUST",dat_at$Transcript_ID[[i]])){
+        cate = sq_df[sq_df$associated_transcript == dat_at$Transcript_ID[[i]],"structural_category"]
+        dat_at$structural_category[[i]] = ifelse('FSM' %in% cate,"FSM","ISM")
+      }else{
+        dat_at$structural_category[[i]] = word(dat_at$Transcript_ID[[i]],c(2),sep = fixed("_"))  
+      }}
+      
+      dat2 = dat_at %>% group_by(associated_gene, structural_category) %>% tally() 
+  }else{
+      print("Type Required")
+    }
+
   
   # table for plot 
-  dat_tab <- dat %>% mutate(Novel = paste0(Novel, " (", signif(Novel/total * 100,2),"%)"),
+  dat_tab <- dat1 %>% mutate(Novel = paste0(Novel, " (", signif(Novel/total * 100,2),"%)"),
                  Known = paste0(Known, " (", signif(Known/total * 100,2),"%)")) %>% .[,c(1,4,2,3)] %>%
     `colnames<-`(c("Target Gene", "Total Isoforms","Novel Isoforms", "Known Isoforms"))
   
-  p1 <- dat %>% reshape2::melt() %>%
+  p1 <- dat1 %>% reshape2::melt() %>%
     filter(variable != "total") %>%
     ggplot(., aes(x = reorder(associated_gene, -value), fill = variable, y = value)) + geom_bar(stat = "identity") + 
     mytheme + labs(x = "", y = "Number of Isoforms") + 
@@ -334,20 +392,16 @@ final_num_iso <- function(sq_df){
                     xmin=25,xmax=3,ymin=65,ymax=90)
   
   ### number of novel vs Known isoforms by subcategory
-  dat2 <- sq_df %>% filter(toupper(associated_gene) %in% TargetGene) %>% 
-    mutate(structural_category = factor(structural_category, levels = c("NNC","NIC","ISM","FSM"))) %>% 
-    group_by(associated_gene, structural_category) %>% tally() 
-
-  dat2_tab <- dat2 %>% 
-    spread(., structural_category, n) %>%
-    `colnames<-`(c("Target Gene", "NIC","NNC","ISM","FSM")) %>% 
-    replace(., is.na(.), 0) %>% 
+  dat2_tab <- dat2 %>% spread(., structural_category, n) %>% 
+    replace(., is.na(.), 0) %>%
     mutate(NIC = paste0(NIC, ifelse(NIC == "0","", paste0(" (", signif(NIC/rowSums(.[2:5]) * 100,2),"%)"))),
            FSM = paste0(FSM, ifelse(FSM == "0","", paste0(" (", signif(FSM/rowSums(.[2:5]) * 100,2),"%)"))),
            NNC = paste0(NNC, ifelse(NNC == "0","", paste0(" (", signif(NNC/rowSums(.[2:5]) * 100,2),"%)"))),
            ISM = paste0(ISM, ifelse(ISM == "0","", paste0(" (", signif(ISM/rowSums(.[2:5]) * 100,2),"%)"))))
   
-  p2 <- ggplot(dat2, aes(x = reorder(associated_gene,-n), y = n, fill = structural_category)) + geom_bar(stat = "identity") + 
+  p2 <- dat2 %>% 
+    mutate(structural_category = factor(structural_category, levels = c("NNC","NIC","ISM","FSM"))) %>%
+    ggplot(., aes(x = reorder(associated_gene,-n), y = n, fill = structural_category)) + geom_bar(stat = "identity") + 
     mytheme + labs(x = "", y = "Number of Isoforms") +
     theme(legend.position = c(0.9,0.9)) + 
     scale_fill_manual(name = "Isoform Classification", labels = c("NNC","NIC","ISM","FSM"),
@@ -358,7 +412,6 @@ final_num_iso <- function(sq_df){
     annotation_custom(tableGrob(dat2_tab,rows=NULL, theme = ttheme_minimal(base_size = 12)),
                       xmin=25,xmax=3,ymin=65,ymax=90)
   
-  cat("Number of total isoforms across 20 genes:", sum(dat$total))
   return(list(p1,p2))
 }
 
@@ -476,6 +529,27 @@ sqanti_filter_reason <- function(){
     theme(legend.position = "bottom") + scale_fill_discrete(name = "Target Genes")
   
   return(list(p1,p2,p3))
+}
+
+# summary of the number of isoforms per target gene and the list of known isoforms
+summary_isoform <- function(input_sqanti_file,gene){
+  # subset gene from input_sqanti_file
+  dat = input_sqanti_file[toupper(input_sqanti_file$associated_gene) == gene,]
+  
+  # list of known isoforms 
+  known_isoforms = paste0(unique(dat[dat$associated_transcript != "novel","associated_transcript"]),sep = ",", collapse = '')
+  
+  # new data frame 
+  df <- data.frame(
+    Target_Gene = dat$associated_gene[1],
+    Total_Isoforms_Num = length(dat$isoform),
+    Known_Isoforms_Num = nrow(dat[dat$associated_transcript != "novel",]), 
+    NIC = nrow(dat[dat$structural_category == "NIC",]),
+    NNC = nrow(dat[dat$structural_category == "NNC",]), 
+    Known_Isoforms = str_sub(known_isoforms,1,nchar(known_isoforms)-1) # remove the final comma
+    
+  )
+  return(df)
 }
 
 ### Human MAPT #################################################################
@@ -597,7 +671,7 @@ sqantifilter_valdidation <- function(){
 }
 
 
-### TaooAS Differential Analysis #################################################################
+### TappAS Differential Analysis #################################################################
 input_tappasfiles <- function(tappas_input_dir){
   # read in files generated from TAPPAS
   tappasfiles <- list.files(path = tappas_input_dir, pattern = ".tsv", full.names = T)
@@ -721,3 +795,95 @@ group_plots_rnavsiso <- function(gene, plottype1, plottype2){
   output = plot_grid(plotlist=myplots,labels = c("a","b"),label_size = 30, label_fontfamily = "CM Roman",scale = 0.9)
   return(output)
 }
+
+# Differentially expressed genes 
+# Input: tappassig with the sheet names "WholeIso_Geneexp" and "WholeRNA_Geneexp"
+# Plots: 
+# P1: venn diagram of genes that are differentially expressed between RNA+RNA(Isabel),Iso+RNA,Iso+Iso
+tappas_genesig <- function(){
+  
+  # plot of the significant genes from Targeted Transcriptome using either Iso-Seq or RNA-Seq as expression input 
+  p1 <- bind_rows(tappassig$TargetedIso_Genexp %>% mutate(type = "TargetedIso"),
+                  tappassig$TargetedRNA_Genexp %>% mutate(type = "TargetedRNA")) %>% 
+    ggplot(., aes(x = `...1`, y = `R-squared`, fill = type)) + geom_bar(position = position_dodge(preserve = "single"), stat = "identity") + mytheme +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "bottom") + labs(x = "", y =  expression(paste(R^2))) + 
+    geom_hline(yintercept=0.5,linetype="dashed") + scale_fill_manual(name = "Transcript Expression Input", labels = c("Iso-Seq","RNA-Seq"), values = c(label_colour("isoseq"),label_colour("rnaseq")))
+  
+  return(p1)
+}
+
+plot_transexp <- function(InputGene,Norm_transcounts,type,name){
+  df <-  Norm_transcounts  %>% filter(associated_gene == InputGene) 
+  df$time <- as.factor(df$time)
+  
+  #p <-
+  #  ggplot(df, aes(x = reorder(isoform,-value), y = value, colour = group, shape = time)) + #geom_boxplot() + 
+  #  geom_jitter(size = 3, position = position_jitterdodge()) +
+  #   stat_summary(data=df, aes(x=group, y=value, group=Isoform), fun ="mean", geom="line", linetype = "dotted") +
+  #  mytheme + labs(x = "", y = "Normalised Isoform Expression",title = paste0(InputGene,"\n\n")) +
+  #  theme(strip.background = element_blank(), 
+  #        plot.title = element_text(hjust = 0.5, size = 16,face = "italic"),
+  #        panel.spacing = unit(2, "lines"), 
+  #        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #  legend_theme +
+  #  facet_grid(~structural_category,  scales = "free", space = "free") +
+  #  scale_y_continuous(trans='log10') +
+  #  guides(shape = guide_legend(order = 2),col = guide_legend(order = 1))
+  
+  p <- df %>% mutate(grouping = paste0(group,"_",time)) %>% group_by(grouping, isoform) %>% dplyr::summarise(structural_category,time,group, mean_exp = mean(value), .groups = 'drop') %>% mutate(group = factor(group, levels = c("TG","WT"))) %>% 
+    ggplot(., aes(x = reorder(isoform,-mean_exp), y = mean_exp)) + geom_point(aes(colour = group, shape = time),size = 3) + mytheme + 
+    labs(x = "", y = "Mean Normalised Isoform Expression",title = paste0(InputGene,"\n\n")) +
+    theme(strip.background = element_blank(), 
+          plot.title = element_text(hjust = 0.5, size = 16,face = "italic"),
+          panel.spacing = unit(2, "lines"), 
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    legend_theme +
+    facet_grid(~structural_category,  scales = "free", space = "free") +
+    scale_y_continuous(trans='log10') +
+    guides(shape = guide_legend(order = 2),col = guide_legend(order = 1))
+  
+  
+  if(type == "isoseq"){
+    p <- p + scale_shape_manual(name = "Age", values=c(1, 16), label = c("2 months", "8 months")) + 
+      scale_colour_manual(name = "Genotype", values = c(label_colour("TG"),label_colour("WT"))) 
+  } else {
+    p <- p + scale_shape_manual(name = "Age (months)", values=c(1, 16, 2, 17)) + 
+      scale_colour_manual(name = "Genotype", values = c(label_colour("TG"),label_colour("WT"))) 
+  }
+  
+  return(p)
+}
+
+plot_transexp_overtime <- function(InputGene,Norm_transcounts){
+  
+  df <-  Norm_transcounts  %>% filter(associated_gene == InputGene) 
+  
+  # linear regression for significant changes over time
+  #for(isoform in unique(df$isoform)){
+  #  cat("Processing",isoform,"\n")
+  #  df1 <- df[df$isoform == isoform & df$group == "WT",]
+  #  df1_WTmean <- df1 %>% group_by(time) %>% summarise(mean_exp = mean(value))
+  #  df1_TG <- df[df$isoform == isoform & df$group == "TG",]
+  #  df2 <- merge(df1_TG, df1_WTmean, by = "time") %>% mutate(diff = abs(value - mean_exp))
+  #print(summary(lm(diff~0 + time,df2)))
+  #}
+  
+  #df_WT <-  df[df$group == "WT",]
+  #df_WTmean <- df %>% group_by(time, isoform) %>% summarise(mean_exp = mean(value),  .groups = 'drop')
+  #df_TG <- df[df$group == "TG",]
+  #df2 <- merge(df_TG, df_WTmean, by = c("time","isoform")) %>% mutate(diff = abs(value - mean_exp))
+  
+  #p1 <- ggplot(df2, aes(x = time, y = diff, colour = isoform)) + geom_point() +
+  #  stat_summary(data=df, aes(x=time, y=value, group=Isoform), fun ="mean", geom="line", linetype = "dotted") +
+  #  scale_y_continuous(trans = 'log10') + mytheme + labs(x = "Age (months)", y = "Fold Change of Isoform Expression \n (TG - WT)") + theme(legend.position = "right")
+  
+  p <- ggplot(df, aes(x = time, y = value, colour = Isoform)) + geom_point() + 
+    facet_grid(~group,scales = "free", space = "free") +
+    stat_summary(data=df, aes(x=time, y=value, group=Isoform), fun ="mean", geom="line", linetype = "dotted") +
+    mytheme + labs(x = "Age (months)", y = "Normalised Isoform Expression",title = paste0(InputGene,"\n\n")) +
+    theme(strip.background = element_blank(), legend.position = "right",plot.title = element_text(hjust = 0.5, size = 16,face = "italic"),panel.spacing = unit(2, "lines")) 
+  return(p)
+}
+
+

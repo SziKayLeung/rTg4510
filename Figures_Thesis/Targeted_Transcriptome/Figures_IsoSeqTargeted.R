@@ -49,10 +49,13 @@ find_mapt()
 QC_yield <- QC_yield_plot() 
 ontarget <- on_target_plot()
 postisofilter <- level2filter() 
-sq_num <- final_num_iso(targeted.class.files)
+sq_num <- final_num_iso(targeted.class.files,"structural_category")
+sq_num_transcript <- final_num_iso(targeted.class.files,"associated_transcript")
 wholevstargeted <- whole_vs_targeted_plots()
 targeted_filtered <- sqanti_filter_reason()
 sqantifilter_plots <- sqantifilter_valdidation()
+sqantifil_isosummary = lapply(TargetGene,function(x) summary_isoform(targeted.preclass.files,x)) %>% do.call(rbind,.)
+targetedcoll_isosummary = lapply(TargetGene,function(x) summary_isoform(coll.class.files,x)) %>% do.call(rbind,.)
 
 ### Differential Analysis 
 tappasiso <- input_tappasfiles(tappasiso_input_dir)
@@ -61,6 +64,7 @@ tappas_removediso(tappasiso$tappAS_Transcripts_InputExpressionMatrix.tsv)
 tappas_removediso(tappasrna$tappAS_Transcripts_InputExpressionMatrix.tsv)
 targetedtappas_isoexp <- tappas_resultsanno(targeted.class.files,tappasiso$input_normalized_matrix.tsv,tappas_phenotype)
 targetedtappas_rnaexp <- tappas_resultsanno(targeted.class.files,tappasrna$input_normalized_matrix.tsv,tappas_phenotype)
+tappasgenesig_plots <- tappas_genesig()
 
 # Gene Expression Plots 
 # using IsoSeq FL read count as expression input
@@ -76,6 +80,8 @@ plot_grid(QC_yield[[1]],bottom_row,labels = c('a', ''), label_size = 30, label_f
 plot_grid(ontarget,NULL,NULL, label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
 plot_grid(sq_num[[1]])
 plot_grid(sq_num[[2]])
+plot_grid(sq_num_transcript[[1]])
+plot_grid(sq_num_transcript[[2]])
 plot_grid(sqantifilter_plots[[2]],sqantifilter_plots[[1]],NULL,labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
 plot_grid(wholevstargeted[[1]],wholevstargeted[[2]],wholevstargeted[[3]],labels = "auto", label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
 grobs <- ggplotGrob(targeted_filtered[[1]])$grobs
@@ -96,11 +102,13 @@ group_plots(ADReg_Genes,targeted_rnageneexp_plots)
 group_plots(GWAS_Genes,targeted_rnageneexp_plots)
 group_plots(FTD_Genes,targeted_rnageneexp_plots)
 group_plots(EWAS_Genes,targeted_rnageneexp_plots)
+# Trem2 
+plot_grid(targeted_isogeneexp_plots$Trem2,plot_transexp_overtime("Trem2",targetedtappas_isoexp$Norm_transcounts), plot_transexp("Trem2",targetedtappas_isoexp$Norm_transcounts,"isoseq_targeted"),labels = c("a","b","c"), nrow = 3, label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
 dev.off()
 
 pdf (paste0(output_plot_dir,"/TargetedDifferentialAnalysis_RNAvsIso.pdf"), width = 10, height = 7)
+tappasgenesig_plots 
 for(gene in c(ADReg_Genes,GWAS_Genes,FTD_Genes,EWAS_Genes)){print(plot_grid(group_plots_rnavsiso(gene,targeted_isogeneexp_plots,targeted_rnageneexp_plots)))}
 dev.off()
-
 
 
