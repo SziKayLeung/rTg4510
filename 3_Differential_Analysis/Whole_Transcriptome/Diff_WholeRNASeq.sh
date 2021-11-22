@@ -2,7 +2,7 @@
 #SBATCH --export=ALL # export all environment variables to the batch job
 #SBATCH -D . # set working directory to .
 #SBATCH -p mrcq # submit to the parallel queue
-#SBATCH --time=0:30:00 # maximum walltime for the job
+#SBATCH --time=2:00:00 # maximum walltime for the job
 #SBATCH -A Research_Project-MRC148213 # research project to submit under
 #SBATCH --nodes=1 # specify number of nodes
 #SBATCH --ntasks-per-node=16 # specify number of processors per node
@@ -13,10 +13,12 @@
 #SBATCH --error=Diff_WholeRNASeq-%A_%a.e
 
 # 29/06/2021: Align all 59 RNA-Seq samples to the Iso-Seq scaffold generated in Diff_Whole.sh (SQ3)
+# 22/11/2021: Realign all 59 RNA-Seq samples to the Iso-Seq scaffold generated in Diff_Whole_noRNASeq.sh 
 
 #************************************* DEFINE GLOBAL VARIABLES
 # setting names of directory outputs
-DiffAnalysis_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/DiffAnalysis
+#DiffAnalysis_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/DiffAnalysis  ## 29/06/2021
+DiffAnalysis_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/DiffAnalysis_noRNASEQ
 PostIsoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq
 RNASeq_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/RNASeq
 
@@ -38,4 +40,5 @@ SAMPLES_NAMES=(K24 L22 M20 O24 Q20 S24 T22 K17 L21 M19 K23 P21 Q19 M21 T21 M18 O
 SAMPLE=${SAMPLES_NAMES[${SLURM_ARRAY_TASK_ID}]}
 
 # run_kallisto_1sample <input_RNASEQ_rawdir> <sample> <input_ref_name_idx> <output_dir>
-run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Individual
+#run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Individual ## 29/06/2021
+run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3

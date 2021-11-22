@@ -64,6 +64,16 @@ run_sqanti3(){
     elif [ $8 == "genome" ]; then
       echo "Processing with gencode.vM22.annotation.gtf for genome annotation "
       python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed -c ./"*SJ.out.bed" --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --expression $kallisto_expfile --fl_count $6 --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
+    
+    elif [ $8 == "basic" ]; then
+      echo "Processing with gencode.vM22.annotation.gtf for genome annotation and basic"
+      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
+      
+    elif [ $8 == "nornaseq" ]; then
+      echo "Processing with gencode.vM22.annotation.gtf for genome annotation and no RNASeq Junction"
+      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --fl_count $6 --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
+
+
     else
       echo "8th argument required"
     fi
@@ -72,7 +82,7 @@ run_sqanti3(){
     python $SQANTI3_DIR/sqanti3_RulesFilter.py $1"_classification.txt" $1"_corrected.fasta" $1"_corrected.gtf" -a 0.6 -c 3 &> $1.sqanti.filter.log
 
     # remove temp SJ.out bed files
-    #rm *SJ.out.bed
+    rm *SJ.out.bed
     source deactivate
 }
 
@@ -291,4 +301,61 @@ run_suppa2(){
   cd $output_dir
   suppa.py generateEvents -i $input_gtf -o $output_name --pool-genes -f ioe -e SE MX FL SS RI &>> $output_name"_suppa2.log"
   python $FUNCTIONS/Suppa2_output_mod_updated.py $output_name $output_dir $input_class &>> $output_name"_suppa2_mod.log"
+}
+
+################################################################################################
+#************************************* Whole + Targeted Transcriptome
+# convertgtf2bed <name> <input_gtf> <working_directory>
+convertgtf2bed(){
+  # variable
+  name=$1
+  input_gtf=$2
+  wkd=$3
+
+  cd $wkd
+
+  source activate sqanti2
+  # convert gtf to bed
+  gtfToGenePred $input_gtf $name.genepred
+  genePredToBed $name.genepred $name.bed12
+
+  # change bed into correct format for tama
+  awk -F'\t' '{print $1,$2,$3,$4,"40",$6,$7,$8,"255,0,0",$10,$11,$12}' $name.bed12 | sed s/" "/"\t"/g|sed s/",\t"/"\t"/g|sed s/",$"/""/g > $name.mod.bed12
+  TAMA_MERGE_prepare=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/General/2_Transcriptome_Annotation/TAMA/TAMA_Merge_Prepare.R
+  # Rscript script.R <name>.bed12 <input_dir>
+  Rscript $TAMA_MERGE_prepare $name".mod" $wkd
+}
+
+# run_tamamerge <wkd> <wholebed> <targetedbed> <outputname>
+run_tamamerge(){
+  # variable
+  wkd=$1
+  wholebed=$2
+  targetedbed=$3
+  outputname=$4
+
+  # prepare file list
+  echo "Merging the following files for TAMA"
+  echo "$wholebed:no_cap:1,1,1:Whole"|sed s/":"/"\t"/g>file.list
+  echo "$targetedbed:no_cap:1,1,1:Targeted"|sed s/":"/"\t"/g>>file.list
+  cat file.list
+
+  # run tama merge using the file list
+  cd $wkd
+  source activate sqanti2
+  tamasoftware=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/tama
+  python $tamasoftware/tama_merge.py -f file.list -p $outputname &> tama_output.log
+
+  # variable
+  wkd=$1
+  wholebed=$2
+  targetedbed=$3
+  outputname=$4
+  # convert from bed to gtf
+  # bedToGenePred $outputname.bed $outputname.genepred
+  # genePredToGtf $outputname.genepred $outputname.gtf
+  source activate sqanti2
+  #bedToGenePred $outputname.bed /dev/stdout | genePredToGtf file /dev/stdin $outputname.gtf
+  tamasoftware=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/tama/tama_go/format_converter/
+  python $tamasoftware/tama_convert_bed_gtf_ensembl_no_cds.py $outputname.bed $outputname.gtf
 }
