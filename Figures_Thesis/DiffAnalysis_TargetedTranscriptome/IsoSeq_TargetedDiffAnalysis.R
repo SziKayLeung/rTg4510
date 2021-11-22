@@ -49,6 +49,7 @@ tappasiso <- input_tappasfiles(tappasiso_input_dir)
 tappasrna <- input_tappasfiles(tappasrna_input_dir)
 tappasisocol <- input_tappasfiles(tappasisocol_input_dir)
 tappasrnacol <- input_tappasfiles(tappasrnacol_input_dir)
+tappasrnacol_exp <- input_tappasfiles(tappasrnacolexp_input_dir)
 tappasrnacolmerged <- input_tappasfiles(tappasrnamerged_input_dir)
 
 # tappasrna expression file: change the column to include phenotype and age
@@ -66,6 +67,7 @@ targetedtappas_isoexp <- tappas_resultsanno(class.files,tappasiso$input_normaliz
 targetedtappas_rnaexp <- tappas_resultsanno(class.files,tappasrna$input_normalized_matrix.tsv,tappasrna_phenotype)
 targetedtappas_isocolexp <- tappas_resultsanno(coll.class.files,tappasisocol$input_normalized_matrix.tsv,tappasiso_phenotype)
 targetedtappas_rnacolexp <- tappas_resultsanno(coll.class.files,tappasrnacol$input_normalized_matrix.tsv,tappasrna_phenotype)
+targetedtappas_rnacolexpexp <- tappas_resultsanno(coll.class.files,tappasrnacol_exp$input_normalized_matrix.tsv,tappasrna_phenotype)
 targetedtappas_rnacolmergedexp <- tappas_resultsanno(merged.class.files,tappasrnacolmerged$input_normalized_matrix.tsv,tappasrna_phenotype)
 
 targetedtappas_rnacolmergedexp$Norm_transcounts <- reannotate_tamamerged_output(targetedtappas_rnacolmergedexp$Norm_transcounts)
@@ -114,6 +116,9 @@ targeted_isocolgeneexpcol_plots <- generate_plots(TargetGene,targetedtappas_isoc
 # using RNA-Seq as expression input, mapped on Iso-Seq transcripts collapsed by partial transcripts 
 targeted_rnacolgeneexpcol_plots <- generate_plots(TargetGene,targetedtappas_rnacolexp,"Gene","RNA-Seq Expression")
 
+# using RNA-Seq as expression input, mapped on Iso-Seq transcripts collapsed by most abundant FSM transcript
+targeted_rnacolexpgeneexpcol_plots <- generate_plots(TargetGene,targetedtappas_rnacolexpexp,"Gene","RNA-Seq Expression")
+
 # using RNA-Seq as expression input, mapped on Targeted and Whole Transcriptome merged 
 targeted_rnacolmergedgeneexpcol_plots <- generate_plots(TargetGene,targetedtappas_rnacolmergedexp,"Gene","RNA-Seq Expression")
 
@@ -127,6 +132,7 @@ targeted_isotransexp_plots_traj <- generate_plots(TargetGene,targetedtappas_isoe
 targeted_rnatransexp_plots_traj <-  generate_plots(TargetGene,targetedtappas_rnaexp,"Transcript Trajectory","RNA-Seq Expression")
 targeted_isocoltransexp_plots_traj <- generate_plots(TargetGene,targetedtappas_isocolexp,"Transcript Trajectory","Iso-Seq Expression")
 targeted_rnacoltransexp_plots_traj <- generate_plots(TargetGene,targetedtappas_rnacolexp,"Transcript Trajectory","RNA-Seq Expression")
+targeted_rnacolexptransexp_plots_traj <- generate_plots(TargetGene,targetedtappas_rnacolexpexp,"Transcript Trajectory","RNA-Seq Expression")
 targeted_rnacolmergedtransexp_plots_traj <- generate_plots(TargetGene,targetedtappas_rnacolmergedexp,"Transcript Trajectory","RNA-Seq Expression")
 
 # Non trajectory plot 
@@ -160,14 +166,38 @@ for(gene in TargetGene){
   }
 dev.off()
 
+
+pdf(paste0(output_plot_dir,"/TargetedDifferentialAnalysis_CollapsedExpression.pdf"), width = 10, height = 15)
+for(gene in TargetGene){
+  print(plot_grid(targeted_isocolgeneexpcol_plots[[gene]],targeted_rnacolexpgeneexpcol_plots[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9,rel_heights = c(1,2)))
+  print(plot_grid(targeted_isocoltransexp_plots_traj[[gene]],targeted_rnacolexptransexp_plots_traj[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9))
+}
+dev.off()
+
 pdf(paste0(output_plot_dir,"/TargetedDifferentialAnalysis_CollapsedMerged.pdf"), width = 10, height = 15)
 for(gene in TargetGene){
-  print(plot_grid(targeted_isocolgeneexpcol_plots[[gene]],targeted_rnacolmergedgeneexpcol_plots[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9,rel_heights = c(1,2)))
-  print(plot_grid(targeted_isocoltransexp_plots_traj[[gene]],targeted_rnacolmergedtransexp_plots_traj[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9))
-  print(plot_grid(targeted_isocolmergedtransexp_plots[[gene]],targeted_rnacolmergedtransexp_plots[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9))
+  print(plot_grid(targeted_rnacolexpgeneexpcol_plots[[gene]],targeted_rnacolmergedgeneexpcol_plots[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9,rel_heights = c(1,2)))
+  print(plot_grid(targeted_isocoltransexp_plots_traj[[gene]], targeted_rnacolmergedtransexp_plots_traj[[gene]],ncol = 1,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9))
+}
+dev.off()
+
+pdf(paste0(output_plot_dir,"/TargetedDifferentialAnalysis_CollapsedMerged_panelled.pdf"), width = 15, height = 10)
+for(gene in TargetGene){
+  print(plot_grid(targeted_isocolgeneexpcol_plots[[gene]],targeted_isocoltransexp_plots_traj[[gene]],targeted_rnacolmergedgeneexpcol_plots[[gene]], targeted_rnacolmergedtransexp_plots_traj[[gene]],ncol = 2,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9, rel_widths = c(0.3,0.7)))
 }
 dev.off()
 
 
-
+# compare strategy
+# Strategy 1 (base): do not collapse counts; off + on target reads
+# Strategy 2: collapse counts; FSM by length; on target reads
+# Strategy 3: collapse counts; merged whole & targeted transcriptome 
+# Strategy 4: collapse counts; FSM by expression; on target reads
+pdf(paste0(output_plot_dir,"/TargetedDifferentialAnalysis_CompareStrategy.pdf"), width = 20, height = 15)
+for(gene in TargetGene){
+  print(plot_grid(targeted_rnatransexp_plots_traj[[gene]],targeted_rnacoltransexp_plots_traj[[gene]],
+                  targeted_rnacolmergedtransexp_plots_traj[[gene]],targeted_rnacolexptransexp_plots_traj[[gene]],
+                  ncol = 2,labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.9))
+}
+dev.off()
 
