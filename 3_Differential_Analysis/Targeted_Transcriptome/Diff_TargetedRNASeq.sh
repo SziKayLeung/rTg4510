@@ -15,10 +15,14 @@
 # 29/06/2021: Align all 59 RNA-Seq samples to the Iso-Seq scaffold generated in Diff_Targeted.sh (SQ3)
 # 27/07/2021: Realign all 59 RNA-Seq samples to Collapsed Iso-Seq scaffold
 # 03/08/2021: Realign all 59 RNA-Seq samples to Tama merged transcriptome of Targeted and Whole Trancriptome
+# 16/09/2021: Realign all 59 RNA-Seq samples to collapsed Iso-Seq scaffold with FSM isoforms selected by expression (Rather than by length - 27/07)
+# 22/11/2021: Realign all 59 RNA-Seq samples to collapsed Iso-Seq scaffold with FSM isoforms selected by length
+  # note Iso-Seq scaffold is not filtered by RNA-Seq for junction support in SQANTI3
 
 #************************************* DEFINE GLOBAL VARIABLES
 # setting names of directory outputs
-DiffAnalysis_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis
+#DiffAnalysis_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis # 29/06/2021
+DiffAnalysis_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis_noRNASEQ
 PostIsoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq
 RNASeq_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/RNASeq
 
@@ -41,12 +45,22 @@ SAMPLE=${SAMPLES_NAMES[${SLURM_ARRAY_TASK_ID}]}
 
 # run_kallisto_1sample <input_RNASEQ_rawdir> <sample> <input_ref_name_idx> <output_dir>
 #run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Individual
+## Output Files: Output/Diff_TargetedRNASeq_Kallisto_Individual.tar.gz
 
 # 27/07/2021
 #for sample in ${SAMPLES_NAMES[@]}; do 
 #  echo "Processing: $sample"
-#  run_kallisto_1sample $RNASeq_Filtered $sample AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Individual_Collapsed
+#  run_kallisto_1sample $RNASeq_Filtered $sample AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Individual_Collapsed_FSMLength
 #done
 
 # 03/08/2021
-run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} WholeTargeted_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Whole_Targeted
+#run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} WholeTargeted_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Whole_Targeted
+## Output Files: Output/Diff_TargetedRNASeq_Kallisto_WholeTargeted.tar.gz
+
+# 16/09/2021 
+#run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3/Individual_Collapsed_FSMExp
+## Output Files: Output/Diff_TargetedRNASeq_Kallisto_Individual_CollapsedFSM.out
+
+# 22/11/2021
+run_kallisto_1sample $RNASeq_Filtered ${SAMPLE} AllRNASeq_Kallisto.idx $DiffAnalysis_WKD/RNASeq_SQANTI3
+## Output Files: Output/Diff_TargetedRNASeq_Kallisto_Individual_CollapsedFSM_noRNASeqSupport.out
