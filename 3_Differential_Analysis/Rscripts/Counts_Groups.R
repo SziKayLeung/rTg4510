@@ -35,7 +35,7 @@ cat("Generating Separate Files for each group in:", class.names.files,"\n")
 group_order = c("WT_2mos","TG_2mos","WT_8mos","TG_8mos")
 for(group in group_order){
   dat = count_simple[count_simple[[group]] != 0 ,"transcript_id"] %>% as.data.frame()
-  #write.table(dat,paste0(output.counts.dir,"/",group,"_counts.txt"), row.names = F, quote = F, col.names = F)
+  write.table(dat,paste0(output.counts.dir,"/",group,"_counts.txt"), row.names = F, quote = F, col.names = F)
   #nrow(count_simple[count_simple$WT_2mos != 0,])
 }
 
@@ -59,7 +59,7 @@ for(col in colnames(abundance)){
   cat("Processing",file,"\n")
   dat = rownames(abundance[abundance[[col]] != "0",]) %>% as.data.frame() 
   
-  #write.table(dat,paste0(output.counts.dir,"/",file,"_counts.txt"), row.names = F, quote = F, col.names = F)
+  write.table(dat,paste0(output.counts.dir,"/",file,"_counts.txt"), row.names = F, quote = F, col.names = F)
   #nrow(abundance[abundance$FL.S23_WT_8mos != "0",])
 }
 
