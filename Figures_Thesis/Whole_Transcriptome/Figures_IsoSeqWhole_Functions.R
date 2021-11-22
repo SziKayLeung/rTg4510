@@ -140,7 +140,7 @@ number_of_reads <- function(){
   # Extract only values from mix of values and percentage
   CCS_values <- cbind(as.character(CCS[,1]), apply(CCS[,-1], 2, function(x) word(x, c(1), sep = fixed("("))))
   colnames(CCS_values)[1] <- "Description"
-  CCS_values_mod <- as.data.frame(CCS_values) %>% melt(., id = "Description") %>%
+  CCS_values_mod <- as.data.frame(CCS_values) %>% reshape2::melt(., id = "Description") %>%
     mutate(sample = word(variable, c(1), sep = fixed("_")))
   CCS_values <<- CCS_values
   
@@ -149,7 +149,7 @@ number_of_reads <- function(){
   # Extract only values from the mix of values and percentage from LIMA output
   LIMA_values <- data.frame(LIMA[,1],lapply(LIMA[,2:ncol(LIMA)], function(x) as.numeric(word(x, c(1),  sep = fixed ('(')) )))
   colnames(LIMA_values)[1] <- "Description"
-  LIMA_values_mod <- as.data.frame(LIMA_values) %>% melt(., id = "Description") %>%
+  LIMA_values_mod <- as.data.frame(LIMA_values) %>% reshape2::melt(., id = "Description") %>%
     mutate(sample = word(variable, c(1), sep = fixed("_")))
   
   
@@ -189,8 +189,8 @@ number_of_reads <- function(){
   
   ### To calculate proportions to generate plots
   # total failed ccs reads
-  failed_CCS_reads <- as.data.frame(CCS_values) %>% melt(., id = "Description") %>% filter(Description %in% c("ZMWs filtered       (C)  "))
-  failed_LIMA_reads <- as.data.frame(LIMA_values) %>% melt(., id = "Description") %>% filter(Description %in% c("ZMWs below any threshold  (C) "))
+  failed_CCS_reads <- as.data.frame(CCS_values) %>% reshape2::melt(., id = "Description") %>% filter(Description %in% c("ZMWs filtered       (C)  "))
+  failed_LIMA_reads <- as.data.frame(LIMA_values) %>% reshape2::melt(., id = "Description") %>% filter(Description %in% c("ZMWs below any threshold  (C) "))
   
   
   # classify Genotype in Reads
@@ -374,7 +374,7 @@ lengths_plots <- function(){
 iso_length <- function(class){
   class <- class %>% filter(subcategory != "mono-exon")
   p <- ggplot(class, aes(x = length)) + geom_histogram(bins = 15, fill="gray", col="black") + 
-    labs(x = "Transcript Length (kb)", y = "Number of Isoforms (Thousand)") + mytheme +
+    labs(x = "Transcript Length (kB)", y = "Number of Isoforms (K)") + mytheme +
     scale_x_continuous(labels = ks) + 
     scale_y_continuous(labels = ks) 
   
@@ -396,7 +396,7 @@ rarefaction_distribution <- function(){
   p1 <- all_rarefaction_levels %>% 
     ggplot(., aes(x = size, y = mean, linetype = type)) + 
     geom_line(size = 1.5) + 
-    labs(x ="Number of Subsampled Reads (Thousand)", y = "Number of Genes/Isoforms (Thousand)") + 
+    labs(x ="Number of Subsampled Reads (K)", y = "Number of Genes/Isoforms (K)") + 
     theme_bw() + mytheme + 
     scale_y_continuous(labels = ks) + scale_x_continuous(labels = ks) + 
     #scale_color_manual(values=c(label_colour("mouse")), name = "") + 
@@ -405,8 +405,8 @@ rarefaction_distribution <- function(){
   
    
   p2 <- ggplot(all_rarefaction_isoforms_category, aes(x=size, y=mean, color=category)) + geom_line(aes(linetype = type), size = 1.5) + 
-    labs(x = "Number of Subsampled Reads (Thousand)", 
-         y = "Number of Isoforms (Thousand)", title = "") +
+    labs(x = "Number of Subsampled Reads (K)", 
+         y = "Number of Isoforms (K)") +
     mytheme + 
     scale_y_continuous(labels = ks, limits = c(0, 20000)) + 
     scale_x_continuous(labels = ks, expand = c(0.15, 0)) + 
@@ -431,7 +431,7 @@ no_of_isoforms_sample <- function(class){
     scale_y_continuous(labels = perc_lab)  + mytheme + labs(x = "Number of Samples", y = "Isoforms (%)")
   
   p2 <- ggplot(dat, aes(x = as.factor(num_samples), y = log(median_FL))) + geom_boxplot() + 
-    mytheme + labs(x = "Number of Samples", y = "Median FL Read Count(Log10)")
+    mytheme + labs(x = "Number of Samples", y = "FL Read Count(Log10)")
   
   return(list(p1,p2))
 }
@@ -500,8 +500,8 @@ novel_annotated <- function(){
   return(p)
   }
   
-  expression <- subset_feature("Log_ISOSEQ_TPM", "Iso-Seq Expression (Log10 TPM)", "all_novel")
-  split_expression <- subset_feature("Log_ISOSEQ_TPM", "Iso-Seq Expression (Log10 TPM)", "all_split")
+  expression <- subset_feature("Log_ISOSEQ_TPM", "Expression (Log10 TPM)", "all_novel")
+  split_expression <- subset_feature("Log_ISOSEQ_TPM", "Expression (Log10 TPM)", "all_split")
   
   length <- subset_feature("length", "Transcript Length (kB)", "all_novel") + scale_y_continuous(labels = ks)
   split_length <- subset_feature("length", "Transcript Length (kB)", "all_split") + scale_y_continuous(labels = ks)
@@ -692,7 +692,7 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
     ggplot(., aes(x=nIsoCat, fill=Sample)) +
     geom_bar(stat="identity", aes(y= Perc, group = as.factor(Sample)), color="black", size=0.3, width=0.7, 
              position="dodge") + 
-    labs(x ="Number of Isoforms", y = "Genes (%)", fill = "", title = "\n") +
+    labs(x ="Number of Isoforms", y = "Genes (%)", fill = "") +
     #scale_fill_manual(values=c(label_colour(dataset1), label_colour(dataset2)), 
     #                 labels=c(paste(dataset1,"Cortex"), paste(dataset2,"Cortex")))  + 
     mytheme + 
@@ -728,6 +728,8 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
   res 
   #res$p.value
   
+ # wilcox.test(WT_2 ~ TG_2,data=AF)
+  
   
   p5 <- data.frame(dataset = c("Iso-Seq","RNA-Seq"),
                    within_50 = c(nrow(class.files %>% filter(abs(dist_to_cage_peak) <= 50))/nrow(class.files) * 100,
@@ -735,10 +737,10 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
                    # include NAs
                    without_50 = c(100 - nrow(class.files %>% filter(abs(dist_to_cage_peak) <= 50))/nrow(class.files) * 100,
                                   100 - nrow(rnaseq.class.files %>% filter(abs(dist_to_cage_peak) <= 50))/nrow(rnaseq.class.files) * 100)) %>%
-    melt() %>%
+    reshape2::melt() %>%
     mutate(variable = factor(variable, levels = c("without_50","within_50"))) %>%
     ggplot(., aes(x = dataset, y = value, fill = variable)) + geom_bar(stat = "identity") + mytheme +
-    labs(y ="Isoforms within 50bp CAGE (%)", x = "", fill = "", title = "\n") + theme(legend.position = "right") +
+    labs(y ="Isoforms within 50bp CAGE (%)", x = "", fill = "") + theme(legend.position = "right") +
     scale_fill_discrete(labels = c("No","Yes"))
   
   # structural_category
@@ -746,7 +748,7 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
                     group_by(structural_category,Sample) %>% tally() %>% group_by(Sample) %>% mutate(perc = n/sum(n)*100),
                   rnaseq.class.files %>% .[,c("structural_category","Sample")] %>% group_by(structural_category,Sample) %>% tally() %>% group_by(Sample) %>% mutate(perc = n/sum(n)*100)) %>% 
     ggplot(., aes(x = Sample, y = perc, fill = structural_category)) + geom_bar(stat = "identity") + mytheme +
-    labs(x = "", y = "Isoforms (%)", fill = "Structural Category", title = "\n") + theme(legend.position = "bottom")
+    labs(x = "", y = "Isoforms (%)", fill = "Structural Category") + theme(legend.position = "bottom")
   
   output <- plot_grid(grobTree(p1),p2,p3,p4,p5,p6, labels = "auto", label_size = 30, label_fontfamily = "ArialMT", ncol = 2)
   
@@ -780,7 +782,7 @@ AS_genes_events <- function(){
     theme(legend.position = "bottom",legend.title = element_blank()) +
     guides(fill = guide_legend(nrow = 1)) +
     facet_grid(~ Group,scales='free') +
-    scale_x_discrete(labels = c("known" = "Known Isoforms", "novel" =  "Novel Isoforms")) +
+    scale_x_discrete(labels = c("known" = "Known \n Isoforms", "novel" =  "Novel \n Isoforms")) +
     theme(strip.background = element_blank(),strip.text.x = element_blank())
   
   dataset_tally_gene <- splicing_events %>% group_by(Sample) %>% count(associated_gene) %>% tally()
@@ -794,7 +796,7 @@ AS_genes_events <- function(){
     geom_bar(stat = "identity", position = position_dodge()) + 
     theme_bw() + labs(y = "AS Genes (%)", x = "Number of Splicing Events") + mytheme + 
     theme(legend.position = c(0.85,0.85), legend.title = element_blank()) + 
-    scale_x_continuous(breaks = 1:7) 
+    scale_x_continuous(breaks = 1:7) + geom_text(aes(label = round(perc,1)),nudge_y = 2)
   
   return(list(p1,p2))
 }
@@ -815,9 +817,9 @@ IR_NMD_run <- function(df){
     p <- venn.diagram(
       x = list(unique(IR_coding$associated_gene), unique(NMD$associated_gene), unique(IR_NMD$associated_gene)),
       category.names = c("IR", "NMD", "IR-NMD"),
-      filename = NULL,output=TRUE, print.mode = "raw",fill = myCol, cex = 2,fontface = "bold",fontfamily= "CM Roman",
+      filename = NULL,output=TRUE, print.mode = "raw",fill = myCol, cex = 1.5,fontface = "bold",fontfamily= "CM Roman",
       # Set names
-      cat.cex = 2,cat.fontfamily = "CM Roman")
+      cat.cex = 1.5,cat.fontfamily = "CM Roman")
     
   return(p)
 }
@@ -848,7 +850,7 @@ NMD_vs_NonNMD <- function(){
                 data.frame("Num" = Non_IR_Non_NMD_transcripts_annotated_genes$Log_ISOSEQ_TPM, "Type" = "Non IR-NMD")) %>%
       ggplot(., aes(y = Num, x = Type)) + geom_boxplot() +
       theme_bw() +
-      labs(x = "", y = "Iso-Seq Expression (Log10 TPM)") + mytheme +
+      labs(x = "", y = "Expression (Log10 TPM)") + mytheme +
       theme(legend.position = c(.90, 0.90), legend.title = element_blank()) 
 
   return(p1)
@@ -866,19 +868,16 @@ lncRNA <- function(){
       p <- rbind(data.frame("Num" = all_dat, "Sample" = "Non-lncRNA"),
                  data.frame("Num" = lnc_dat, "Sample" = "lncRNA")) %>%
         ggplot(., aes(y = Num, x = Sample)) + geom_boxplot() +
-        theme_bw() +
-        labs(x = "", y = "Iso-Seq Expression (Log10 TPM)") +
+        labs(x = "", y = "Expression (Log10 TPM)") +
         mytheme + scale_fill_manual(values = wes_palette("Darjeeling2")) +
         theme(legend.position = c(.15, 0.85), legend.title = element_blank()) + theme(legend.direction="horizontal")
     }else if(title == "Number of Exons (Annotated Genes only)"){
       p <- rbind(data.frame("Num" = all_dat, "Sample" = "Non-lncRNA"),
                  data.frame("Num" = lnc_dat, "Sample" = "lncRNA")) %>%
-        ggplot(., aes(Num, fill = Sample)) + geom_density(alpha = 0.2) +
+        ggplot(., aes(Num, x = Sample)) + geom_boxplot() +
         theme_bw() +
-        labs(x = "Number of Exons", y = "Density") +
-        theme_bw() + 
-        mytheme + 
-        theme(legend.position = c(.15, 0.85), legend.title = element_blank()) + theme(legend.direction="horizontal")
+        labs(y = "Number of Exons", x = "") +
+        mytheme + theme(legend.position = c(.15, 0.85), legend.title = element_blank()) + theme(legend.direction="horizontal")
     }else if(title == "ORF Length (Annotated Genes only)"){
       p <- rbind(data.frame("Num" = all_dat, "Sample" = "Non-lncRNA"),
                  data.frame("Num" = lnc_dat, "Sample" = "lncRNA")) %>%
@@ -893,7 +892,7 @@ lncRNA <- function(){
                  data.frame("Num" = lnc_dat, "Sample" = "lncRNA")) %>%
         ggplot(., aes(y = Num, x = Sample)) + geom_boxplot() +
         theme_bw() +
-        labs(x = "", y = "Number of Isoforms per Gene (Log10)") +
+        labs(x = "", y = "Number of Isoforms (Log10)") +
         theme_bw() + 
         mytheme + 
         theme(legend.position = c(.25, 0.85), legend.title = element_blank()) + theme(legend.direction="horizontal")
@@ -1130,7 +1129,7 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
     ggplot(., aes(x=nIsoCat, fill=Sample)) +
     geom_bar(stat="identity", aes(y= Perc, group = as.factor(Sample)), color="black", size=0.3, width=0.7, 
              position="dodge") + 
-    labs(x ="Number of Isoforms", y = "Genes (%)", fill = "", title = "\n") +
+    labs(x ="Number of Isoforms", y = "Genes (%)", fill = "") +
     #scale_fill_manual(values=c(label_colour(dataset1), label_colour(dataset2)), 
     #                 labels=c(paste(dataset1,"Cortex"), paste(dataset2,"Cortex")))  + 
     mytheme + 
@@ -1139,12 +1138,12 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
   # Length
   p3 <- bind_rows(class.files %>% mutate(Sample = "Iso-Seq") %>% .[,c("length","Sample")], rnaseq.class.files %>% .[,c("length","Sample")]) %>% 
     ggplot(., aes(x = Sample, y = log10(length/1000))) + geom_boxplot() + mytheme +
-    labs(x = "", y = "Isoform Length (Log10 kb)", title = "\n")
+    labs(x = "", y = "Isoform Length (Log10 kb)")
   
   # Exons
   p4 <- bind_rows(class.files %>% mutate(Sample = "Iso-Seq") %>% .[,c("exons","Sample")], rnaseq.class.files %>% .[,c("exons","Sample")]) %>% 
     ggplot(., aes(x = Sample, y = log10(exons))) + geom_boxplot() + mytheme +
-    labs(x = "", y = "Number of Exons (Log10)", title = "\n")
+    labs(x = "", y = "Number of Exons (Log10)")
   
   # cage peak
   p5 <- data.frame(dataset = c("Iso-Seq","RNA-Seq"),
@@ -1153,10 +1152,10 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
                    # include NAs
                    without_50 = c(100 - nrow(class.files %>% filter(abs(dist_to_cage_peak) <= 50))/nrow(class.files) * 100,
                                   100 - nrow(rnaseq.class.files %>% filter(abs(dist_to_cage_peak) <= 50))/nrow(rnaseq.class.files) * 100)) %>%
-    melt() %>%
+    reshape2::melt() %>%
     mutate(variable = factor(variable, levels = c("without_50","within_50"))) %>%
     ggplot(., aes(x = dataset, y = value, fill = variable)) + geom_bar(stat = "identity") + mytheme +
-    labs(y ="Isoforms within 50bp CAGE (%)", x = "", fill = "", title = "\n") + theme(legend.position = "right") +
+    labs(y ="Isoforms within 50bp CAGE (%)", x = "", fill = "") + theme(legend.position = "right") +
     scale_fill_discrete(labels = c("No","Yes"))
   
   # structural_category
@@ -1164,11 +1163,9 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
                     group_by(structural_category,Sample) %>% tally() %>% group_by(Sample) %>% mutate(perc = n/sum(n)*100),
                   rnaseq.class.files %>% .[,c("structural_category","Sample")] %>% group_by(structural_category,Sample) %>% tally() %>% group_by(Sample) %>% mutate(perc = n/sum(n)*100)) %>% 
     ggplot(., aes(x = Sample, y = perc, fill = structural_category)) + geom_bar(stat = "identity") + mytheme +
-    labs(x = "", y = "Isoforms (%)", fill = "Structural Category", title = "\n") + theme(legend.position = "bottom")
+    labs(x = "", y = "Isoforms (%)", fill = "Structural Category") + theme(legend.position = "left")
   
-  output <- plot_grid(grobTree(p1),p2,p3,p4,p5,p6, labels = "auto", label_size = 30, label_fontfamily = "ArialMT", ncol = 2)
-  
-  return(output)
+  return(list(p1,p2,p3,p4,p5,p6))
 }
 
 # rnaseq_isoseq_counts
