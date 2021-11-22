@@ -240,6 +240,9 @@ read_files_differentialASevents <- function(group_sqanti_dir,suppa_dir){
 # AS_events_diff
 # Find AS events after generating files from read_files_differentialASevents
 # output = 3 plots 
+group.mono.class.files = dASevents_files$group.mono.class.files
+annotated_sqanti_gtf = dASevents_files$annotated_sqanti_gtf
+suppa2.output= dASevents_files$suppa2.output
 AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.output){
   
   # naming of lists to annotate files
@@ -275,6 +278,7 @@ AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.ou
   splicing_events_tally_present <- splicing_events_tally %>% 
     mutate(Num_Perc = paste0(n.x," (",round(perc,2),"%)")) %>% select(Event, Sample, Num_Perc) %>% spread(., Sample, Num_Perc)
   print(splicing_events_tally_present)
+  splicing_events_tally_present <<- splicing_events_tally_present
   
   p1 <- splicing_events_tally %>% mutate(phenotype = factor(word(Sample, c(1), sep = fixed("_")), levels = c("WT","TG")), age = word(Sample, c(2), sep = fixed("_"))) %>%
     mutate(age=recode(age, "2mos"="2 months", "8mos" = "8 months")) %>%
@@ -282,6 +286,10 @@ AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.ou
     facet_grid(~age) + theme_bw() + labs(y = "Splicing Events (%)", x = "") + mytheme + 
     theme(legend.position = "top",legend.title = element_blank(),strip.background = element_blank()) +
     guides(fill = guide_legend(ncol = 1)) 
+  
+  #splicing_events_tally_present %>% filter(Event == "AF")
+  #splicing_events_tally_present %>% filter(Event == "SE")
+  # AF
   
   # Number of genes 
   splicing_events_genes <- splicing_events %>% group_by(Event, Sample) %>% tally() 
@@ -297,7 +305,7 @@ AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.ou
     guides(fill = guide_legend(ncol = 1))  +
     scale_y_continuous(labels = ks) 
   
-  dataset_tally_gene <- splicing_events %>% group_by(Sample) %>% count(associated_gene) %>% tally()
+  dataset_tally_gene <- splicing_events %>% group_by(Sample) %>% dplyr::count(associated_gene) %>% tally()
   nrow((unique(splicing_events[splicing_events$Sample == "WT_2mos","associated_gene"])))
   splicing_events_number <- splicing_events %>% group_by(Sample, associated_gene) %>% tally() %>% group_by(n, Sample) %>% tally() %>% left_join(dataset_tally_gene, by = "Sample") %>%
     mutate(perc = nn/n.y * 100)  %>% `colnames<-`(c("Number_of_Splicing_Events", "Sample", "Genes", "Total_Genes","perc")) %>% as.data.frame(.) 
@@ -311,7 +319,7 @@ AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.ou
     ggplot(., aes(x = Number_of_Splicing_Events, y = perc, fill = Sample)) + 
     geom_bar(stat = "identity", position = position_dodge()) + 
     theme_bw() + labs(y = "AS Genes (%)", x = "Number of Splicing Events") + mytheme + 
-    theme(legend.position = c(0.85,0.85), legend.title = element_blank()) + 
+    theme(legend.position = c("top"), legend.title = element_blank()) + 
     scale_x_continuous(breaks = 1:7) + scale_fill_manual(values=c(label_colour("TG_2mos"), label_colour("TG"),label_colour("WT_2mos"), label_colour("WT"))) 
   
   return(list(p1,p2,p3))

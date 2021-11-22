@@ -16,9 +16,10 @@ mytheme <- theme(axis.line = element_line(colour = "black"),
                  #legend.justification = c(1,1),
                  legend.box.just = "right",
                  legend.margin = margin(6, 6, 6, 6),
-                 legend.text = element_text(size = 18,family="CM Roman"),
+                 legend.text = element_text(size = 14,family="CM Roman"),
                  axis.text.x= element_text(size=16,family="CM Roman"),
-                 axis.text.y= element_text(size=16,family="CM Roman"))
+                 axis.text.y= element_text(size=16,family="CM Roman"),
+                 strip.text = element_text(size=17,family="CM Roman"))
 
 legend_theme <- theme(panel.grid.major = element_blank(),
                       panel.grid.minor = element_blank(),
@@ -173,15 +174,15 @@ plot_mergedexp <- function(InputGene,IsoformID,GeneExp,Norm_transcounts,type){
     plot_title <- paste0(InputGene,"\n",type)
     #cat("Mean Expression across groups for", InputGene,"\n")
     
-    meanexp = df %>% group_by(time, group) %>% summarise_at(vars(Exp), funs(mean(., na.rm=TRUE))) %>% as.data.frame() %>% 
-      mutate(groupings = paste0(time,group)) %>% .[,c("Exp","groupings")] %>% spread(., groupings, Exp) %>% mutate(log2fc = log2(`8CASE`/`2CASE`)) %>% .[,c(5,2,4,1,3)]
+    #meanexp = df %>% group_by(time, group) %>% summarise_at(vars(Exp), funs(mean(., na.rm=TRUE))) %>% as.data.frame() %>% 
+    #  mutate(groupings = paste0(time,group)) %>% .[,c("Exp","groupings")] %>% spread(., groupings, Exp) %>% mutate(log2fc = log2(`8CASE`/`2CASE`)) %>% .[,c(5,2,4,1,3)]
     
     # 3 significant factor 
-    meanexp = signif(meanexp, digits = 3)
+    #meanexp = signif(meanexp, digits = 3)
     
     #print(meanexp)
-    meanexp_output[[InputGene]] <- meanexp
-    meanexp_output <<- meanexp_output
+    #meanexp_output[[InputGene]] <- meanexp
+    #meanexp_output <<- meanexp_output
     
   }else if(IsoformID != "NA"){
     df <- Norm_transcounts  %>% filter(isoform == IsoformID) %>% left_join(., phenotype, by = c("variable" = "sample"))
@@ -239,12 +240,11 @@ group_plots_rnavsiso <- function(gene, plottype1, plottype2){
 # Input: tappassig with the all the sheets
 # Plots: 
 # P1: venn diagram of genes that are differentially expressed between RNA+RNA(Isabel),Iso+RNA,Iso+Iso
-tappas_genesig <- function(R){
+tappas_genesig <- function(){
   
   ## Genes that are already filtered by significance (p <0.05 and R > 0.5)
   # Genes associated with interaction effects (results from using RNA-Seq or Iso-Seq as expression)
-  WholeRNA_Interaction = c(gene_sigs_WholeRNA_lst$models$`Model 4 Interaction`$...1,gene_sigs_WholeRNA_lst$models$`Model 5 Interaction`$...1,
-    gene_sigs_WholeRNA_lst$models$`Model 6 Interaction`$...1,gene_sigs_WholeRNA_lst$models$`Model 7 Interaction`$...1)
+  WholeRNA_Interaction = c(gene_sigs_WholeRNA_lst$models$`Model 4 - 7 Interaction`$...1)
   
   WholeIso_Interaction = c(gene_sigs_WholeIso_lst$models$`Model 4 Interaction`$...1,gene_sigs_WholeIso_lst$models$`Model 5 Interaction`$...1,
                            gene_sigs_WholeIso_lst$models$`Model 6 Interaction`$...1,gene_sigs_WholeIso_lst$models$`Model 7 Interaction`$...1)
@@ -724,7 +724,46 @@ IR_ORF <- function(){
   return(list(p1,p2,p3,p4))
 }
 
+### FDA #################################################################
+FDA_plot <- function(FDA_input, title){
+  
+  TranscriptFeatures = c("NMD","repeat","3UTR Motif","5UTR Motif","PAS","uORF","miRNA Binding","3UTR Length","5UTR Length","CDS","PolyA Site","3UTR Motif","5UTR Motif")
+  
+  # data wrangle for plot
+  dat = reshape2::melt(FDA_input, id = "Gene", variable = "Category") %>% group_by(Category,value) %>% tally() %>% filter(value != "") %>% 
+    mutate(type = factor(ifelse(Category %in% TranscriptFeatures, "Transcript","Protein"), levels = c("Transcript","Protein"))) %>%
+    mutate(perc = n/nrow(FDA_FP) * 100) 
+  
+  tab = dat %>% arrange(desc(perc))
+  
+  p = ggplot(dat, aes(x = reorder(Category,n), y = n, fill = type, label = n)) + geom_bar(aes(alpha = value),stat = "identity") + coord_flip() + 
+    scale_fill_manual(values = alpha(c("red", "blue"), .3)) + 
+    facet_wrap(~type,nrow = 2, scales = "free_y") + mytheme + labs(y = "", x = "", title = title) + 
+    guides(fill="none",alpha=guide_legend(title="Status")) + theme(legend.position = c(0.8,0.1),strip.background = element_blank()) 
+  
+  return(list(tab,p))
+}
 
+# Plot venn diagram of the genes varying by 5'UTR, 3'UTR, CDS, PolyA
+FDA_lengths_plot <- function(){
+  
+  x <- list(
+    `3'UTR` = FDA_lengths$`3UTR`[FDA_lengths$`3UTR`$Status == "YES","Gene"], 
+    `5'UTR` = FDA_lengths$`5UTR`[FDA_lengths$`5UTR`$Status == "YES","Gene"] , 
+    CDS = FDA_lengths$`CDS`[FDA_lengths$`CDS`$Status == "YES","Gene"],
+    PolyA = FDA_lengths$PolyASite[FDA_lengths$PolyASite$Status == "YES","Gene"]
+  )
+  
+  # Example of Genes with varying 3'UTR, 5'UTR, CDS, PolyA site
+  intersect(intersect(intersect(intersect(FDA_lengths$`3UTR`[FDA_lengths$`3UTR`$Status == "YES","Gene"],
+                                          FDA_lengths$`5UTR`[FDA_lengths$`5UTR`$Status == "YES","Gene"]),
+                                FDA_lengths$`CDS`[FDA_lengths$`CDS`$Status == "YES","Gene"]),
+                      FDA_lengths$PolyASite[FDA_lengths$PolyASite$Status == "YES","Gene"]),
+            FDA_lengths$mir3225[FDA_lengths$mir3225$Status == "YES","Gene"]) 
+  
+  p = ggvenn(x, fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"), stroke_size = 0.5, set_name_size = 4)
+  return(p)
+}
 ### Summary Info #################################################################
 summary_dataset <- function(){
   output = data.frame()
@@ -793,4 +832,350 @@ DEI_genes_unique <- function(x){
   output = list(p1,p2,p3,p4,p5)
   names(output) = list("p1_density","p2_slc1a3_isoseq","p3_slc1a3_rnaseq","p4_Gja1_isoseq","p5_Gja1_rnaseq")
   return(output)
+}
+
+# Identify common genes with DMP/DMR and DIU/DIE/DFI
+# DMP/DMR = Differentially methylated position/differentially methylated region 
+# DIU/DIE/DFI = Differential isoform usage/differential isoform expression/differential feature inclusion 
+# Use RNASeq as expression 
+# Model == Genotype or Interaction (DMP/DMR)
+# Output 
+# 1/ Venn Diagram of overlap of DMP with DIU/DIE/DFI based on model
+# 2/ Output Table of location of overlap DMP
+Methylation_Integration<- function(Model){
+  # Genes identified as DFI with major isoform switching (more interesting)
+  # Genes with major isoform switch using the fold change for filtering minor isoforms
+  # Genes with differential transcript expression with Rsqaured > 0.7
+  DFI_yes = DFI %>% filter(DFI_Status == "DFI", MajorIsoformSwitching == "YES")
+  DIU_yes = tappasDIU$DIU_rnaseq_fc %>% filter(podiumChange == "TRUE")
+  DIE_yes = tappassigtrans$WholeRNA_Transexp[tappassigtrans$WholeRNA_Transexp$`R-squared` > 0.7,]
+  
+  # Select DMP/DMR model  
+  if(Model == "DMP_Genotype"){DMP = Whole_DMP$genotype}else if(
+    Model == "DMP_Interaction"){DMP = Whole_DMP$interaction}else if(
+      Model == "DMR_Genotype"){
+      # less stringent for DMR genotype 
+      DFI_yes = DFI %>% filter(DFI_Status == "DFI")
+      DIE_yes = tappassigtrans$WholeRNA_Transexp
+      DMP = DMRs}else{print("FAIL")}
+  
+  # create venn diagram 
+  x <- list(DFI = DFI_yes$Gene, DIU = DIU_yes$gene, DIE = DIE_yes$associated_gene, `DMP Genotype` = DMP$Chipseeker_SYMBOL)
+  p = ggvenn(x, fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"), stroke_size = 0.5, set_name_size = 4)
+  
+  # Interesting sectors 
+  DIU_DIE_DFI_DMP = intersect(intersect(intersect(DFI_yes$Gene,DIU_yes$gene),DIE_yes$associated_gene),DMP$Chipseeker_SYMBOL)
+  DIU_DIE_DMP = intersect(intersect(DIU_yes$gene,DMP$Chipseeker_SYMBOL),DIE_yes$associated_gene)
+  DFI_DMP = intersect(DFI_yes$Gene,DMP$Chipseeker_SYMBOL)
+  DIU_DMP = intersect(DIU_yes$gene,DMP$Chipseeker_SYMBOL)
+  DIE_DMP = intersect(DIE_yes$associated_gene,DMP$Chipseeker_SYMBOL)
+  cat("Overlap between DFI, DIU, DIU, DMP:", DIU_DIE_DFI_DMP, "\n")
+  cat("Overlap between DFI and DMP :", DFI_DMP,"\n")
+  cat("Overlap between DIU, DIE and DMP:", DIU_DIE_DMP,"\n")
+  cat("Overlap between DIU and DMP:", DIU_DMP,"\n")
+  cat("Overlap between DIE and DMP:", DIE_DMP,"\n")
+  
+  All_Overlap = unique(c(DIU_DIE_DFI_DMP,DIU_DIE_DMP,DFI_DMP,DIU_DMP,DIE_DMP))
+  cat("All Genes with Overlap", All_Overlap,"\n")
+  
+  # DMP/DMR positions of overlap 
+  Location = DMP[DMP$Chipseeker_SYMBOL %in% All_Overlap,] %>% 
+    mutate(chr = word(Location,c(1),sep = fixed(":")), start = word(Location,c(2),sep = fixed(":")), end = word(Location,c(2),sep = fixed(":")))
+  
+  # No FDR for DMR Genotype
+  if(Model == "DMR_Genotype"){
+    Location = Location %>% select(chr, start, end, Chipseeker_SYMBOL, Chipseeker_annotation, meth.group1.WT, meth.group2.TG) 
+  }else{
+    Location = Location %>% select(chr, start, end, Chipseeker_SYMBOL, Chipseeker_annotation, meth.group1.WT, meth.group2.TG,FDR_adj_genotype) 
+  }
+  
+  output = list(p,Location)
+  names(output) = c("Venn","Positions")
+  return(output)
+}
+
+# Plot the Methylation of DMP of interest, and the correlation of isoform expression with DMP 
+# gene = common gene from the DMPgene doc
+# DMPposition = position of the DMP of interest 
+# isoformdiff = PB.ID of the isoform of interest 
+Methylation_Integration_plots <- function(gene, isoformdiff){
+  # Find the DMP associated to the gene from Isabel's results
+  Diff_Meth = rbind(Whole_DMP$genotype[,c(c("Location","Chipseeker_SYMBOL"))], # Genotype DMP
+                    Whole_DMP$interaction[,c("Location","Chipseeker_SYMBOL")]) # Interaction DMP
+  
+  # remove duplicated DMP (from different analysis of genotype and interaction)
+  Diff_Meth = Diff_Meth[!duplicated(Diff_Meth), ]
+  DMPposition = Diff_Meth %>% filter(Chipseeker_SYMBOL == gene) 
+  
+  # subset the RRBS data by the chromosome of the gene and the DMP position  
+  # Use the mean of all the methylation values
+  dat = subset(RRBS_completebetas, rownames(RRBS_completebetas) %in% DMPposition$Location) %>% reshape2::melt() %>%
+    group_by(variable) %>% summarise_at(vars(value), list(Methylation = mean))
+  
+  # merge subsetted data with the phenotype data; datawrangle for plot
+  df = merge(dat,RRBS_Phenotype[,c("Sample_ID","Genotype","Age_months")], by.x = "variable", by.y = "Sample_ID") %>% 
+    mutate(Age_months = factor(Age_months),Genotype = factor(Genotype, levels = c("WT","TG")), Sample = word(variable,c(1),sep = fixed("_")))
+  
+  # plot the methylation of DMP 
+  age_names <- c(`2` = "2 mos",`4` = "4 mos", `6` = "6 mos",`8` = "8 mos")
+  p1 = ggplot(df,aes(x = Genotype, y = Methylation, colour = Genotype)) + geom_boxplot() + 
+    geom_point(size = 3, position = position_jitter(w = 0.1, h = 0)) + 
+    labs(x = " ", y = "Methylation (%)") + mytheme +
+    theme(legend.position = "bottom") + scale_colour_manual(values = c(label_colour("TG"),label_colour("WT"))) +  
+    scale_y_continuous(labels = function(x) x*100) + theme(legend.position = "none") +
+    facet_grid(~Age_months,labeller = as_labeller(age_names)) + 
+    theme(strip.background = element_blank())
+  
+  
+  # isoform expression (RNASeq expression normalised counts)
+  df2 = tappasrna$input_normalized_matrix.tsv %>% 
+    tibble::rownames_to_column(., "isoform") %>% filter(isoform == isoformdiff) %>% reshape2::melt() #%>% 
+    #mutate(sample = word(word(variable,c(1), sep = fixed("_")),c(2), sep = fixed(".")))
+  df2 = merge(df2, tappasrna_phenotype, by.x = "variable", by.y = "sample") %>% dplyr::rename(Expression = value)
+  
+  # merge the isoform expression and methylation 
+  merged = merge(df,df2,by.x = "Sample", by.y = "variable")
+  
+  # plot interaction 
+  p2 = ggplot(merged,aes(x = Methylation, y = Expression)) + geom_point(size = 3, aes(colour = Genotype)) + labs(y = "Isoform Expression (normalised)", x = "Methylation (%)") + mytheme + 
+    scale_colour_manual(values = c(label_colour("TG"),label_colour("WT"))) + theme(legend.position = "bottom") +  scale_x_continuous(labels = function(x) x*100)
+  
+  # correlation 
+  print(cor.test(merged$Methylation,merged$Expression))
+  
+  # linear regression 
+  lr = data.frame(Exp = merged$Expression,Meth = merged$Methylation,Genotype = merged$Genotype, Age = merged$Age_months)
+  lr$Age = as.numeric(as.character(lr$Age))
+  lr$Genotype = as.numeric(as.character(recode(lr$Genotype, "WT" = "0","TG" = "1")))
+  lr$InteractionMethGeno = lr$Meth * lr$Genotype
+  lr$InteractionMethAge = lr$Meth * lr$Age
+  lr$InteractionAgeGeno = lr$Age * lr$Genotype
+  lr$InteractionAgeGenoMeth = lr$Age * lr$Genotype * lr$Meth
+  
+  
+  res = lm(Exp ~ Meth + Genotype + InteractionMethGeno + InteractionMethAge + InteractionAgeGenoMeth + Age, data = lr)
+  print(summary(res))
+  
+  output = list(p1,p2)
+  return(output)
+}
+
+as3mt_dmr_figure <- function(){
+  # DMP position within AS3MT region
+  as3mt_DMR = c("chr19:46730273","chr19:46730291","chr19:46730292","chr19:46730304","chr19:46730305","chr19:46730332","chr19:46730333","chr19:46730349","chr19:46730758")
+  dat = subset(RRBS_completebetas, rownames(RRBS_completebetas) %in% as3mt_DMR) 
+  
+  # subset from RRBS and datawrangle for plot
+  subsetted_dat = dat %>% rownames_to_column(var = "position") %>% mutate(location = as.numeric(as.character(word(position,c(2),sep = fixed(":"))))) %>% reshape2::melt(id = "location") %>% merge(.,RRBS_Phenotype[,c("Sample_ID","Genotype","Age_months")], by.x = "variable", by.y = "Sample_ID") %>% mutate(Methylation = as.numeric(as.character(value)) * 100) 
+  
+  # mean of methylation across the DMR
+  df = subsetted_dat %>% filter(location != "46730758") %>% 
+    group_by(Genotype,Age_months,variable) %>% summarise_at(vars(Methylation), list(Methylation = mean))
+  
+  df2 = tappasrna$input_normalized_matrix.tsv %>% tibble::rownames_to_column(., "isoform") %>% 
+    filter(isoform == "PB.8363.2") %>% reshape2::melt() %>% dplyr::rename(Expression = value) 
+    #mutate(sample = word(word(variable,c(1), sep = fixed("_")),c(2), sep = fixed("."))) 
+  
+  # merge the isoform expression and methylation 
+  merged = merge(df,df2)
+  
+  # correlation 
+  print(cor.test(merged$Methylation,merged$Expression))
+  
+  # linear regression 
+  lr = data.frame(Exp = merged$Expression,Meth = merged$Methylation,Genotype = merged$Genotype, Age = merged$Age_months)
+  lr$Age = as.numeric(as.character(lr$Age))
+  lr$Genotype = as.numeric(as.character(recode(lr$Genotype, "WT" = "0","TG" = "1")))
+  lr$InteractionMethGeno = lr$Meth * lr$Genotype
+  lr$InteractionMethAge = lr$Meth * lr$Age
+  lr$InteractionAgeGeno = lr$Age * lr$Genotype
+  lr$InteractionAgeGenoMeth = lr$Age * lr$Genotype * lr$Meth
+  
+  res = lm(Exp ~ Meth + Genotype + InteractionMethGeno + InteractionMethAge + InteractionAgeGenoMeth + Age, data = lr)
+  print(summary(res))
+  
+  # plot
+  p = ggplot(subsetted_dat,aes(x = location, y = Methylation, colour = Genotype)) + 
+    annotate("rect", xmin = 46730270, xmax = 46730350, ymin = 0, ymax = 100, alpha = 0.1,fill = wes_palette("Darjeeling1")[2]) +
+    geom_point(size = 2) + ylim(0,100) + xlim(46730250,46730800) + stat_summary(data=subsetted_dat, aes(x=location, y=Methylation, group=Genotype), fun ="mean", geom="line", linetype = "dotted") + scale_colour_manual(values = c(label_colour("TG"),label_colour("WT")), "Genotype", labels = c("WT","TG")) + 
+    mytheme + labs(y = "Methylation (%)", x = "Chromosome 19") + theme(legend.position = "bottom")
+  
+  # correlation plot 
+  p2 = ggplot(merged,aes(x = Methylation, y = Expression)) + geom_point(size = 3, aes(colour = Genotype)) + 
+    labs(y = "Isoform Expression (normalised)", x = "Methylation (%)") + mytheme + 
+    scale_colour_manual(values = c(label_colour("TG"),label_colour("WT"))) + 
+    theme(legend.position = "bottom")
+  
+  
+  return(list(p,p2))
+}
+
+
+
+#### WGCNA
+venn_WGCNA <- function(){
+  genesigs = c(gene_sigs_WholeIso_lst$models$`Model 1 Genotype`$...1,gene_sigs_WholeIso_lst$models$`Model 2 Genotype+Age`$...1,
+               gene_sigs_WholeIso_lst$models$`Model 4 Interaction`$...1,gene_sigs_WholeIso_lst$models$`Model 5 Interaction`$...1,
+               gene_sigs_WholeIso_lst$models$`Model 6 Interaction`$...1,gene_sigs_WholeIso_lst$models$`Model 7 Interaction`$...1)
+  all_modules = c(WGCNA$`Turquoise `$Gene,WGCNA$Red$Gene,WGCNA$Yellow$Gene)
+  
+  # RNA-Seq genes
+  #Turquoise = length(intersect(gene_sigs_WholeRNA_lst$models$`Model 4 - 7 Interaction`$...1,WGCNA$`Turquoise `$Gene))
+  #Red = length(intersect(gene_sigs_WholeRNA_lst$models$`Model 4 - 7 Interaction`$...1,WGCNA$Red$Gene))
+  #Yellow = length(intersect(gene_sigs_WholeRNA_lst$models$`Model 4 - 7 Interaction`$...1,WGCNA$Yellow$Gene))
+  #None = length(setdiff(gene_sigs_WholeRNA_lst$models$`Model 4 - 7 Interaction`$...1,all_modules))
+  
+  # Iso-Seq genes
+  Turquoise = length(intersect(genesigs,WGCNA$`Turquoise `$Gene))
+  Red = length(intersect(genesigs,WGCNA$Red$Gene))
+  Yellow = length(intersect(genesigs,WGCNA$Yellow$Gene))
+  None = length(setdiff(genesigs,all_modules))
+  
+  cat(length(genesigs))
+  
+  
+  data <- data.frame(
+    category=c("Turquoise Module", "Red Module", "Yellow Module","Not in Module"),
+    count=c(Turquoise, Red, Yellow,None)
+  )
+  
+  
+  # Compute percentages
+  data$fraction <- data$count / sum(data$count)
+  
+  # Compute the cumulative percentages (top of each rectangle)
+  data$ymax <- cumsum(data$fraction)
+  
+  # Compute the bottom of each rectangle
+  data$ymin <- c(0, head(data$ymax, n=-1))
+  
+  # Compute label position
+  data$labelPosition <- (data$ymax + data$ymin) /2
+  
+  # Compute a good label
+  data$label <- paste0(data$count)
+  
+  # Make the plot
+  p = ggplot(data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) +
+    geom_rect() +
+    geom_text( x=2, aes(y=labelPosition, label=label, color=category), size=6) + # x here controls label position (inner / outer)
+    scale_fill_manual(values = c(wes_palette("Royal1")[[1]],wes_palette("Zissou1")[[5]],
+                                 wes_palette("Zissou1")[[1]],wes_palette("Zissou1")[3])) +
+    scale_colour_manual(values = c(wes_palette("Royal1")[[1]],wes_palette("Zissou1")[[5]],
+                                   wes_palette("Zissou1")[[1]],wes_palette("Zissou1")[3])) +
+    coord_polar(theta="y") +
+    xlim(c(-1, 4)) +
+    theme_void() +
+    theme(legend.position = "bottom", legend.title = element_blank(),legend.text = element_text(size=16),legend.direction = "vertical")
+  
+  return(p)
+  
+}
+
+DFI_generateplots <- function(){
+  cat("Number of DFI:", DFI %>% filter(DFI == "DFI") %>% nrow(),"\n")
+  cat("Number of DFI:", DFI %>% filter(DFI == "DFI") %>% select(Gene) %>% unique() %>% nrow(),"\n")
+  
+  lstTrans = c("3UTRmotif","5UTRmotif","RNA_binding","uORF","miRNA","miRNA_Binding","PAS","repeat")
+  
+  dfi_results = data.frame()
+  for(feature in unique(DFI$Feature)){
+    newRow = data.frame(Feature=feature,
+                        TotalCount=nrow(DFI[DFI$Feature==feature,]),
+                        DFICount=nrow(DFI[DFI$Feature==feature & DFI$DFI == "DFI",]),
+                        TotalAnnot=sum(DFI_counts[DFI_counts$Feature==feature,]$Total),
+                        Level=ifelse(feature %in% lstTrans, "Transcript","Protein"), 
+                        Time = "0")
+    dfi_results = rbind(dfi_results,newRow)
+  }
+  
+  dfi_results["Freq1"] = dfi_results[,"TotalCount"]/sum(dfi_results[,"TotalCount"])*100
+  dfi_results["Freq2"] = dfi_results[,"TotalAnnot"]/sum(dfi_results[,"TotalAnnot"])*100
+  dfi_results$Feature = as.character(dfi_results$Feature)
+  dfi_results = dfi_results[order(dfi_results$Feature, method = ),]
+  
+  # original plot
+  p1 = ggplot(dfi_results) +
+    geom_bar(aes(x=Feature,y=Freq2,fill=as.factor(Time)),width =0.8, size=0.5,
+             color="black", stat = "identity", position = position_dodge()) +
+    geom_line(aes(x=Feature,y=Freq1), stat="identity", group = 1) +
+    geom_point(aes(x=Feature,y=Freq1, shape="Features"), stat="identity", group = 1) +
+    ylab("% Features") +
+    xlab("Category") +
+    labs(fill= "", shape=NULL) +
+    scale_fill_manual(labels = c("DFI Features"), values = c(myPalette[c(2)])) +
+    theme_classic() +
+    theme(axis.title.x = element_text(size=17, margin=margin(5,0,0,0)),
+          axis.text.x  = element_text(margin=margin(7,0,0,0), size=17, hjust = 1, angle = 45),
+          axis.title.y = element_text(size=17,  margin=margin(0,15,0,0)),
+          axis.text.y  = element_text(vjust=0.5, size=17))  +
+    facet_grid(~ Level, scales = "free",  space="free") +  theme(strip.text.x = element_text(size = 15, face="bold"), strip.background = element_rect(colour="black", fill=c("white")))
+  
+  # original plot reformatted
+  p1b = ggplot(dfi_results) +
+    geom_bar(aes(x=Feature,y=Freq2,fill=as.factor(Time)),width =0.8, size=0.5,
+             color="black", stat = "identity", position = position_dodge()) +
+    geom_line(aes(x=Feature,y=Freq1), stat="identity", group = 1) +
+    geom_point(aes(x=Feature,y=Freq1, shape="Features"), stat="identity", group = 1) +
+    ylab("Features (%)") +
+    xlab("Category") +
+    labs(fill= "", shape=NULL) +
+    scale_fill_manual(labels = c("DFI Features"), values = c(myPalette[c(2)])) +
+    mytheme +  facet_grid(~ Level, scales = "free",  space="free") +  
+    theme(strip.text.x = element_text(size = 15, face="bold"), strip.background = element_rect(colour="white", fill=c("white"))) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + theme(legend.position = "bottom") 
+    
+  
+  # Plot 2
+  dfFavored = DFI[DFI$DFI == "DFI",c("Feature","Favored")]
+  total_favored = data.frame()
+  
+  for(feature in unique(dfFavored$Feature)){
+    group = unique(dfFavored$Favored)
+    for(name in group){
+      newRow = data.frame(
+        "Feature" = feature,
+        "Favored" = name,
+        "Count" = nrow(dfFavored[dfFavored$Feature==feature & dfFavored$Favored==name,]),
+        "Level" = ifelse(feature %in% lstTrans, "Transcript","Protein")
+      )
+      total_favored = rbind(total_favored,newRow)
+    }
+    total_favored[total_favored$Feature==feature,]$Count <- (total_favored[total_favored$Feature==feature,]$Count/
+                                                               sum(total_favored[total_favored$Feature==feature,]$Count))*100
+  }
+  
+  if(length(which(total_favored$Favored=="N/A"))>0)total_favored = total_favored[-which(total_favored$Favored=="N/A"),]
+  total_favored = total_favored[order(total_favored$Level, method = ),] 
+  total_favored$Level = factor(total_favored$Level, levels = c("Transcript","Protein"))
+  
+  p2 = ggplot(total_favored, aes(x=Feature, y = Count, fill=Favored)) +
+    geom_bar(stat = "identity", position = "fill") +
+    mytheme + labs(x = "Category", y = "DFI Features") +
+    facet_grid(~ Level, scales = "free",  space="free") +
+    theme(strip.text.x = element_text(size = 15, face="bold"), strip.background = element_rect(colour="white", fill=c("white"))) +
+    geom_hline(yintercept=0.5, linetype="dashed",
+               color = myPalette[1], size=1)+
+    scale_fill_manual(values = c(label_colour("TG"),label_colour("WT")), labels = c("WT","TG")) +
+    scale_y_continuous(labels = scales::percent) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + theme(legend.position = "bottom") 
+  
+  # Co inclusion 
+  simplify_features <- function(feature){
+    simplify = if(grepl("miR", feature) == "TRUE"){"miRNA"}else if(grepl("U00", feature) == "TRUE"){"uORF"}else(as.character(feature))
+    return(simplify)
+  }
+  
+  #DFI_co$FeatureID1_simplified = lapply(DFI_co$FeatureID1, function(x) simplify_features(x))
+  #DFI_co$FeatureID2_simplified = lapply(DFI_co$FeatureID2, function(x) simplify_features(x))
+  #DFI_co$Pair = paste0(DFI_co$FeatureID1_simplified,"_",DFI_co$FeatureID2_simplified)
+  #DFI_co = DFI_co %>% filter(GeneswithBothDFI > 10)
+  
+  #merge(DFI_co %>% group_by(Pair) %>% tally(MutualExclusive) %>% dplyr::rename("MutualExclusive" = "n"),
+  #      DFI_co %>% group_by(Pair) %>% tally(Coinclusion) %>% dplyr::rename("Coinclusion" = "n")) %>% reshape2::melt() %>% 
+  #  ggplot(., aes(x = Pair, y = value, fill = variable)) + geom_bar(stat = "identity") +
+  #  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + theme(legend.position = "bottom")
+  
+  
+  return(list(p1,p1b,p2))
 }

@@ -25,6 +25,8 @@ suppressMessages(library(directlabels))
 suppressMessages(library(cowplot))
 suppressMessages(library(data.table))
 suppressMessages(library(readxl))
+suppressMessages(library("xlsx"))
+suppressMessages(library(ggvenn))
 
 detach("package:plyr")
 library(extrafont)
@@ -34,7 +36,7 @@ loadfonts()
 # do not output log files for venn diagrams
 futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
 
-#output_helpfig_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures"
+output_helpfig_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures"
 output_plot_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/DiffAnalysis_WholeTranscriptome"
 # results from Whole transcriptome paper
 input_table_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/Output/Tables"
@@ -45,6 +47,11 @@ source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg45
 ##### Load Files ############################# 
 tappasiso <- input_tappasfiles(tappasiso_input_dir)
 tappasrna <- input_tappasfiles(tappasrna_input_dir)
+
+#### FDA 
+FDA_FP_results = FDA_plot(FDA_FP, "Presence")
+FDA_GP_results = FDA_plot(FDA_GP, "Position")
+FDA_lengths_results = FDA_lengths_plot()
 
 # tappasrna expression file: change the column to include phenotype and age
 # tappasrna_phenotype = phenotype file used for input to tappas with all the mouse for rnaseq expresssion input
@@ -161,6 +168,10 @@ IFiso_Esyt2 = IF_plot("Esyt2",tappasiso$gene_transcripts.tsv, tappasiso$input_no
 IFrna_Esyt2 = IF_plot("Esyt2",tappasrna$gene_transcripts.tsv, tappasrna$input_normalized_matrix.tsv, "rnaseq")
 DIU_genes_exp_plots = DIU_genes_exp()
 DEG_DIU = DIU_RNASEQ_results()
+write.xlsx(DEG_DIU$DIU_DEG_maj, paste0(output_helpfig_dir,"/DIU_Analysis_Genelist.xlsx"), sheetName="DIU_DEG_maj")
+write.xlsx(DEG_DIU$DIU_DEG_nomaj, paste0(output_helpfig_dir,"/DIU_Analysis_Genelist.xlsx"), sheetName="DIU_DEG_nomaj", append=TRUE)
+write.xlsx(DEG_DIU$DIU_notDEG_nomaj, paste0(output_helpfig_dir,"/DIU_Analysis_Genelist.xlsx"), sheetName="DIU_notDEG_nomaj", append=TRUE)
+write.xlsx(DEG_DIU$DIU_notDEG_maj, paste0(output_helpfig_dir,"/DIU_Analysis_Genelist.xlsx"), sheetName="DIU_notDEG_maj", append=TRUE)
 
 #################################### Generate Plots ############
 pdf(paste0(output_plot_dir,"/WholeDifferentialAnalysis.pdf"), width = 10, height = 15)
@@ -168,7 +179,7 @@ plot_grid(grobTree(tappasgenesig_plots$p1),grobTree(tappasgenesig_plots$p2), lab
 plot_grid(whole_isogeneexp_plots$Gfap,whole_rnageneexp_plots$Gfap,whole_isogeneexp_plots$C4b,whole_rnageneexp_plots$C4b,whole_isogeneexp_plots$Tgfbr1,whole_rnageneexp_plots$Tgfbr1, labels = "auto", label_size = 30, label_fontfamily = "CM Roman", ncol = 2, nrow = 3, scale = 0.9)
 plot_grid(whole_isogeneexp_plots$Slc14a1,whole_rnageneexp_plots$Slc14a1,whole_isogeneexp_plots$Unc93b1,whole_rnageneexp_plots$Unc93b1, NULL,NULL, labels = c("a","b","c","d"), label_size = 30, label_fontfamily = "CM Roman", ncol = 2, nrow = 3, scale = 0.9)
 plot_grid(whole_isotransexp_plots_traj$Gfap,whole_isotransexp_plots$Gfap, labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", ncol = 1, nrow = 2, scale = 0.9)
-plot_grid(gene_sigs_WholeIso_lst$p,NULL,scale = 0.9, nrow = 2)
+plot_grid(gene_sigs_WholeIso_lst$p,venn_WGCNA(),NULL,NULL,scale = 0.9, ncol = 2,labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", rel_widths = c(2,1))
 plot_grid(plotlist = genesigs_model_plots, ncol = 2, labels = "auto",label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
 plot_grid(grobTree(venndiu$v1),grobTree(venndiu$v2),grobTree(venndiu$v3),grobTree(venndiu$v4), labels = "auto", label_size = 30, label_fontfamily = "CM Roman", ncol = 1, scale = 0.9)
 plot_grid(plot_transexp("Esyt2",wholetappas_isoexp$Norm_transcounts,"isoseq","Iso-Seq Expression"),plot_transexp("Esyt2",wholetappas_rnaexp$Norm_transcounts,"rnaseq","RNA-Seq Expression"), labels = "auto", label_size = 30, label_fontfamily = "CM Roman", ncol = 1, scale = 0.9)
@@ -223,18 +234,30 @@ dev.off()
 
 plot_transexp_overtime("Ctse",wholetappas_isoexp$Norm_transcounts,"isoseq")
 
+##### DFI ##### 
+DFI_plots <- DFI_generateplots()
 
-##### Alternative Splicing Events ############################# 
+
+##### Alternative Splicing Events, FDA ############################# 
 dASevents_files = read_files_differentialASevents(group_sqanti_dir,suppa_dir)
 AS_events_diff_plots = AS_events_diff(dASevents_files$group.mono.class.files, dASevents_files$annotated_sqanti_gtf, dASevents_files$suppa2.output)
-IR_ORF_plots = IR_ORF()
+#IR_ORF_plots = IR_ORF()
 
-grobs <- ggplotGrob(AS_events_diff_plots[[1]])$grobs
-legend <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
-pdf(paste0(output_plot_dir,"/WholeASDiff.pdf"), width = 10, height = 15)
-plot_grid(AS_events_diff_plots[[1]] + theme(legend.position = "none"),AS_events_diff_plots[[2]],AS_events_diff_plots[[3]],legend,labels = c("a","b","c"), label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
-plot_grid(IR_ORF_plots[[1]],IR_ORF_plots[[2]],labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
-plot_grid(IR_ORF_plots[[3]],IR_ORF_plots[[4]],labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
+pdf(paste0(output_plot_dir,"/WholeFDA.pdf"), width = 10, height = 15)
+#grobs <- ggplotGrob(AS_events_diff_plots[[1]])$grobs
+#legend <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+#plot_grid(AS_events_diff_plots[[1]] + theme(legend.position="bottom") + guides(fill = guide_legend(nrow = 1)),AS_events_diff_plots[[3]],labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman",NULL,NULL, nrow = 2, scale = 0.9)
+#plot_grid(IR_ORF_plots[[1]],IR_ORF_plots[[2]],labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
+#plot_grid(IR_ORF_plots[[3]],IR_ORF_plots[[4]],labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
+
+# FDA
+top <- plot_grid(FDA_FP_results[[2]] + theme(legend.position = "none"),FDA_GP_results[[2]], align='vh', vjust=1, scale = 1, labels = c("a","b"),label_size = 30, label_fontfamily = "CM Roman")
+y.grob <- textGrob("Features", gp=gpar(fontfamily="CM Roman", fontsize=16), rot=90)
+x.grob <- textGrob("Number of Genes with Features", gp=gpar(fontfamily="CM Roman", fontsize=16))
+bottom <- plot_grid(FDA_lengths_results,NULL,ncol=2,labels = c("c",""), label_size = 30, label_fontfamily = "CM Roman")
+plot_grid(grid.arrange(arrangeGrob(top, left = y.grob, bottom = x.grob)),bottom, nrow = 3, scale = 0.9,rel_heights = c(0.5,0.4,0.1))
+# DFI
+plot_grid(DFI_plots[[2]],DFI_plots[[3]],NULL,NULL, labels = c("a","b"),label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
 dev.off()
 
 ##### Summary Dataset ############################# 
@@ -262,6 +285,46 @@ for(gene in TargetGene){
 }
 dev.off()
 
+#### WGCNA
+venn_WGCNA()
 
+#### Methylation Integration #### 
+# List of Genes identified with DMR/DMP (from Isabel's analysis)
+DMPGenotype_Integration = Methylation_Integration("DMP_Genotype")
+DMPInteraction_Integration = Methylation_Integration("DMP_Interaction")
+DMRGenotype_Integration = Methylation_Integration("DMR_Genotype")
 
+# Methyylation and Expression plots 
+Spata13_output = Methylation_Integration_plots("Spata13","PB.4966.2")
+Ncf2_output = Methylation_Integration_plots("Ncf2","PB.700.1")
+IRF8_output = Methylation_Integration_plots("Irf8","PB.15969.1")
+Susd5_output = Methylation_Integration_plots("Susd5","PB.16983.1")
+As3mt_methylation_output = as3mt_dmr_figure()
+
+# Plot Transcript Expression Trajection of DMP/DMR Genes
+DMP_DMR_Genes = unique(c(DMPGenotype_Integration$Positions$Chipseeker_SYMBOL,
+         DMPInteraction_Integration$Positions$Chipseeker_SYMBOL,
+         as.character(DMRGenotype_Integration$Positions$Chipseeker_SYMBOL)))
+
+DMP_DMR_Genes_plots_traj  <- lapply(lapply(DMP_DMR_Genes, function(gene) 
+  plot_transexp_overtime(gene,wholetappas_rnaexp$Norm_transcounts,"RNA-Seq Isoform Expression") +
+    theme(legend.position = "bottom", plot.title = element_blank())),ggplotGrob)
+names(DMP_DMR_Genes_plots_traj) <- DMP_DMR_Genes
+
+#pdf(paste0(output_plot_dir,"/WholeDifferentialAnalysis_DMPDMR.pdf"), width = 10, height = 5)
+#for(i in DMP_DMR_Genes){print(plot_grid(DMP_DMR_Genes_plots_traj[[i]]))}
+#dev.off()
+
+pdf(paste0(output_plot_dir,"/WholeDifferentialAnalysis_DMPDMR.pdf"), width = 15, height = 8)
+plot_grid(DMP_DMR_Genes_plots_traj$As3mt,As3mt_methylation_output[[1]],As3mt_methylation_output[[2]], ncol = 3, 
+          labels = "auto",label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
+plot_grid(DMP_DMR_Genes_plots_traj$Spata13,Spata13_output[[1]],Spata13_output[[2]], ncol = 3,
+          labels = "auto",label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
+plot_grid(DMP_DMR_Genes_plots_traj$Ncf2,Ncf2_output[[1]],Ncf2_output[[2]], ncol = 3,
+          labels = "auto",label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
+plot_grid(DMP_DMR_Genes_plots_traj$Susd5,Susd5_output[[1]],Susd5_output[[2]], ncol = 3,
+          labels = "auto",label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
+plot_grid(DMP_DMR_Genes_plots_traj$Irf8,IRF8_output[[1]],IRF8_output[[2]], ncol = 3,
+          labels = "auto",label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
+dev.off()
 
