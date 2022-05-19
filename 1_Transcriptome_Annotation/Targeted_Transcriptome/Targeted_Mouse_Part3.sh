@@ -12,6 +12,7 @@
 #SBATCH --error=Targeted_Mouse_Part3.e
 
 # 03/06/2021: Same script as Targeted_Mouse_Part2.sh but only work with the same samples as Whole Transcriptome for fair comparisons
+# 14/01/2022: Re-run SQANIT3 on subset of whole samples with no RNA-Seq Support
 
 #************************************* DEFINE GLOBAL VARIABLES
 # File directories
@@ -21,7 +22,7 @@ RNASeq_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_
 WHOLE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/SQANTI_TAMA_FILTER/GENOME
 
 #cd $Isoseq3_WKD; mkdir CCS LIMA REFINE CLUSTER
-#cd $PostIsoseq3_WKD; mkdir mkdir MAP TOFU SQANTI2 KALLISTO TAMA SQANTI_TAMA_FILTER Whole_vs_Targeted
+#cd $PostIsoseq3_WKD; mkdir mkdir MAP TOFU SQANTI2 KALLISTO TAMA SQANTI_TAMA_FILTER Whole_vs_Targeted SQANTI3_noRNASEQ
 #cd $RNASeq_WKD; mkdir MAPPED
 
 # For Pooled Targeted
@@ -48,7 +49,7 @@ ALL_TG4510_SAMPLES=(K24 L22 M20 O24 P22 Q20 S24 T22 K17 L21 M19 K23 P21 Q19 M21 
 
 
 # sourcing functions script
-FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/1_Transcriptome_Annotation/Linux/Targeted_Transcriptome
+FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/1_Transcriptome_Annotation/Targeted_Transcriptome
 source $FUNCTIONS/Targeted_Mouse_Functions.sh
 
 module load Miniconda2/4.3.21
@@ -82,6 +83,11 @@ run_kallisto AllMouseTargeted $PostIsoseq3_WKD/TOFU/SubsetAllMouseTargeted.colla
 echo "#************************************* SQANTI2 [Function 12]"
 ## 12) run_sqanti2 <input_tofu_prefix> <input_gtf> <input_tofu_dir> <input_RNASEQ_dir> <input_KALLISTO_file> <input_abundance> <output_dir> <mode=genome/noexp/lncrna>
 run_sqanti2 SubsetAllMouseTargeted.collapsed SubsetAllMouseTargeted.collapsed.gff $PostIsoseq3_WKD/TOFU $RNASeq_WKD/MAPPED $PostIsoseq3_WKD/KALLISTO/AllMouseTargeted.mod.abundance.tsv $PostIsoseq3_WKD/TOFU/SubsetAllMouseTargeted.Demultiplexed_Abundance.txt $PostIsoseq3_WKD/SQANTI2 genome
+
+# command line
+# run_sqanti3 <input_tofu_prefix> <input_gtf> <input_tofu_dir> <input_RNASEQ_dir> <input_KALLISTO_file> <input_abundance> <output_dir> <mode=genome/rnaseq/lncrna>
+source /gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/3_Differential_Analysis/Whole_Transcriptome/Diff_Whole_Functions.sh
+run_sqanti3 SubsetAllMouseTargeted.collapsed SubsetAllMouseTargeted.collapsed.gff $PostIsoseq3_WKD/TOFU NA NA $PostIsoseq3_WKD/TOFU/SubsetAllMouseTargeted.Demultiplexed_Abundance.txt $PostIsoseq3_WKD/SQANTI3_noRNASEQ nornaseq
 
 ################################################################################################
 echo "#************************************* TAMA filter [Function 13,14]"
