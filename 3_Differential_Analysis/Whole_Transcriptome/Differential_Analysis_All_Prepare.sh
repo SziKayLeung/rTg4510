@@ -77,14 +77,13 @@ wait
 ##################################################################################################
 echo "#************************************* Alternative Splicing Events for Groups"
 source activate sqanti2_py3
-Rscript $R_FUNC/Counts_Groups.R $sqpath"_ISM_rem.txt" $DiffAnalysis_WKD/AS
+Rscript $R_FUNC/Counts_Groups.R $DiffAnalysis_WKD/SQANTI3/$dataset"_ISMrem.classification.txt" $DiffAnalysis_WKD/AS
 
 for group in WT_2mos TG_2mos WT_8mos TG_8mos WT TG; do
   echo "Processing: $group"
   # Rscript .R <retained_id> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_junc_txt> <output_prefix_name> <output_dir>
-  Rscript $GENERALFUNC/sqanti_classgtfsubset.R $DiffAnalysis_WKD/AS/$group"_counts.txt" $DiffAnalysis_WKD/SQANTI3 $sqname"_ISMrem.classification" $sqname"_ISMrem.classification.gtf" $sqname"_ISMrem.junction.txt" $group $DiffAnalysis_WKD/AS
+  Rscript $GENERALFUNC/sqanti_classgtfsubset.R $DiffAnalysis_WKD/AS/$group"_counts.txt" $DiffAnalysis_WKD/SQANTI3 $dataset"_ISMrem.classification.txt" $dataset"_ISMrem.classification.gtf" $dataset"_ISMrem.junction.txt" $group $DiffAnalysis_WKD/AS
 
   # run_suppa2 <input_gtf> <input_class> <output_dir> <output_name>
   run_suppa2 $DiffAnalysis_WKD/AS/$group"_sqantisubset.classification.gtf" $DiffAnalysis_WKD/AS/$group"_sqantisubset.classification.txt" $DiffAnalysis_WKD/AS $group
 done
-
