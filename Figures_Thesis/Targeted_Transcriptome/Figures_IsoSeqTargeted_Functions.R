@@ -18,7 +18,8 @@ mytheme <- theme(axis.line = element_line(colour = "black"),
                  legend.margin = margin(6, 6, 6, 6),
                  legend.text = element_text(size = 18,family="CM Roman"),
                  axis.text.x= element_text(size=16,family="CM Roman"),
-                 axis.text.y= element_text(size=16,family="CM Roman"))
+                 axis.text.y= element_text(size=16,family="CM Roman"),
+                 strip.background = element_blank())
 
 
 legend_theme <- theme(panel.grid.major = element_blank(),
@@ -222,20 +223,20 @@ QC_yield_plot <- function(){
   
   p1 <- Reads_plot %>% filter(Description != "Transcripts") %>% filter(Batch != "3 (partial run)") %>%
     ggplot(., aes(x = Description, y = value, colour = Batch, group = Batch)) +
-    geom_line() + geom_point() +  mytheme + theme(legend.position = c(0.8,0.8)) + labs(x = "", y = "Number of Reads (Thousands)") +
+    geom_line() + geom_point(size = 3) +  mytheme + theme(legend.position = c(0.8,0.8)) + labs(x = "", y = "Number of Reads (Thousands)") +
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
     scale_colour_discrete(name = "",labels = c("Batch 1 (n = 6)","Batch 2 (n = 9) ","Batch 3 (n = 9)"))
   
   p2 <- Reads_plot %>% filter(Description == "Transcripts") %>% 
     ggplot(., aes(x = Genotype, y = value, colour = Genotype)) +
-    geom_boxplot() + geom_point() +  mytheme + 
+    geom_boxplot() + geom_point(size = 3) +  mytheme + 
     labs(x = "Genotype", y = "Number of FL Transcripts (Thousands)") +
     scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) + theme(legend.position = "none") +
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3,accuracy = 1))
   
   p3 <- Reads_plot[Reads_plot$Description == "Poly-A FLNC Reads" ,] %>% 
-    ggplot(., aes(x = Batch, y = value)) + geom_boxplot() + geom_point(aes(colour = Genotype)) + mytheme +
+    ggplot(., aes(x = Batch, y = value)) + geom_boxplot() + geom_point(aes(colour = Genotype),size = 3) + mytheme +
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
     labs(x = "Batch", y = "Number of Poly-A FLNC Reads (Thousands)") +
     scale_colour_manual(values = c(label_colour("TG"),label_colour("WT"))) 
@@ -282,10 +283,10 @@ on_target_plot <- function(){
     full_join(., targetedpheno, by = c("sample" = "Sample"))
   
   p1<- ggplot(Probes, aes(x = as.factor(Batch), y = perc, fill = as.factor(Phenotype))) + geom_boxplot() +
-    geom_point(aes(colour = as.factor(Phenotype)), position = position_jitterdodge()) + 
+    geom_point(aes(colour = as.factor(Phenotype)), position = position_jitterdodge(), size = 3) + 
     mytheme + labs(y = "On-Target Rate (%)", x = "Batch") + 
     scale_fill_manual(values = c(alpha(label_colour("TG"),0.4),alpha(label_colour("WT"),0.4)), name = "Genotype") + 
-    scale_colour_manual(values = c(label_colour("TG"),label_colour("WT")), guide=FALSE) 
+    scale_colour_manual(values = c(label_colour("TG"),label_colour("WT")), guide="none") 
   
   for(i in 1:3){cat("Mean on target rate in Batch",i,":", 
                     mean(Probes[Probes$Batch == i,"perc"]),"\n")}
@@ -387,9 +388,9 @@ final_num_iso <- function(sq_df,type){
     mytheme + labs(x = "", y = "Number of Isoforms") + 
     scale_fill_discrete(name = "Isoform Classification",guide = guide_legend(reverse=TRUE)) + 
     theme(legend.position = "bottom") +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    annotation_custom(tableGrob(dat_tab,rows=NULL, theme = ttheme_minimal(base_size = 12)),
-                    xmin=25,xmax=3,ymin=65,ymax=90)
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))# +
+    #annotation_custom(tableGrob(dat_tab,rows=NULL, theme = ttheme_minimal(base_size = 12)),
+    #                xmin=25,xmax=3,ymin=65,ymax=90)
   
   ### number of novel vs Known isoforms by subcategory
   dat2_tab <- dat2 %>% spread(., structural_category, n) %>% 
@@ -408,84 +409,115 @@ final_num_iso <- function(sq_df,type){
                       values = c(alpha("#F8766D",0.3),alpha("#F8766D",0.8),alpha("#00BFC4",0.3),alpha("#00BFC4",0.8)),
                       guide = guide_legend(reverse=TRUE)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    theme(legend.position = "bottom")  +
-    annotation_custom(tableGrob(dat2_tab,rows=NULL, theme = ttheme_minimal(base_size = 12)),
-                      xmin=25,xmax=3,ymin=65,ymax=90)
+    theme(legend.position = "bottom") # +
+   # annotation_custom(tableGrob(dat2_tab,rows=NULL, theme = ttheme_minimal(base_size = 12)),
+    #                  xmin=25,xmax=3,ymin=65,ymax=90)
   
   return(list(p1,p2))
 }
 
 whole_vs_targeted_plots <- function(){
-  # from TAMA merge transcript file, filter transcripts associated with target gene 
-  ADtrans <- TAMA_transfile %>% filter(toupper(gene_name) %in% TargetGene)
-  # from TAMA merge transcript file, filter transcripts not associated with target gene 
-  nonADtrans <- TAMA_transfile %>% filter(!toupper(gene_name) %in% TargetGene)
+  cuff_tmap_exact = cuff_tmap[cuff_tmap$class_code == "=",]
+  whole.class.files = whole.class.files %>% mutate(Matching = ifelse(isoform %in% cuff_tmap_exact$ref_id,"Both","Whole"))
+  subsettargeted.class.files = subsettargeted.class.files %>% mutate(Matching = ifelse(isoform %in% cuff_tmap_exact$qry_id,"Both","Targeted")) 
   
-  #### plots ###
-  #p1 = number of isoforms per target gene identified in whole transcriptome, targeted transcriptome, and in both
-  #p2 = FL read counts in targeted transcriptome of isoforms annotated to AD genes (target) that are detected uniquely in targeted transcriptome and also in whole
-  #p3 = FL read counts in whole transcriptome of isoforms not annotated to AD genes (off target) that are detected uniquely in whole and also in targeted
-  
-  ##### p1
-  # calculate the total number of merged transcripts for plot in reorder 
-  ADtrans_ttgene <- TAMA_transfile %>% group_by(gene_name) %>% tally()
-  
-  # Tally the merged transcripts by where it is from and also by gene name 
-  # source from tama merge transcript file would either be "Targeted" or "Targeted,Whole" or "Whole"
-  p1 <- ADtrans %>% group_by(sources,gene_name) %>% tally() %>%
-    mutate(sources = recode(sources,"Targeted,Whole" = "Both")) %>%
-    mutate(sources = factor(sources, levels = c("Whole","Both","Targeted"))) %>%
-    left_join(.,ADtrans_ttgene, by = "gene_name") %>%
-    ggplot(.,aes(x = reorder(gene_name,-n.y), y = n.x, fill = sources)) + geom_bar(stat = "identity") + mytheme + 
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "", y = "Number of Isoforms") +
+  cols = c("isoform","associated_gene","Matching","structural_category")
+  p1 = rbind(whole.class.files[whole.class.files$Matching != "Both",cols],subsettargeted.class.files[,cols]) %>% 
+    filter(associated_gene %in% TargetGene) %>%
+    group_by(associated_gene, Matching) %>% tally() %>%
+    ggplot(., aes(x = reorder(associated_gene, -n), fill = Matching, y = n)) + geom_bar(stat = "identity") +
+    mytheme + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "", y = "Number of Isoforms") +
     scale_fill_manual(name = "", values = c(label_colour("whole"),label_colour("whole+targeted"),label_colour("targeted")))
   
-  ##### p2, p3
-  # iso_filter
-  # filter the transcripts in whole or targeted transcriptome to determine the difference in expression 
-  # if type == ADGenes, then subset the transcripts that are in tama merge file associated with ADGenes and are either in targeted, or in targeted and equivalent whole, then find the targeted PacBio Id of that transcript, and find the FL; 
-  # if type == NonADGenes, then subset the transcripts that are in tama merge file not associated with ADGenes and are either in whole, or in targeted and equivalent whole, then find the Whole PacBio Id of that transcript, and find the FL; 
-  iso_filter <- function(input_dat, input_class,type){
-    if(type == "ADGenes"){
-      fil_group <- c("Targeted","Targeted,Whole")
-      name <- "Targeted"
-      colour <- scale_fill_manual(name = "", values = c(label_colour("targeted"),label_colour("whole+targeted")))
-    }else if(type == "NonADGenes"){
-      fil_group <- c("Whole","Targeted,Whole")
-      name <- "Whole"
-      colour <-  scale_fill_manual(name = "", values = c(label_colour("whole+targeted"),label_colour("whole")))
-    }else{
-      print("1")
-    }
+  p2 = subsettargeted.class.files %>% filter(associated_gene %in% TargetGene) %>%
+    group_by(structural_category, Matching) %>% tally() %>% 
+    ggplot(., aes(x = structural_category, y = n, fill = Matching)) + geom_bar(stat = "identity") + 
+    mytheme + labs(x = "Structural Category", y = "Number of Isoforms \n Targeted Transcriptome") +
+    scale_fill_manual(name = "", values = c(label_colour("whole+targeted"),label_colour("targeted"))) + 
+    theme(legend.position = "top")
+  
+  print(rbind(whole.class.files[whole.class.files$Matching != "Both",cols],subsettargeted.class.files[,cols]) %>% 
+          filter(associated_gene %in% TargetGene) %>%
+          group_by(Matching) %>% tally())
+  
+  plot_exp <- function(dat, dataset){
+    if(dataset == "Targeted"){colour <-  scale_fill_manual(name = "", values = c(label_colour("whole+targeted"),label_colour("targeted")))
+    }else{colour <-  scale_fill_manual(name = "", values = c(label_colour("whole+targeted"),label_colour("whole")))}
     
-    dat <- input_dat %>% filter(sources %in% fil_group) %>% 
-      # separate column by the different sources if detected in both whole and targeted
-      # the order from TAMA is not consistent i.e one row would be wholeXXX,targetedXXX and another would be targetedXXX,wholeXXX
-      # therefore use ifelse to grep the correct PBID reference to whole and targeted transcriptome
-      separate(all_source_trans, c("match1", "match2"), ",") %>% 
-      mutate(Whole = word(ifelse(word(match1, c(1), sep = fixed("_")) == "Whole",
-                                 word(match1, c(2), sep = fixed("_")),
-                                 word(match2, c(2), sep = fixed("_"))))) %>% 
-      mutate(Targeted = word(ifelse(word(match1, c(1), sep = fixed("_")) == "Targeted",
-                                    word(match1, c(2), sep = fixed("_")),
-                                    word(match2, c(2), sep = fixed("_"))))) 
-    
-    # merge the pacbio ID from the whole or targeted transcriptome to the classification file to extract the FL reads
-    dat2 <- merge(dat[,c("sources",name)],input_class[,c("isoform","FL")], by.x = name, by.y = "isoform", all.x = T) %>% 
-      mutate(sources = recode(sources, "Targeted,Whole" = "Whole & Targeted", name = paste0(name," Only")))
-    
-    p <- ggplot(dat2, aes(x = sources, y = log10(FL), fill = sources)) + geom_boxplot() + mytheme + 
-      labs(x = "Transcriptome Approach", y = paste0("FL Read Counts \n",name," Transcriptome (Log10)")) +
-      colour + theme(legend.position = "none")
+    dat$ad_f = factor(dat$ADGene, levels=c("Target Genes","Not Target Genes"))
+    p = ggplot(dat, aes(x = Matching, y = log10(FL), fill = Matching)) + geom_boxplot() + facet_grid(~ad_f) + mytheme + 
+      labs(x = "", y = paste0("FL Read Counts \n",dataset," Transcriptome (Log10)")) + colour + theme(legend.position = "none")
     
     return(p)
   }
   
-  p2 <- iso_filter(ADtrans,targeted.class.files,"ADGenes")
-  p3 <- iso_filter(nonADtrans,whole.class.files,"NonADGenes")
+  p3 = plot_exp(whole.class.files,"Whole")
+  p4 = plot_exp(subsettargeted.class.files,"Targeted")
   
-  return(list(p1,p2,p3))
+  return(list(p1,p2,p3,p4))
 }
+
+isoseq_targeted_Vs_whole_more_plots <- function(){
+  paste0("Number of IsoSeq isoforms", nrow(IsoSeq_filtered_class))
+  paste0("Structural Category")
+  table(IsoSeq_filtered_class$structural_category)
+  
+  whole.class.files[whole.class.files$associated_gene %in% TargetGene,] %>% group_by(within_50_cage) %>% tally()
+  median(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"dist_to_cage_peak"],  na.rm = T)
+  median(abs(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"diff_to_gene_TSS"]), na.rm = T)
+  median(abs(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"diff_to_gene_TTS"]), na.rm = T)
+  
+  IsoSeq_filtered_class %>% group_by(within_50_cage) %>% tally()
+  median(IsoSeq_filtered_class$dist_to_cage_peak, na.rm = T)
+  median(abs(IsoSeq_filtered_class$diff_to_gene_TSS), na.rm = T)
+  median(abs(IsoSeq_filtered_class$diff_to_gene_TTS), na.rm = T)
+  
+  mean(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"length"])
+  min(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"length"])
+  max(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"length"])
+  sd(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"length"])
+  
+  mean(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"exons"])
+  min(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"exons"])
+  max(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"exons"])
+  sd(whole.class.files[whole.class.files$associated_gene %in% TargetGene,"exons"])
+  
+  
+  mean(IsoSeq_filtered_class$length)
+  min(IsoSeq_filtered_class$length)
+  max(IsoSeq_filtered_class$length)
+  sd(IsoSeq_filtered_class$length)
+  mean(IsoSeq_filtered_class$exons)
+  min(IsoSeq_filtered_class$exons)
+  max(IsoSeq_filtered_class$exons)
+  sd(IsoSeq_filtered_class$exons)
+  
+  IsoSeq_Lengths = rbind(whole.class.files[whole.class.files$associated_gene %in% TargetGene,c("isoform","length")] %>% mutate(dataset = "Whole_transcriptome"),
+                         IsoSeq_filtered_class %>% select("isoform","length") %>% mutate(dataset = "Targeted_transcriptome")) 
+  ggplot(IsoSeq_Lengths, aes(length, fill = dataset)) + geom_density(alpha = 0.2)
+  
+  wilcox.test(IsoSeq_Lengths[IsoSeq_Lengths$dataset == "Whole_transcriptome","length"], 
+              IsoSeq_Lengths[IsoSeq_Lengths$dataset == "Targeted_transcriptome","length"])
+  
+  IsoSeq_Exons = rbind(whole.class.files[whole.class.files$associated_gene %in% TargetGene,c("isoform","exons")] %>% mutate(dataset = "Whole_transcriptome"),
+                       IsoSeq_filtered_class %>% select("isoform","exons") %>% mutate(dataset = "Targeted_transcriptome")) 
+  ggplot(., aes(exons, fill = dataset)) + geom_density(alpha = 0.2)
+  
+  wilcox.test(IsoSeq_Exons[IsoSeq_Exons$dataset == "Whole_transcriptome","exons"], 
+              IsoSeq_Exons[IsoSeq_Exons$dataset == "Targeted_transcriptome","exons"])
+  
+  nrow(subsettargeted.class.files)
+  nrow(subsettargeted.class.files[!subsettargeted.class.files$associated_gene %in% TargetGene & subsettargeted.class.files$Matching == "Both",])
+  
+  IsoSeq_rnaseq_class = read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis/SQANTI3/AllMouseTargeted.collapsed_classification.txt", header = T)
+  
+  IsoSeq_filtered_class = merge(IsoSeq_filtered_class,IsoSeq_rnaseq_class[,c("isoform","min_cov")], full.X = T, by = "isoform") %>% 
+    mutate(RNASeq_supported = ifelse(min_cov.y <= 1, "Supported","Not Supported"))
+  
+  table(IsoSeq_filtered_class$RNASeq_supported)
+  
+}
+
 
 # sqanti_filter_reason
 # Aim: plot the number of isoforms that were removed using SQANTI filter under default settings (RNASeq coverage of 24 samples)

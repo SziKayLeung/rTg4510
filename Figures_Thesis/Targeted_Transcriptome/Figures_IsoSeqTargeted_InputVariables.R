@@ -16,7 +16,7 @@ CLUSTER_Merge <- read.csv("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/
 
 
 # Target Genes and Groups for plots
-TargetGene <- c("ABCA1","SORL1","MAPT","BIN1","TARDBP","APP","ABCA7","PTK2B","ANK1","FYN","CLU","CD33","FUS","PICALM","SNCA","APOE","TRPA1","RHBDF2","TREM2","VGF")
+TargetGene <- str_to_title(c("ABCA1","SORL1","MAPT","BIN1","TARDBP","APP","ABCA7","PTK2B","ANK1","FYN","CLU","CD33","FUS","PICALM","SNCA","APOE","TRPA1","RHBDF2","TREM2","VGF"))
 ADReg_Genes = c("App","Mapt","Fyn","Trpa1","Vgf")
 GWAS_Genes = c("Apoe","Abca1","Abca7","Bin1","Cd33","Picalm","Ptk2b","Sorl1","Trem2")
 FTD_Genes = c("Snca","Fus","Tardbp")
@@ -34,22 +34,37 @@ Merged_probes_files <- read.table(paste0(Merged_Mapping_dir,"All_Targeted_Merged
 barcode <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Raw_Data/Targeted_Transcriptome/Barcode_Configs/"
 All_Targeted_Merged <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/OLD2021/All_Targeted_Merged"
 
+# SQANTI file 
+subsettargeted.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SUBSET/SQANTI3_noRNASEQ/SubsetAllMouseTargeted.collapsed_classification.filtered_lite_classification.txt" 
+subsettargeted.class.files <- SQANTI_class_preparation(subsettargeted.class.names.files,"standard") %>% 
+  mutate(ss_category = paste0(structural_category,"_", subcategory)) %>%
+  filter(ss_category != "ISM_3prime_fragment") %>%
+  mutate(ADGene = ifelse(associated_gene %in% TargetGene, "Target Genes","Not Target Genes"))
+
+IsoSeq_rootdir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis_noRNASEQ"
+IsoSeq_filtered_class =  SQANTI_class_preparation(paste0(IsoSeq_rootdir,"/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),"standard") %>% filter(associated_gene %in% TargetGene) %>% mutate(Dataset = "Iso-Seq") %>%  
+  mutate(within_50_cage = ifelse(abs(dist_to_cage_peak) <= 50, "Within 50bp","Not within 50bp"),
+         RNASeq_supported = ifelse(min_cov <= 1, "Supported","Not Supported"))
+
 # SQANTI, TAMA filtered file
-targeted.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SQANTI_TAMA_FILTER/AllMouseTargeted_sqantitamafiltered.classification.txt"
+targeted.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis_noRNASEQ/COLLAPSE_FILTER/AllMouseTargeted_sqantisubset.classification.txt"
 targeted.gtf.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/OLD2021/All_Targeted_Merged/Alternative_Pipeline/SQANTI_TAMA_FILTER/All_Targeted_Merged_sqantitamafiltered.classification.gtf"
 targeted.class.files <- SQANTI_class_preparation(targeted.class.names.files,"standard")
 
 # SQANTI, TAMA further collapsed files
-collapsed.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis/COLLAPSE_FILTER/AllMouseTargeted_sqantisubset.classification.txt"
-coll.class.files <- SQANTI_class_preparation(collapsed.class.names.files,"standard")
+#collapsed.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/DiffAnalysis/COLLAPSE_FILTER/AllMouseTargeted_sqantisubset.classification.txt"
+#coll.class.files <- SQANTI_class_preparation(collapsed.class.names.files,"standard")
 
 # SQANTI filtered files
 targeted_sqfil_reason <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SQANTI2/AllMouseTargeted.collapsed_classification.filtered_lite_reasons.txt", sep = ",", header = T) %>%  mutate(PBId = paste0("PB.",word(.$filtered_isoform, c(2), sep = fixed("."))))
-targeted.preclass.names.files <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SQANTI2/AllMouseTargeted.collapsed_classification.txt"
-targeted.preclass.files <- SQANTI_class_preparation(targeted.preclass.names.files,"standard")
 
-targeted.preclass.names.files.final <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SQANTI2/TAMAFILTERSQANTI/AllMouseTargeted_sqantitamafiltered.classification.txt"
-targeted.preclass.files.final <- SQANTI_class_preparation(targeted.preclass.names.files.final,"standard")
+diff_root = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse"
+
+targeted.class.names.files_nornaseq <- paste0(diff_root, "/DiffAnalysis_noRNASEQ/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt")
+targeted.preclass.files_nornaseq <- SQANTI_class_preparation(targeted.class.names.files_nornaseq,"standard")
+
+targeted.class.names.files_rnaseq <- paste0(diff_root, "/DiffAnalysis/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt")
+targeted.preclass.files_rnaseq <- SQANTI_class_preparation(targeted.class.names.files,"standard")
 
 # Input mapping paths
 mapping_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/MAP/PAF"
@@ -59,12 +74,19 @@ map <- read.table(paste0(mapping_input_dir,"/AllMouseTargeted_reads_with_alignme
 colnames(map) <- c("name_of_read","chrom","start","read_length","alignment_length","alignment_length_perc","length_of_target_seq_alignment","alignment_identity","strand","num_mismatches","num_insertions","num_deletions")
 
 
-whole.gtf.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/SQANTI_TAMA_FILTER/GENOME/WholeIsoSeq_sqantitamafiltered.classification.gtf"
-whole.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/SQANTI_TAMA_FILTER/GENOME/WholeIsoSeq_sqantitamafiltered.classification.txt"
-whole.class.files <- SQANTI_class_preparation(whole.class.names.files,"standard")
+#whole.gtf.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/SQANTI_TAMA_FILTER/GENOME/WholeIsoSeq_sqantitamafiltered.classification.gtf"
+#whole.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/SQANTI_TAMA_FILTER/GENOME/WholeIsoSeq_sqantitamafiltered.classification.txt"
+#whole.class.files <- SQANTI_class_preparation(whole.class.names.files,"standard")
 
-# output file from TAMA merge 
-TAMA_transfile <- read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Whole_vs_Targeted/merged_whole_targeted_trans_report.txt", header = T) %>% mutate(gene_id = word(transcript_id, c(1), sep = fixed("."))) %>% mutate(gene_name = word(word(all_source_trans, c(3), sep = fixed("_")),c(1), sep = ","))
+# Comparison from gffcompare
+cuff_tmap = read.table("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/SUBSET/SQANTI3_noRNASEQ/Whole_Targeted.SubsetAllMouseTargeted.collapsed_classification.filtered_lite.gtf.tmap", header = T)
+
+whole.class.names.files = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/DiffAnalysis_noRNASEQ/SQANTI3/WholeIsoSeq.collapsed_classification.filtered_lite_classification.txt"
+whole.class.files <- SQANTI_class_preparation(whole.class.names.files,"standard") %>% 
+  mutate(ss_category = paste0(structural_category,"_", subcategory)) %>%
+  filter(ss_category != "ISM_3prime_fragment") %>% 
+  mutate(ADGene = ifelse(associated_gene %in% TargetGene, "Target Genes","Not Target Genes")) %>%
+  mutate(within_50_cage = ifelse(abs(dist_to_cage_peak) <= 50, "Within 50bp","Not within 50bp"))
 
 # Input Human MAPT Paths
 humanmapt_input_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/HUMANMAPT"

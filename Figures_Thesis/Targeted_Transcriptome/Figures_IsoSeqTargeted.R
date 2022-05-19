@@ -48,14 +48,14 @@ find_mapt()
 ### 
 QC_yield <- QC_yield_plot() 
 ontarget <- on_target_plot()
-postisofilter <- level2filter() 
-sq_num <- final_num_iso(targeted.class.files,"structural_category")
-sq_num_transcript <- final_num_iso(targeted.class.files,"associated_transcript")
+#postisofilter <- level2filter() 
+#sq_num <- final_num_iso(targeted.class.files,"structural_category")
+#sq_num_transcript <- final_num_iso(targeted.class.files,"associated_transcript")
 wholevstargeted <- whole_vs_targeted_plots()
-targeted_filtered <- sqanti_filter_reason()
-sqantifilter_plots <- sqantifilter_valdidation()
-sqantifil_isosummary = lapply(TargetGene,function(x) summary_isoform(targeted.preclass.files,x)) %>% do.call(rbind,.)
-targetedcoll_isosummary = lapply(TargetGene,function(x) summary_isoform(coll.class.files,x)) %>% do.call(rbind,.)
+#targeted_filtered <- sqanti_filter_reason()
+#sqantifilter_plots <- sqantifilter_valdidation()
+#sqantifil_isosummary = lapply(TargetGene,function(x) summary_isoform(targeted.preclass.files,x)) %>% do.call(rbind,.)
+#targetedcoll_isosummary = lapply(TargetGene,function(x) summary_isoform(coll.class.files,x)) %>% do.call(rbind,.)
 
 ### Differential Analysis 
 tappasiso <- input_tappasfiles(tappasiso_input_dir)
@@ -75,19 +75,15 @@ targeted_rnageneexp_plots <- lapply(lapply(unique(targetedtappas_rnaexp$GeneExp$
 names(targeted_rnageneexp_plots) <- unique(targetedtappas_rnaexp$GeneExp$associated_gene)
 
 pdf (paste0(output_plot_dir,"/TargetedTranscriptome.pdf"), width = 10, height = 15)
-bottom_row <- plot_grid(QC_yield[[3]],QC_yield[[2]],labels = c('b', 'c'), label_size = 30, label_fontfamily = "CM Roman", ncol = 2,scale = 0.9)
-plot_grid(QC_yield[[1]],bottom_row,labels = c('a', ''), label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
+top_row <- plot_grid(QC_yield[[1]], labels = c('A'), label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
+bottom_row <- plot_grid(QC_yield[[3]],QC_yield[[2]],labels = c('B', 'C'), label_size = 30, label_fontfamily = "CM Roman", ncol = 2,scale = 0.9)
+plot_grid(top_row, bottom_row, nrow = 2)
 plot_grid(ontarget,NULL,NULL, label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
-plot_grid(sq_num[[1]])
-plot_grid(sq_num[[2]])
-plot_grid(sq_num_transcript[[1]])
-plot_grid(sq_num_transcript[[2]])
-plot_grid(sqantifilter_plots[[2]],sqantifilter_plots[[1]],NULL,labels = c("a","b"), label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
-plot_grid(wholevstargeted[[1]],wholevstargeted[[2]],wholevstargeted[[3]],labels = "auto", label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
-grobs <- ggplotGrob(targeted_filtered[[1]])$grobs
-legend <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
-top_row <- plot_grid(targeted_filtered[[1]] + theme(legend.position = "none"),legend,labels = c('a', ''), label_size = 30, label_fontfamily = "CM Roman", ncol = 2,scale = 0.9)
-plot_grid(top_row,targeted_filtered[[2]],targeted_filtered[[3]],labels = c("","b","c"), label_size = 30, label_fontfamily = "CM Roman", nrow = 3, scale = 0.9)
+top_row <- plot_grid(wholevstargeted[[1]],wholevstargeted[[2]],
+                     labels = c('A', 'B'), label_size = 30, label_fontfamily = "CM Roman", ncol = 2,scale = 0.9, rel_widths = c(0.6,0.4))
+bottom_row <- plot_grid(wholevstargeted[[3]],wholevstargeted[[4]],
+                        labels = c('C', 'D'), label_size = 30, label_fontfamily = "CM Roman", ncol = 2,scale = 0.9)
+plot_grid(top_row, bottom_row, nrow = 2)
 dev.off()
 
 

@@ -44,9 +44,9 @@ rnaseq_sqanti_files()
 lncrna_class_files()
 
 ### 
-#QC_yield <- QC_yield_plot() 
+QC_yield <- QC_yield_plot() 
 #Mapping_Stats <- Mapping_stats_plots()
-#Lengths <- lengths_plots()
+Lengths <- lengths_plots()
 rarefaction <- rarefaction_distribution()
 iso_length_plot <- iso_length(class.files)
 no_of_iso_persample <- no_of_isoforms_sample(class.files)
@@ -60,8 +60,6 @@ lncRNA_plots <- lncRNA()
 humanMAPT_plots <- find_mapt()
 rnaseq_isoseq_counts_mouse <- rnaseq_isoseq_counts(class.files)
 rnaseqisoseq <- rnaseq_isoseq_transcriptome(cuffrefmap_input,cufftmap_input)
-
-#bottom_row <- plot_grid(QC_yield[[4]], Mapping_Stats, labels = c('B', 'C'), label_size = 30, label_fontfamily = "CM Roman", ncol = 2)
 
 pdf (paste0(output_plot_dir,"/IsoSeqWholeTranscriptome.pdf"), width = 10, height = 15)
 plot_grid(rarefaction[[1]],iso_length_plot,NULL,NULL,NULL,NULL,labels = c("A","B"), label_size = 30, label_fontfamily = "CM Roman", scale = 0.9, ncol = 2)
@@ -77,7 +75,13 @@ plot_grid(humanMAPT_plots[[1]],humanMAPT_plots[[2]],NULL,NULL,NULL,NULL,labels =
 grobs <- ggplotGrob(rnaseqisoseq[[6]])$grobs
 legend <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 plot_grid(rnaseqisoseq[[2]],rnaseqisoseq[[5]],rnaseqisoseq[[6]] + theme(legend.position = "none"),legend,NULL,NULL, labels = c("A","B","C"), label_size = 30, label_fontfamily = "CM Roman", ncol = 2, scale = 0.9)
-#plot_grid(QC_yield[[1]],QC_yield[[2]],labels = "auto", label_size = 30, label_fontfamily = "CM Roman", nrow = 2, scale = 0.9)
-#plot_grid(QC_yield[[3]], bottom_row,labels = c('a', ''), label_size = 30, label_fontfamily = "CM Roman", scale = 0.9, nrow = 2)
-#plot_grid(Lengths[[1]],Lengths[[2]],Lengths[[3]], labels = "auto", label_size = 30, label_fontfamily = "CM Roman", scale = 0.8),
+dev.off()
+
+
+# Chapter 5 plots
+top = plot_grid(QC_yield[[1]],QC_yield[[2]], labels = c("A","B"), label_size = 30, label_fontfamily = "CM Roman", nrow = 1, scale = 0.9)
+mid = plot_grid(QC_yield[[3]],NULL, rel_widths = c(1,0), labels = c("C",""), label_size = 30, label_fontfamily = "CM Roman", nrow = 1, scale = 0.9)
+bottom = plot_grid(QC_yield[[4]],Lengths,labels = c("D","E"), label_size = 30, label_fontfamily = "CM Roman", nrow = 1, scale = 0.9)
+pdf (paste0(output_plot_dir,"/rTg4510WholeTranscriptome.pdf"), width = 10, height = 15)
+plot_grid(top, mid, bottom, nrow = 3)
 dev.off()

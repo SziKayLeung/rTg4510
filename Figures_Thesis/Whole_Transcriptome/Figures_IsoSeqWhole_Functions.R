@@ -238,17 +238,18 @@ QC_yield_plot <- function(){
     filter(Genotype != "J20") %>% 
     filter(Description != "Transcripts") %>% 
     ggplot(., aes(x = reorder(Description, -value), y = value, group = sample, colour = Genotype)) +
-    geom_line() + geom_point() +  mytheme + theme(legend.position = "top") + labs(x = "", y = "Number of Reads (Thousands)") +
+    geom_line() + geom_point() +  mytheme + theme(legend.position = "top") + labs(x = "Reads", y = "Number of Reads (K)") +
     scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    scale_x_discrete(labels=c("Polymerase Reads" = "Polymerase", "CCS Reads" = "CCS","FL Reads" = "FL","FLNC reads" = "FLNC",
+                              "Poly-A FLNC reads" = "Poly-A FLNC"))
   
   p4 <- Reads %>%
     filter(Genotype != "J20") %>% 
     filter(Description == "Transcripts") %>% 
     ggplot(., aes(x = Genotype, y = value, colour = Genotype)) +
     geom_boxplot() + geom_point() +  mytheme + 
-    labs(x = "", y = "Number of FL Transcripts (Thousands)", title = "\n\n") +
+    labs(x = "", y = "Number of FL Transcripts (K)") +
     scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) + theme(legend.position = "none") +
     scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3,accuracy = 1), limits = c(30000,35000))
   
@@ -260,6 +261,9 @@ QC_yield_plot <- function(){
   #res.ftest # p = 0.29
   res <- t.test(RIN ~ Genotype , data = sequenced, var.equal = TRUE)
   res
+  
+  # correlation of RIN and total yield
+  cor.test(sequenced$RIN,sequenced$Total.Bases..GB.)
   
   res <- t.test(Total.Bases..GB.~ Genotype , data = sequenced, var.equal = TRUE)
   res
@@ -323,28 +327,6 @@ lengths_plots <- function(){
     return(all)
   }
   
-  violin_plot <- function(input_dat, type){
-    
-    y_var <- if (type == "CCS"){ "CCS Read Length (kb)"
-    } else if (type == "clustered"){ "Poly-A FLNC Read Length (kb)"
-    } else if (type == "collapsed"){ "Collapsed Reads (Transcripts) (kb)"
-    } else { print("Type argument either CCS or clustered or collapsed")
-    }
-    
-    p <- input_dat %>%
-      filter(!Sample %in% c("All_Merged","WT_Merged","TG_Merged")) %>%
-      ggplot(., aes(x=reorder(Sample,V2, median), y=V2, fill = Genotype)) +
-      geom_violin(trim=FALSE) +
-      geom_boxplot(width=0.1) +
-      labs(y = y_var, x = "") +
-      theme_bw() + mytheme +
-      theme(legend.title = element_blank(), legend.position = c(0.9, 0.9)) +
-      scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
-      scale_fill_manual(values = c(label_colour("WT"),label_colour("TG")))
-    
-    return(p)
-    
-  }
   
   #all_ccs <- parse_lengths(paste0(CCS_input_dir,"/Lengths"),"ccs.fasta.seqlengths.txt","CCS")
   #all_clustered <- parse_lengths(paste0(CLUSTER_input_dir,"/Lengths"),"clustered.hq.fasta.seqlengths.txt","clustered")
@@ -352,29 +334,26 @@ lengths_plots <- function(){
   #write.csv(all_clustered,paste0(output_helpfig_dir,"/Tg4510_CLusteredLengthsReadsStats.csv"))
   
   all_ccs <- read.csv(paste0(output_helpfig_dir,"/Tg4510_CCSLengthsReadsStats.csv"))
-  all_clustered <- read.csv(paste0(output_helpfig_dir,"/Tg4510_CLusteredLengthsReadsStats.csv"))
-  p1 <- violin_plot(all_ccs, "CCS")
-  p2 <- violin_plot(all_clustered, "clustered")
-  
-  # merged
-  p3 <- bind_rows(all_ccs, all_clustered) %>%
-    ggplot(., aes(x = Type, y = V2, fill = Genotype)) + geom_violin() +
-    geom_violin() +
-    labs(y = "Read Length (kb)", x = "") +
+  #all_clustered <- read.csv(paste0(output_helpfig_dir,"/Tg4510_CLusteredLengthsReadsStats.csv"))
+    
+  p = all_ccs %>% 
+    filter(!Sample %in% c("All_Merged","WT_Merged","TG_Merged")) %>% 
+    filter(Type == "CCS") %>% 
+    ggplot(., aes(V2, fill = Genotype)) +
+    geom_density(alpha = 0.2) +
+    labs(x = "CCS Read Length (kb)", y = "Density") +
     theme_bw() + mytheme +
     theme(legend.title = element_blank(), legend.position = c(0.9, 0.9)) +
-    scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
-    scale_fill_manual(values = c(label_colour("WT"),label_colour("TG"))) +
-    scale_x_discrete(breaks=c("CCS","Clustered","Collapsed"),
-                     labels=c("CCS Reads", "Poly-A FLNC Reads", "Collapsed Reads (Transcripts)"))
-  
-  return(list(p1,p2,p3))
+    scale_x_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+    scale_fill_manual(values = c(label_colour("WT"),label_colour("TG")))
+
+    return(p)
 }
 
 iso_length <- function(class){
   class <- class %>% filter(subcategory != "mono-exon")
   p <- ggplot(class, aes(x = length)) + geom_histogram(bins = 15, fill="gray", col="black") + 
-    labs(x = "Transcript Length (kB)", y = "Number of Isoforms (K)") + mytheme +
+    labs(x = "Transcript Length (kb)", y = "Number of Isoforms (K)") + mytheme +
     scale_x_continuous(labels = ks) + 
     scale_y_continuous(labels = ks) 
   
@@ -503,8 +482,8 @@ novel_annotated <- function(){
   expression <- subset_feature("Log_ISOSEQ_TPM", "Expression (Log10 TPM)", "all_novel")
   split_expression <- subset_feature("Log_ISOSEQ_TPM", "Expression (Log10 TPM)", "all_split")
   
-  length <- subset_feature("length", "Transcript Length (kB)", "all_novel") + scale_y_continuous(labels = ks)
-  split_length <- subset_feature("length", "Transcript Length (kB)", "all_split") + scale_y_continuous(labels = ks)
+  length <- subset_feature("length", "Transcript Length (kb)", "all_novel") + scale_y_continuous(labels = ks)
+  split_length <- subset_feature("length", "Transcript Length (kb)", "all_split") + scale_y_continuous(labels = ks)
   
   exon <- subset_feature("exons", "Number of Exons", "all_novel")
   split_exon <- subset_feature("exons", "Number of Exons", "all_split")
@@ -759,10 +738,14 @@ rnaseq_isoseq_transcriptome <- function(cuffrefmap_input,cufftmap_input){
 ### Alternative Splicing #################################################################
 AS_genes_events <- function(){
   cbbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-  splicing_events <- read.csv(paste0(input_table_dir,"/AS_IR/ALL_SUPPA2_Genes_Output_Updated2.csv"))
+  splicing_events <- read.csv(paste0(input_table_dir,"/AS_IR/ALL_SUPPA2_Genes_Output_Updated2.csv")) %>% mutate(
+    Event = as.character(Event)
+  )
+  splicing_events$Event[splicing_events$Event == "SE"] <- "ES"
   dataset_tally_events <- splicing_events %>% group_by(Sample) %>% tally(n)  
   
-  anno_novel_AS <- read.csv(paste0(input_table_dir,"/AS_IR/Mouse_AS_NovelAnnoIsoforms.csv")) %>% gather(., Type, n, known:novel, factor_key=TRUE)
+  anno_novel_AS <- read.csv(paste0(input_table_dir,"/AS_IR/Mouse_AS_NovelAnnoIsoforms.csv")) %>% gather(., Type, n, known:novel, factor_key=TRUE) %>% mutate(Event = as.character(Event))
+  anno_novel_AS$Event[anno_novel_AS$Event == "SE"] <- "ES"
   anno_novel_AS_tally <- anno_novel_AS %>% group_by(Type) %>% tally(n)
   
   # Number of splicing events - all (inc Novel Genes)
@@ -774,7 +757,9 @@ AS_genes_events <- function(){
   anno_novel_AS_tally_present <- anno_novel_AS  %>% left_join(anno_novel_AS_tally, by = "Type") %>% mutate(perc = n.x/n.y * 100) %>% mutate(Group = "2")
   
   # Number of splicing events - annotated genes
-  knowngenes_AS <- read.csv(paste0(input_table_dir,"/AS_IR/Mouse_AS_KnownGenes.csv")) %>% mutate(Group = "1", Type = "Annotated Genes")
+  knowngenes_AS <- read.csv(paste0(input_table_dir,"/AS_IR/Mouse_AS_KnownGenes.csv")) %>% mutate(Group = "1", Type = "Annotated Genes") %>%
+    mutate(Event = as.character(Event))
+  knowngenes_AS$Event[knowngenes_AS$Event == "SE"] <- "ES"
   
   p1 <- bind_rows(knowngenes_AS[,c("Event","Type","perc","Group")],anno_novel_AS_tally_present[,c("Event","Type","perc","Group")]) %>%
     ggplot(., aes(x = Type, y = perc, fill = reorder(Event, -perc))) + geom_bar(stat = "identity") + 

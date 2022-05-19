@@ -187,8 +187,8 @@ Suppa2_input <- function(SUPPA2_input_dir, dataset){
 }
 
 # read_files_differentialASevents
-# read in the classification files, classification gtf of the subsetted groups in group_sqanti_dir 
-read_files_differentialASevents <- function(group_sqanti_dir,suppa_dir){
+# read in the classification files, classification gtf of the subsetted groups in AS_dir 
+read_files_differentialASevents <- function(AS_dir){
   # read in files for different AS events 
   # sqanti gtf for custom scripts as using coordinates 
   # sqanti files for IR 
@@ -203,11 +203,11 @@ read_files_differentialASevents <- function(group_sqanti_dir,suppa_dir){
   for(grp in 1:length(group_order)){
     cat("Processing",group_order[[grp]],"\n")
     # sqanti gtf 
-    sqanti.gtf.names.files[[grp]] = paste0(group_sqanti_dir,group_order[[grp]],"_sqantitamafiltered.classification.gtf") 
+    sqanti.gtf.names.files[[grp]] = paste0(AS_dir, group_order[[grp]],"_sqantisubset.classification.gtf") 
     # sqanti classification
-    sqanti.names.files[[grp]] = paste0(group_sqanti_dir,group_order[[grp]],"_sqantitamafiltered.classification.txt")
+    sqanti.names.files[[grp]] = paste0(AS_dir, group_order[[grp]],"_sqantisubset.classification.txt")
     # suppa files
-    suppa2.output[[grp]] = Suppa2_input(suppa_dir, group_order[[grp]])
+    suppa2.output[[grp]] = Suppa2_input(AS_dir, group_order[[grp]])
   }
   names(suppa2.output) <- group_order # also prefix of files
   
@@ -224,7 +224,7 @@ read_files_differentialASevents <- function(group_sqanti_dir,suppa_dir){
   # modify the sqanti classification file
   # Filter monoexonic transcripts as no alternative splicing events with just one exon, thus merge all.x = T
   group.class.files <- lapply(sqanti.names.files, function(x) read.table(x, as.is = T, header = T, sep = "\t")) 
-  group.mono.class.files <- lapply(group.class.files, function(x) x %>% filter(subcategory != "mono-exon") %>% select(isoform,associated_gene,structural_category,strand,subcategory))
+  group.mono.class.files <- lapply(group.class.files, function(x) x %>% filter(subcategory != "mono-exon") %>% dplyr::select(isoform,associated_gene,structural_category,strand,subcategory))
   names(group.class.files) <- group_order
   names(group.mono.class.files) <- group_order
   
@@ -240,9 +240,6 @@ read_files_differentialASevents <- function(group_sqanti_dir,suppa_dir){
 # AS_events_diff
 # Find AS events after generating files from read_files_differentialASevents
 # output = 3 plots 
-group.mono.class.files = dASevents_files$group.mono.class.files
-annotated_sqanti_gtf = dASevents_files$annotated_sqanti_gtf
-suppa2.output= dASevents_files$suppa2.output
 AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.output){
   
   # naming of lists to annotate files
@@ -276,7 +273,7 @@ AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.ou
   splicing_events_tally <- splicing_events %>% group_by(Event, Sample) %>% tally(n) %>% left_join(dataset_tally_events, by = "Sample") %>% mutate(perc = n.x/n.y * 100)
   cat("Number of splicing events: \n")
   splicing_events_tally_present <- splicing_events_tally %>% 
-    mutate(Num_Perc = paste0(n.x," (",round(perc,2),"%)")) %>% select(Event, Sample, Num_Perc) %>% spread(., Sample, Num_Perc)
+    mutate(Num_Perc = paste0(n.x," (",round(perc,2),"%)")) %>% dplyr::select(Event, Sample, Num_Perc) %>% spread(., Sample, Num_Perc)
   print(splicing_events_tally_present)
   splicing_events_tally_present <<- splicing_events_tally_present
   
@@ -322,6 +319,6 @@ AS_events_diff <- function(group.mono.class.files,annotated_sqanti_gtf,suppa2.ou
     theme(legend.position = c("top"), legend.title = element_blank()) + 
     scale_x_continuous(breaks = 1:7) + scale_fill_manual(values=c(label_colour("TG_2mos"), label_colour("TG"),label_colour("WT_2mos"), label_colour("WT"))) 
   
-  return(list(p1,p2,p3))
+  return(list(p1,p2,p3, splicing_events_genes, splicing_events_tally_present))
 }
 

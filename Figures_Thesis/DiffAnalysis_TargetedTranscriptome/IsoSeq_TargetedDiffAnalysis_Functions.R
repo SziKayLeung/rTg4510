@@ -442,6 +442,10 @@ plot_transexp_overtime <- function(InputGene,Norm_transcounts, name){
     mytheme + labs(x = "Age (months)", y = "Normalised Counts",title = plot_title) +
     theme(strip.background = element_blank(), legend.position = "bottom",plot.title = element_text(hjust = 0.5, size = 16,face = "italic"),panel.spacing = unit(2, "lines")) +
     guides(colour=guide_legend(ncol=3,bycol=TRUE))
+  
+  if(name == "ONT Expression"){
+    p = p + theme(legend.position = "None")
+  }
   return(p)
 }
 
