@@ -546,267 +546,198 @@ Favored_tappas <- function(exp, design)
   
 }
 
-#
-# END Favored_tappas
-#
-
-
-#### validate command line arguments
-
-args = commandArgs(TRUE)
-cat("Differential Feature Inclusion Analysis script arguments: ", args, "\n")
-arglen = length(args)
-print(arglen)
-#if(arglen != 14)
-#  stop("Invalid number of arguments.")
-method = ""
-indir = ""
-outdir = ""
-
-restrictType = ""
-cmpType = ""
-degValue = ""
-
-filteringType = ""
-filterFC = ""
-sig = ""
-inFileCount = ""
-outputTestFeatures = ""
-outputTestGenes = ""
-analysisId = ""
-indirDFI = ""
-
-for(i in 1:14) {
-    if(length(grep("^-m", args[i])) > 0)
-      method = substring(args[i], 3)
-    else if(length(grep("^-i", args[i])) > 0)
-      indir = substring(args[i], 3)
-    else if(length(grep("^-d", args[i])) > 0)
-      indirDFI = substring(args[i], 3)
-    else if(length(grep("^-o", args[i])) > 0)
-      outdir = substring(args[i], 3)
-    else if(length(grep("^-u", args[i])) > 0)
-      degValue = substring(args[i], 3)
-    else if(length(grep("^-r", args[i])) > 0)
-      restrictType = substring(args[i], 3)
-    else if(length(grep("^-k", args[i])) > 0)
-      cmpType = substring(args[i], 3)
-    else if(length(grep("^-f", args[i])) > 0)
-      filterFC = substring(args[i], 3)
-    else if(length(grep("^-t", args[i])) > 0)
-      filteringType = substring(args[i], 3)
-    else if(length(grep("^-s", args[i])) > 0)
-      sig = substring(args[i], 3)
-    else if(length(grep("^-c", args[i])) > 0)
-        inFileCount = substring(args[i], 3)
-    else if(length(grep("^-g1", args[i])) > 0)
-      outputTestFeatures = substring(args[i], 4)
-    else if(length(grep("^-g2", args[i])) > 0)
-      outputTestGenes = substring(args[i], 4)
-    else if(length(grep("^-a", args[i])) > 0)
-      analysisId = substring(args[i], 3)
-    else {
-      cat("Invalid command line argument: '", args[i], "'\n")
-      stop("Invalid command line argument.")
-    }
-}
-if(nchar(indirDFI) == 0 || nchar(analysisId) == 0 || nchar(outputTestFeatures) == 0 || nchar(outputTestGenes) == 0 || nchar(inFileCount) == 0 || nchar(sig) == 0 || nchar(outdir) == 0 || nchar(indir) == 0 || nchar(method) == 0 || nchar(degValue) == 0 || nchar(restrictType) == 0 || nchar(cmpType) == 0 || nchar(filterFC) == 0 || nchar(filteringType) == 0)
-  stop("Missing command line argument.")
-
-#### determine what type of data to run DIU for
-mff <- NULL
-if(filterFC != "0") {
-    mff = as.numeric(filterFC)
-}
-triple = FALSE
-if(restrictType == "MORESTRICT")
-    triple = TRUE
-degree = as.numeric(degValue)
-sig = as.numeric(sig)
-
-#### Read input data and run analysis
-
-# read expression factors definition table
-cat("\nReading factors file data...")
-myfactors=read.table(file.path(indir, "time_factors.txt"), row.names=1, sep="\t", header=TRUE)
-myfactors
-groups = ncol(myfactors) - 2
-times = length(unique(myfactors[,1]))
-timepoints = 0
-if(groups==1)
-    timepoints = times
-cat("\nGroups: ", groups, ", times: ", times)
-design <- make.design.matrix(myfactors, degree)
-minobs = (degree + 1) * groups
-
-# read feature expression matrix normalized
-cat("\nReading normalized feature matrix file data...")
-featureMatrix = read.table(file.path(indirDFI, paste0("dfi_feature_matrix.",as.character(analysisId),".tsv")), row.names=1, sep="\t", quote=NULL, header=TRUE)
-row.names(featureMatrix) <- lapply(row.names(featureMatrix), function(x) {gsub("GO:", "GO__", x)})
-cat("\nRead ", nrow(featureMatrix), " normalized feature expression data rows")
-
-# read gene feature map (gene-feature[-pos]-on/off to gene-feature[-pos]), where the position is optional
-cat("\nReading gene features map...")
-geneFeatures <- read.table(file.path(indirDFI, paste0("dfi_feature_id_map.",as.character(analysisId),".tsv")), sep="\t", quote=NULL, header=TRUE)
-genes <- data.frame("feature"=geneFeatures$geneFeature, "id" = as.character(geneFeatures$featureId))
-rownames(genes) <- genes[,1]
-genes[,1] <- NULL
-cat("\nRead ", nrow(genes), " feature id map data rows")
-#head(genes)
-
-# run DIU Analysis based on selected method - loop through all Sources and all Features within each source
-result_dfi <- NULL
-cont = 0
-len_zero = F
-sources <- ddply(geneFeatures, c("db"), summarise, N = length(result))
-cat("Sources:\n")
-print(head(sources))
-for(db in sources$db) {
+# run DFI Analysis based on selected method - loop through all Sources and all Features within each source
+DFI <- function(minobs,design,groups,times,timepoints,featureMatrix,geneFeatures,genes){
+  result_dfi <- NULL
+  cont = 0
+  len_zero = F
+  sources <- ddply(geneFeatures, c("db"), summarise, N = length(result))
+  cat("Sources:\n")
+  print(head(sources))
+  for(db in sources$db) {
     gfDB <- geneFeatures[geneFeatures$db == db, ]
     dbCats <- ddply(gfDB, c("cat"), summarise, N = length(result))
     cat("SourceFeatures:\n")        
     print(head(dbCats$cat))
     for(category in dbCats$cat) {
-        result_predfi <- NULL
-        dbcatIds <- geneFeatures[geneFeatures$db == db & geneFeatures$cat == category, ]
-        print(head(dbcatIds))
-        dbcatVIds <- as.vector(dbcatIds[,c("geneFeature")])
-        dbcatMatrix <- featureMatrix[dbcatVIds,]
-        cat("DBCat matrix: ", nrow(dbcatMatrix), "\n")        
-        print(head(dbcatMatrix))
-        dbcatGenes <- data.frame("feature"=dbcatIds$geneFeature, "id" = as.character(dbcatIds$featureId))
-        rownames(dbcatGenes) <- dbcatGenes[,1]
-        dbcatGenes[,1] <- NULL
-        cat("\nRead ", nrow(dbcatGenes), " feature id map data rows")
-        #print(head(dbcatGenes))
+      result_predfi <- NULL
+      dbcatIds <- geneFeatures[geneFeatures$db == db & geneFeatures$cat == category, ]
+      print(head(dbcatIds))
+      dbcatVIds <- as.vector(dbcatIds[,c("geneFeature")])
+      dbcatMatrix <- featureMatrix[dbcatVIds,]
+      cat("DBCat matrix: ", nrow(dbcatMatrix), "\n")        
+      print(head(dbcatMatrix))
+      dbcatGenes <- data.frame("feature"=dbcatIds$geneFeature, "id" = as.character(dbcatIds$featureId))
+      rownames(dbcatGenes) <- dbcatGenes[,1]
+      dbcatGenes[,1] <- NULL
+      cat("\nRead ", nrow(dbcatGenes), " feature id map data rows")
+      #print(head(dbcatGenes))
+      
+      
+      ### filter matrix
+      cat("\nRead ", nrow(dbcatMatrix), " expression data rows")
+      dbcatMatrix = dbcatMatrix[order(rownames(dbcatMatrix)),]
+      if(!is.null(mff)){
+        cat(paste0("\nFiltering new transcript matrix by ",filteringType,"...\n"))
+        trans = minorFoldfilterTappas(dbcatMatrix, genes[rownames(dbcatMatrix),"id"], mff, minorMethod=filteringType)
         
-
-        ### filter matrix
-        cat("\nRead ", nrow(dbcatMatrix), " expression data rows")
-        dbcatMatrix = dbcatMatrix[order(rownames(dbcatMatrix)),]
-        if(!is.null(mff)){
-            cat(paste0("\nFiltering new transcript matrix by ",filteringType,"...\n"))
-            trans = minorFoldfilterTappas(dbcatMatrix, genes[rownames(dbcatMatrix),"id"], mff, minorMethod=filteringType)
-
-            ### We need to remove the complementary isoforms (if delete without we also remove with)
-            ### we look for isoforms we dont have to keep
-            aux = setdiff(1:nrow(dbcatMatrix),which(rownames(dbcatMatrix) %in% trans))
-            if(!length(aux)==0){
-                ### we get its couple
-                ### if odd +1, if even -1
-                res = c()
-                for(number in aux){
-                    if(number %% 2 == 0)
-                      res = c(res, number, number-1)
-                    else
-                      res = c(res, number, number+1)
-                }
-                ## remove the couple of isoforms
-                ### do unique for possible 1 and 2 remove and keep 1 2 2 1
-                res = sort(unique(res))
-              dbcatMatrix=dbcatMatrix[-res,]
-            }
-        }
-      ### end filter
-        if(nrow(dbcatMatrix) == 0){
-          len_zero = T
-          break
-        } 
-        # run analysis for all entries in this source:feature
-        cont = cont+1
-        results <- IsoModel_tappas(data=dbcatMatrix, gen=genes[rownames(dbcatMatrix),"id"], design=design, degree=degree,
-                                  counts=TRUE, min.obs = minObs, triple=triple)#minorFoldfilter = mff, )
-        print(names(results))
-        cat("\nlenGen: ", length(results$gen), ", lenDSG: ", length(results$DSG), ", lenadjPV: ", length(results$adjpvalue))
-        print(head(results$adjpvalue))
-
-        # get the podium change information for these results
-        pcList = PodiumChange_tappas(iso = results, only.sig.genes = FALSE, comparison = cmpType, time.points=timepoints)
-        # add tested genes, default to podium False
-        result_sig <- data.frame("gene"=names(results$adjpvalue), "adjPValue"=results$adjpvalue, "podiumChange"=rep(FALSE, times=length(results$adjpvalue)), "podiumTimes"=rep('.', times=length(results$adjpvalue)), "favoredTimes"=rep('.', times=length(results$adjpvalue)), stringsAsFactors=FALSE)
-        print(paste("Number of tested genes: ", nrow(result_sig)))
-        print(head(result_sig))
-        # add Not tested genes, default to podium False
-        list_notsig_genes = as.character(unique(dbcatIds$featureId[!(dbcatIds$featureId %in% result_sig$gene)]))
-        if(!length(list_notsig_genes)==0){
-          result_notsig <- data.frame("gene"=list_notsig_genes, "adjPValue"=1.0, "podiumChange"=FALSE, "podiumTimes"='.', "favoredTimes"='.', stringsAsFactors=FALSE)
-          rownames(result_notsig) <- result_notsig$gene
-          print(paste("Not tested(", nrow(result_notsig), "):"))
-          print(head(result_notsig))
-          result_predfi <- rbind(result_sig, result_notsig)
-        }else{
-          result_predfi <- result_sig
-        }
-        
-        if(!length(pcList$L)==0){
-          # set podium change flags
-          result_predfi[result_predfi$gene %in% pcList$L, "podiumChange"] <- TRUE
-  
-          # set podium change time points if single series
-          if(groups == 1) {
-              # convert podium information from nested list to data frame
-              print("Podium information:")
-              #print(head(pcList))
-              if(!length(pcList$T)==0){
-                  podium_info <- data.frame("gene"=as.character(names(pcList$T[[1]])), "podiumTimes"=matrix(unlist(pcList$T[[1]]), nrow=length(pcList$T[[1]]), byrow=T), stringsAsFactors=FALSE)
-                  print(head(podium_info))
-                  # get index of rows to update in result_predfi table - order in match call is important
-                  # we should never get an NA vector value in idx since all genes are in result_predfi
-                  idx <- match(podium_info$gene, result_predfi$gene)
-                  # if you need to remove at a later point use: idx <- idx[!is.na(idx)]
-                  print(paste("Number of pdium gene matches:", length(idx)))
-                  # update podium times
-                  result_predfi[idx, "podiumTimes"] <- podium_info["podiumTimes"]
-              }
-              print(head(result_predfi))
+        ### We need to remove the complementary isoforms (if delete without we also remove with)
+        ### we look for isoforms we dont have to keep
+        aux = setdiff(1:nrow(dbcatMatrix),which(rownames(dbcatMatrix) %in% trans))
+        if(!length(aux)==0){
+          ### we get its couple
+          ### if odd +1, if even -1
+          res = c()
+          for(number in aux){
+            if(number %% 2 == 0)
+              res = c(res, number, number-1)
+            else
+              res = c(res, number, number+1)
           }
+          ## remove the couple of isoforms
+          ### do unique for possible 1 and 2 remove and keep 1 2 2 1
+          res = sort(unique(res))
+          dbcatMatrix=dbcatMatrix[-res,]
         }
-        # set favored information - for both times series
-        print("Favored information:")
-        print(head(dbcatMatrix, 5))
-        #print(head(design))
-        fvList <- Favored_tappas(dbcatMatrix, design)
-        if(!is.null(fvList$F)){
-          print(head(fvList))
-          print(names(fvList))
-          # convert favored information from nested list to data frame
-          favored_info <- data.frame("gene"=as.character(names(fvList$F)), "favoredTimes"=matrix(unlist(fvList$F), nrow=length(fvList$F), byrow=T), stringsAsFactors=FALSE)
-          print(head(favored_info))
-          # get index of rows to update in result_predfi table - order in match call is important
-          # we should never get an NA vector value in idx since all genes are in result_predfi
-          idx <- match(favored_info$gene, result_predfi$gene)
-          # if you need to remove at a later point use: idx <- idx[!is.na(idx)]
-          print(paste("Number of favored gene matches:", length(idx)))
-          # update favored times
-          result_predfi[idx, "favoredTimes"] <- favored_info["favoredTimes"]
+      }
+      ### end filter
+      if(nrow(dbcatMatrix) == 0){
+        len_zero = T
+        break
+      } 
+      # run analysis for all entries in this source:feature
+      cont = cont+1
+      results <- IsoModel_tappas(data=dbcatMatrix, gen=genes[rownames(dbcatMatrix),"id"], design=design, degree=degree,
+                                 counts=TRUE, min.obs = minObs, triple=triple)#minorFoldfilter = mff, )
+      print(names(results))
+      cat("\nlenGen: ", length(results$gen), ", lenDSG: ", length(results$DSG), ", lenadjPV: ", length(results$adjpvalue))
+      print(head(results$adjpvalue))
+      
+      # get the podium change information for these results
+      pcList = PodiumChange_tappas(iso = results, only.sig.genes = FALSE, comparison = cmpType, time.points=timepoints)
+      # add tested genes, default to podium False
+      result_sig <- data.frame("gene"=names(results$adjpvalue), "adjPValue"=results$adjpvalue, "podiumChange"=rep(FALSE, times=length(results$adjpvalue)), "podiumTimes"=rep('.', times=length(results$adjpvalue)), "favoredTimes"=rep('.', times=length(results$adjpvalue)), stringsAsFactors=FALSE)
+      print(paste("Number of tested genes: ", nrow(result_sig)))
+      print(head(result_sig))
+      # add Not tested genes, default to podium False
+      list_notsig_genes = as.character(unique(dbcatIds$featureId[!(dbcatIds$featureId %in% result_sig$gene)]))
+      if(!length(list_notsig_genes)==0){
+        result_notsig <- data.frame("gene"=list_notsig_genes, "adjPValue"=1.0, "podiumChange"=FALSE, "podiumTimes"='.', "favoredTimes"='.', stringsAsFactors=FALSE)
+        rownames(result_notsig) <- result_notsig$gene
+        print(paste("Not tested(", nrow(result_notsig), "):"))
+        print(head(result_notsig))
+        result_predfi <- rbind(result_sig, result_notsig)
+      }else{
+        result_predfi <- result_sig
+      }
+      
+      if(!length(pcList$L)==0){
+        # set podium change flags
+        result_predfi[result_predfi$gene %in% pcList$L, "podiumChange"] <- TRUE
+        
+        # set podium change time points if single series
+        if(groups == 1) {
+          # convert podium information from nested list to data frame
+          print("Podium information:")
+          #print(head(pcList))
+          if(!length(pcList$T)==0){
+            podium_info <- data.frame("gene"=as.character(names(pcList$T[[1]])), "podiumTimes"=matrix(unlist(pcList$T[[1]]), nrow=length(pcList$T[[1]]), byrow=T), stringsAsFactors=FALSE)
+            print(head(podium_info))
+            # get index of rows to update in result_predfi table - order in match call is important
+            # we should never get an NA vector value in idx since all genes are in result_predfi
+            idx <- match(podium_info$gene, result_predfi$gene)
+            # if you need to remove at a later point use: idx <- idx[!is.na(idx)]
+            print(paste("Number of pdium gene matches:", length(idx)))
+            # update podium times
+            result_predfi[idx, "podiumTimes"] <- podium_info["podiumTimes"]
+          }
+          print(head(result_predfi))
         }
-        print(head(result_predfi))
-
-        result_dfi <- rbind(result_dfi, result_predfi)
+      }
+      # set favored information - for both times series
+      print("Favored information:")
+      print(head(dbcatMatrix, 5))
+      #print(head(design))
+      fvList <- Favored_tappas(dbcatMatrix, design)
+      if(!is.null(fvList$F)){
+        print(head(fvList))
+        print(names(fvList))
+        # convert favored information from nested list to data frame
+        favored_info <- data.frame("gene"=as.character(names(fvList$F)), "favoredTimes"=matrix(unlist(fvList$F), nrow=length(fvList$F), byrow=T), stringsAsFactors=FALSE)
+        print(head(favored_info))
+        # get index of rows to update in result_predfi table - order in match call is important
+        # we should never get an NA vector value in idx since all genes are in result_predfi
+        idx <- match(favored_info$gene, result_predfi$gene)
+        # if you need to remove at a later point use: idx <- idx[!is.na(idx)]
+        print(paste("Number of favored gene matches:", length(idx)))
+        # update favored times
+        result_predfi[idx, "favoredTimes"] <- favored_info["favoredTimes"]
+      }
+      print(head(result_predfi))
+      
+      result_dfi <- rbind(result_dfi, result_predfi)
     }
+  }
+  
+  # if we dont have trans and we dont processed any feature before 
+  if(len_zero & cont == 0){
+    cat("Final output\n")
+    write.table(result_dfi, file.path(outdir, paste0("dfi_result.tsv")), quote=FALSE, row.names=FALSE, sep="\t")
+    # write completion file
+    cat("You have 0 transcripts to analyze with this feature.\n")
+  }else{
+    cat("Final output\n")
+    head(result_dfi)
+    
+    # write results file
+    write.table(result_dfi, file.path(outdir, paste0("dfi_result.tsv")), quote=FALSE, row.names=FALSE, sep="\t")
+    
+    # write completion file
+    cat("\nWriting DFInalysis completed file...")
+    filedone <- file(file.path(outdir, paste0("DFI_done.txt")))
+    writeLines("done", filedone)
+    close(filedone)
+    
+    
+    
+    cat("\nAll done.\n")
+    
+  }
+  
 }
 
-# if we dont have trans and we dont processed any feature before 
-if(len_zero & cont == 0){
-  cat("Final output\n")
-  write.table(result_dfi, file.path(outdir, paste0("dfi_result.",as.character(analysisId),".tsv")), quote=FALSE, row.names=FALSE, sep="\t")
-  # write completion file
-  cat("You have 0 transcripts to analyze with this feature.\n")
-}else{
-  cat("Final output\n")
-  head(result_dfi)
-  
-  # write results file
-  write.table(result_dfi, file.path(outdir, paste0("dfi_result.",as.character(analysisId),".tsv")), quote=FALSE, row.names=FALSE, sep="\t")
-  
-  # write completion file
-  cat("\nWriting DFInalysis completed file...")
-  filedone <- file(file.path(outdir, paste0("done.",as.character(analysisId),".txt")))
-  writeLines("done", filedone)
-  close(filedone)
 
-  
+#### Read input data and run analysis
 
-  cat("\nAll done.\n")
+run_dfi_timeanalysis <- function(indir,indirDFI,outdir,degValue,restrictType,cmpType,filterFC,filteringType,sig,inFileCount,outputTestFeatures){
+  # read expression factors definition table
+  cat("\nReading factors file data...")
+  myfactors=read.table(file.path(indir, "time_factors.txt"), row.names=1, sep="\t", header=TRUE)
+  myfactors
+  groups = ncol(myfactors) - 2
+  times = length(unique(myfactors[,1]))
+  timepoints = 0
+  if(groups==1)
+    timepoints = times
+  cat("\nGroups: ", groups, ", times: ", times)
+  design <- make.design.matrix(myfactors, degree)
+  minobs = (degree + 1) * groups
   
-}
+  # read feature expression matrix normalized
+  cat("\nReading normalized feature matrix file data...")
+  featureMatrix = read.table(file.path(indirDFI, paste0("dfi_feature_matrix.",as.character(analysisId),".tsv")), row.names=1, sep="\t", quote=NULL, header=TRUE)
+  row.names(featureMatrix) <- lapply(row.names(featureMatrix), function(x) {gsub("GO:", "GO__", x)})
+  cat("\nRead ", nrow(featureMatrix), " normalized feature expression data rows")
+  
+  # read gene feature map (gene-feature[-pos]-on/off to gene-feature[-pos]), where the position is optional
+  cat("\nReading gene features map...")
+  geneFeatures <- read.table(file.path(indirDFI, paste0("dfi_feature_id_map.",as.character(analysisId),".tsv")), sep="\t", quote=NULL, header=TRUE)
+  genes <- data.frame("feature"=geneFeatures$geneFeature, "id" = as.character(geneFeatures$featureId))
+  rownames(genes) <- genes[,1]
+  genes[,1] <- NULL
+  cat("\nRead ", nrow(genes), " feature id map data rows")
+  #head(genes)
+  
+}  
+
+

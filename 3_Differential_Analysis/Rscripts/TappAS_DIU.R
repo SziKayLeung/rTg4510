@@ -1,13 +1,5 @@
-
-library("maSigPro")
-library("MASS")
-
-# input and output directory paths
-wholeindir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/TAPPAS/TAPPAS_output"
-targetedindir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/TAPPAS/TAPPAS_output"
-indir = list(paste0(wholeindir,"/IsoSeq"),paste0(wholeindir,"/RNASeq"),
-             paste0(targetedindir,"/IsoSeq"),paste0(targetedindir,"/RNASeq"))
-outdir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures"
+# Szi Kay Leung: sl693@exeter.ac.uk
+# Differential Isoform Usage Analysis R script from tappAS
 
 minorFoldfilterTappas <- function(data, gen, minorfilter, minorMethod=c("PROP","FOLD")){
   print ("Removing low expressed minor isoforms")
@@ -78,12 +70,12 @@ DIU_prefilter <- function(dir, mff, filteringType){
 
   # read transcript expression matrix normalized
   cat("\nReading normalized transcript matrix file data...")
-  transMatrix = read.table(file.path(dir, "transcript_matrix.tsv"), row.names=1, sep="\t", header=TRUE)
+  transMatrix = read.table(file.path(dir, "/Data/transcript_matrix.tsv"), row.names=1, sep="\t", header=TRUE)
   cat("\nRead ", nrow(transMatrix), " normalized transcripts expression data rows")
   
   # read gene transcripts map - this file also contains the transcript lengths, (geneName/transcript/length),
   cat("\nReading gene transcripts map...")
-  geneTrans <- read.table(file.path(dir, "gene_transcripts.tsv"), sep="\t", header=TRUE)
+  geneTrans <- read.table(file.path(dir, "Data/gene_transcripts.tsv"), sep="\t", header=TRUE)
   genes <- data.frame(row.names = geneTrans$transcript, "id" = as.character(geneTrans$geneName))
   genes <<- genes
 
@@ -92,7 +84,7 @@ DIU_prefilter <- function(dir, mff, filteringType){
   
   #Filter transMatrix - need genes
   # note same file as geneTrans except without the length
-  infoGenes = read.table(file.path(dir, "result_gene_trans.tsv"), sep="\t", quote=NULL, header=FALSE,  stringsAsFactors=FALSE)
+  infoGenes = read.table(file.path(dir, "Data/result_gene_trans.tsv"), sep="\t", quote=NULL, header=FALSE,  stringsAsFactors=FALSE)
   genes_trans = c()
   index = c()
   
@@ -524,7 +516,7 @@ MayorIso<-function(zz){
 #
 
 # run DIU Analysis based on selected method (fold filter already applied)
-run_DIU_analysis <- function(degree, triple, transMatrix){
+run_DIU_analysis <- function(degree, triple, transMatrix, myfactors){
   
   #degree = "1"
   #triple = FALSE
@@ -580,6 +572,9 @@ run_DIU_analysis <- function(degree, triple, transMatrix){
   return(result_diu)
 }
 
+
+
+### Own functions
 merge_exp <- function(input_result, gene_matrix){
   meangeneexp = data.frame(apply(gene_matrix,1,mean)) %>% rownames_to_column(var = "gene") %>% `colnames<-`(c("gene", "mean_expression"))
   medgeneexp = data.frame(apply(gene_matrix,1,median)) %>% rownames_to_column(var = "gene") %>% `colnames<-`(c("gene", "median_expression"))
@@ -590,88 +585,37 @@ merge_exp <- function(input_result, gene_matrix){
   return(dat)
 }
 
-# Whole Transcriptome: Iso-Seq scaffold + Iso-Seq reads
-gene_matrix=read.table(file.path(indir[1],"gene_matrix.tsv")) 
-myfactors=read.table(file.path(indir[[1]], "time_factors.txt"), row.names=1, sep="\t", header=TRUE)
-groups = ncol(myfactors) - 2
-times = length(unique(myfactors[,1]))
-if(groups==1){timepoints = times}
-
-# cat("\nGroups: ", groups, ", times: ", times)
-
-# proportion
-IsoIso_transMatrix_prop = DIU_prefilter(indir[1], mff=0.2, filteringType = "PROP")
-DIU_isoseq_prop = run_DIU_analysis(degree = "1", triple = FALSE, IsoIso_transMatrix_prop)
-DIU_isoseq_prop = merge_exp(DIU_isoseq_prop,gene_matrix)
-# fold change
-IsoIso_transMatrix_fc = DIU_prefilter(indir[1], mff=2.5, filteringType = "FOLD")
-DIU_isoseq_fc = run_DIU_analysis(degree = "1", triple = FALSE, IsoIso_transMatrix_fc)
-DIU_isoseq_fc = merge_exp(DIU_isoseq_fc ,gene_matrix)
-
-# Whole Transcriptome: Iso-Seq scaffold + RNA-Seq reads
-gene_matrix=read.table(file.path(indir[2],"gene_matrix.tsv")) 
-myfactors=read.table(file.path(indir[[2]], "time_factors.txt"), row.names=1, sep="\t", header=TRUE)
-groups = ncol(myfactors) - 2
-times = length(unique(myfactors[,1]))
-if(groups==1){timepoints = times}
-# cat("\nGroups: ", groups, ", times: ", times)
-
-IsoRNA_transMatrix_prop = DIU_prefilter(indir[2], mff=0.2, filteringType = "PROP")
-DIU_rnaseq_prop = run_DIU_analysis(degree = "1", triple = FALSE, IsoRNA_transMatrix_prop)
-DIU_rnaseq_prop = merge_exp(DIU_rnaseq_prop,gene_matrix)
-
-IsoRNA_transMatrix_fc = DIU_prefilter(indir[2], mff=2.5, filteringType = "FOLD")
-DIU_rnaseq_fc = run_DIU_analysis(degree = "3", triple = FALSE, IsoRNA_transMatrix_fc)
-DIU_rnaseq_fc = merge_exp(DIU_rnaseq_fc,gene_matrix)
-
-### Save results as workbook
-write.xlsx(DIU_isoseq_prop, paste0(outdir,"/DifferentialTranscriptUsage_Analysis.xlsx"), sheetName="DIU_isoseq_prop")
-write.xlsx(DIU_isoseq_fc, paste0(outdir,"/DifferentialTranscriptUsage_Analysis.xlsx"), sheetName="DIU_isoseq_fc", append=TRUE)
-write.xlsx(DIU_rnaseq_prop, paste0(outdir,"/DifferentialTranscriptUsage_Analysis.xlsx"), sheetName="DIU_rnaseq_prop", append=TRUE)
-write.xlsx(DIU_rnaseq_fc, paste0(outdir,"/DifferentialTranscriptUsage_Analysis.xlsx"), sheetName="DIU_rnaseq_fc", append=TRUE)
-
-
-
-
-attempt_to_distinguish_fcvsprop{
-
-num_isofiltered <- data.frame()
-count = 1
-for(i in c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)){
-  transMatrix_prop = DIU_prefilter(indir[1], mff=i, filteringType = "PROP")
-  # remove rows that are completely na 
-  transMatrix_prop = transMatrix_prop[complete.cases(transMatrix_prop), ]
-  num_isofiltered[count,1] <- c(nrow(transMatrix_prop))
-  count = count + 1
+DIU_time_analysis <- function(input_dir,degreevalue){
+  # Whole Transcriptome: Iso-Seq scaffold + Iso-Seq reads
+  gene_matrix=read.table(file.path(input_dir,"Data/gene_matrix.tsv")) 
+  myfactors=read.table(file.path(input_dir, "Data/time_factors.txt"), row.names=1, sep="\t", header=TRUE)
+  groups = ncol(myfactors) - 2
+  times = length(unique(myfactors[,1]))
+  if(groups==1){timepoints = times}
+  
+  # proportion
+  IsoIso_transMatrix_prop = DIU_prefilter(input_dir, mff=0.2, filteringType = "PROP")
+  DIU_isoseq_prop = run_DIU_analysis(degree = degreevalue, triple = FALSE, IsoIso_transMatrix_prop,myfactors)
+  DIU_isoseq_prop = merge_exp(DIU_isoseq_prop,gene_matrix)
+  
+  # fold change
+  IsoIso_transMatrix_fc = DIU_prefilter(input_dir, mff=2.5, filteringType = "FOLD")
+  DIU_isoseq_fc = run_DIU_analysis(degree = degreevalue, triple = FALSE, IsoIso_transMatrix_fc,myfactors)
+  DIU_isoseq_fc = merge_exp(DIU_isoseq_fc,gene_matrix)
+  
+  output = list(DIU_isoseq_prop,DIU_isoseq_fc)
+  names(output) = c("DIU_prop","DIU_fc")
+  return(output)
 }
 
-num_isofiltered %>% mutate(threshold = seq(10,100,10)) %>% reshape2::melt(id = "threshold") %>% ggplot(.,aes(x = threshold, y = value, colour = variable)) + geom_line() + labs(x = "Threshold (%)", y = "Number of isoforms retained") + mytheme + scale_colour_discrete(labels = c("Proportion","Fold Change"), name = "Method")
-
-
-num_isofiltered <- data.frame()
-count = 1
-for(i in c(1,2,3,4,5,10)){
-  transMatrix_fold = DIU_prefilter(indir[1], mff=i, filteringType = "FOLD")
-  transMatrix_fold = transMatrix_fold[complete.cases(transMatrix_fold), ]
-  num_isofiltered[count,1] <- c(nrow(transMatrix_fold))
-  count = count + 1
-}
-
-num_isofiltered %>% mutate(threshold = c(1,2,3,4,5,10)) %>% reshape2::melt(id = "threshold") %>% ggplot(.,aes(x = threshold, y = value, colour = variable)) + geom_line() + labs(x = "Fold Expression Difference", y = "Number of isoforms retained") + mytheme + scale_colour_discrete(labels = c("Fold Change"), name = "Method")
-
-
-# complete cases to remove rows with NA (error from DIU prefilter code)
-# left join as there will be transcripts that would have been previously filtered during normalisation
-transMatrix0.2_prop = DIU_prefilter(indir[1], mff=0.2, filteringType = "PROP") %>% rownames_to_column(var = "isoform") %>% .[complete.cases(.), ] %>% left_join(., genes %>% rownames_to_column(var = "isoform"))
-
-transMatrix0.2_fold = DIU_prefilter(indir[1], mff=2, filteringType = "FOLD") %>% rownames_to_column(var = "isoform")%>% .[complete.cases(.), ] %>% left_join(., genes %>% rownames_to_column(var = "isoform"))
-
-transMatrix0.2 = lapply(list(transMatrix0.2_prop, transMatrix0.2_fold), function(x) x %>% group_by(id) %>% tally())
-transMatrix0.2_comp = merge(transMatrix0.2[[1]],transMatrix0.2[[2]], by = "id", all = "TRUE") %>% `colnames<-`(c("gene", "Prop0.2", "FC0.2")) %>% 
-  mutate(diffPropFC = `Prop0.2` - `FC0.2`)
-
-class.files[class.files$associated_gene == "Sorbs1","isoform"]
-View(tappasiso$input_normalized_matrix.tsv %>% rownames_to_column(var = "isoform") %>% .[.$isoform %in% class.files[class.files$associated_gene == "Sorbs1","isoform"],])
-View(tappasiso$input_normalized_matrix.tsv %>% rownames_to_column(var = "isoform") %>% .[.$isoform %in% class.files[class.files$associated_gene == "Akap8","isoform"],])
-transMatrix0.2_fold[transMatrix0.2_fold$id == "Akap8",]
+DIU_time_analysis_filteronly <- function(input_dir, degreevalue){
+  # Whole Transcriptome: Iso-Seq scaffold + Iso-Seq reads
+  gene_matrix=read.table(file.path(input_dir,"Data/gene_matrix.tsv")) 
+  myfactors=read.table(file.path(input_dir, "Data/time_factors.txt"), row.names=1, sep="\t", header=TRUE)
+  groups = ncol(myfactors) - 2
+  times = length(unique(myfactors[,1]))
+  if(groups==1){timepoints = times}
+  
+  # fold change
+  IsoIso_transMatrix_fc = DIU_prefilter(input_dir, mff=2.5, filteringType = "FOLD")
 }
