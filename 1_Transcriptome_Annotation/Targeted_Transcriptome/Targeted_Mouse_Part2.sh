@@ -15,6 +15,7 @@
 # File directories
 Isoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/IsoSeq
 PostIsoseq3_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq
+PostIsoseq3_Human_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Post_IsoSeq/HUMAN
 RNASeq_WKD=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/RNASeq
 WholevsTargeted=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Targeted_Transcriptome/Mouse/Whole_vs_Targeted
 WHOLE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/Post_IsoSeq/SQANTI_TAMA_FILTER/GENOME
@@ -22,6 +23,7 @@ WHOLE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcri
 #cd $Isoseq3_WKD; mkdir CCS LIMA REFINE CLUSTER
 #cd $PostIsoseq3_WKD; mkdir mkdir MAP TOFU SQANTI2 KALLISTO TAMA SQANTI_TAMA_FILTER SQANTI2_allrnaseq HUMANMAPT TAPPAS ALLRNASEQ
 #cd $RNASeq_WKD; mkdir MAPPED
+#cd $PostIsoseq3_Human_WKD; mkdir MAP SQANTI3 TOFU
 
 # For Pooled Targeted
 ### Important order of BAM files is the same as the sample names
@@ -48,7 +50,7 @@ ALL_TG4510_SAMPLES=(K24 L22 M20 O24 P22 Q20 S24 T22 K17 L21 M19 K23 P21 Q19 M21 
 
 
 # sourcing functions script
-FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/1_Transcriptome_Annotation/Linux/Targeted_Transcriptome
+FUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/1_Transcriptome_Annotation/Targeted_Transcriptome
 source $FUNCTIONS/Targeted_Mouse_Functions.sh
 
 module load Miniconda2/4.3.21
@@ -79,7 +81,7 @@ run_map_cupcakecollapse AllMouseTargeted $Isoseq3_WKD/MERGED_CLUSTER $PostIsoseq
 demux_targeted $Isoseq3_WKD/REFINE $Isoseq3_WKD/MERGED_CLUSTER/AllMouseTargeted.clustered.cluster_report.csv $PostIsoseq3_WKD/TOFU/AllMouseTargeted.collapsed.read_stat.txt $PostIsoseq3_WKD/TOFU/AllMouseTargeted.Demultiplexed_Abundance.txt
 
 ## 9) on_target_rate <sample> <input_cluster_dir> <output_dir> <input_probe_bed.file>
-# command line 
+# command line
 cd $PostIsoseq3_WKD/MAP; mkdir TARGETRATE
 for i in ${SAMPLES_NAMES[@]};do on_target_rate $i $Isoseq3_WKD/CLUSTER $PostIsoseq3_WKD/MAP/TARGETRATE $RAWDIR/Probes/FINAL_MOUSE.bed; done
 
@@ -183,3 +185,11 @@ counts_subset_4tappas $PostIsoseq3_WKD/SQANTI_TAMA_FILTER/AllMouseTargeted_sqant
 #  echo "Copying $file from Project.0160514833.tappas to TAPPAS_output/RNASeq"
 #  scp -r sLeung@knight.ex.ac.uk:/home/sLeung/tappasWorkspace/Projects/Project.0160514833.tappas/Data/$file $PostIsoseq3_WKD/TAPPAS/TAPPAS_output/RNASeq
 #done
+
+
+################################################################################################
+echo "#************************************* Identify human tau isoforms [Function 24]"
+run_map_cupcakecollapse AllMouseTargeted $Isoseq3_WKD/MERGED_CLUSTER $PostIsoseq3_Human_WKD/MAP $PostIsoseq3_Human_WKD/TOFU human
+demux_targeted $Isoseq3_WKD/REFINE $Isoseq3_WKD/MERGED_CLUSTER/AllMouseTargeted.clustered.cluster_report.csv $PostIsoseq3_Human_WKD/TOFU/AllMouseTargeted.collapsed.read_stat.txt $PostIsoseq3_Human_WKD/TOFU/AllMouseTargeted.Demultiplexed_Abundance.txt
+run_sqanti3_human WholeIsoSeq.collapsed WholeIsoSeq.collapsed.gff $PostIsoseq3_Human_WKD/TOFU $RNASeq_WKD/MAPPED NA $PostIsoseq3_Human_WKD/TOFU/WholeIsoSeq.Demultiplexed_Abundance.txt $PostIsoseq3_Human_WKD/SQANTI3 rnaseq
+convert_gtf_bed12 $PostIsoseq3_Human_WKD/SQANTI3 AllMouseTargeted.collapsed_corrected.gtf $PostIsoseq3_Human_WKD/SQANTI3

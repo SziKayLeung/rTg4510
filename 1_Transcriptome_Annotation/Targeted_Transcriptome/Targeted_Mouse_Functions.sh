@@ -215,7 +215,14 @@ run_map_cupcakecollapse(){
 
     echo "Processing Sample $1 for Minimap2 and sort"
     cd $3 #cd to $MAP directory for output
-    minimap2 -t 30 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $REFERENCE/mm10.fa $2/$1.clustered.hq.fastq > $1.sam 2> $1.map.log
+    if [ $5 == "human" ]; then
+      echo "Aligning to human hg38 genome"
+      minimap2 -t 30 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $REFERENCE/hg38.fa $2/$1.clustered.hq.fastq > $1.sam 2> $1.map.log
+    else
+      echo "Aligning to mouse mm10 genome"
+      minimap2 -t 30 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $REFERENCE/mm10.fa $2/$1.clustered.hq.fastq > $1.sam 2> $1.map.log
+    fi
+    source activate nanopore
     samtools sort -O SAM $1.sam > $1.sorted.sam
 
     # Alignment stats
@@ -233,6 +240,7 @@ run_map_cupcakecollapse(){
 
     echo "Processing Sample $1 for TOFU, with coverage 85% and identity 95%"
     source activate cupcake
+    head $CUPCAKE/README.md
     cd $4 #cd to $TOFU directory for output
     collapse_isoforms_by_sam.py -c 0.85 -i 0.95 --input $2/$1.clustered.hq.fastq --fq -s $3/$1.sorted.sam --dun-merge-5-shorter -o $1 &>> $1.collapse.log
     get_abundance_post_collapse.py $1.collapsed $2/$1.clustered.cluster_report.csv &>> $1.abundance.log
@@ -698,4 +706,23 @@ counts_subset_4tappas(){
   # type = AD or Non-AD
   source activate sqanti2_py3
   Rscript $GENERALFUNC/Counts_Subset.R $input_class $output_class $type_genes
+}
+
+convert_gtf_bed12(){
+
+  	source activate nanopore
+    cd $3
+    sample=$(basename "$2" | cut -d "." -f 1 )
+    echo $sample
+    echo $1/$sample.collapsed_corrected.gtf
+    gtfToGenePred $1/$sample.collapsed_corrected.gtf $sample.genePred
+    genePredToBed $sample.genePred $sample.bed12
+    sort -k1,1 -k2,2n $sample.bed12 > $sample"_sorted.bed12"
+    rm $sample.genePred $sample.bed12
+    # Rscript script.R <input.classfile> <input_output_dir of bed file> <prefix>
+    #Rscript $GENERAL/annotate_uscs_tracks.R $SQANTI $WKD $sample
+    #bedToBigBed -extraIndex=name $sample $sample"_Modified.bed12" $REFERENCE/mm10.chrom.filtered.sizes $sample.bb
+
+    #source deactivate
+    #./bedToBigBed -as=bedExample2.as -type=bed9+3 -extraIndex=name $sample"_Modified.bed12" $REFERENCE/mm10.chrom.filtered.sizes $sample.bb
 }
