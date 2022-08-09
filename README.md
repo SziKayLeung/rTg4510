@@ -1,36 +1,35 @@
 # Isoseq3_Tg4510
 
-This directory stores scripts pertaining to whole transcriptome Iso-Seq analysis of Tg4510 mice
+This directory is a repository of scripts pertaining to Whole Transcriptome and Targeted Transcriptome Iso-Seq analysis of Tg4510 mice
 
-## Getting Started 
-1.  Create/load conda environment to run the pipeline in ISCA, which contain functions that call python scripts with dependencies. All installation instructions found in [CreatingCondaEnv_Installation.sh](https://git.exeter.ac.uk/sl693/general/blob/master/Reference/CreatingCondaEnv_Installation.sh).
+## **Raw Data**
+* Whole Transcriptome: List of location of rawdata on ISCA to feed into Iso-Seq Analysis pipeline (Linux commands)
+* Targeted Transcriptome
+    + List of location of rawdata on ISCA
+    + Barcode Configuration Files: Samples with the relevant Pacbio barcode for demultiplexing
+    + Probes: List of probes and locations for determining off-target rate
 
-```
-module load Miniconda2
-source activate isoseq3     # all necessary dependencies to run IsoSeq3
-source activate sqanti2_py3 # all necessary dependencies to run RNASeq and Post-IsoSeq (Cupcake and SQANTI2) in python3
-source activate sqanti3     # Post-Isoseq (Cupcake and SQANTI2) in python3
+## **Datasets** 
+There are 2 Iso-Seq datasets:
+1. **Whole Transcriptome (n = 12 samples)**
+2. **Targeted Transcriptome (n = 24 samples)** 
 
-```
-
-2. Download all the genome.gtf file from GENCODE and build an index using STAR, GMAP and Minimap2 for alignment downstream
-3. Create a fasta sequence for the cDNA primer sequences for demultiplexing downstream
-4. Download mm9 FANTOM5 CAGE peak and use a liftover to mm10 for input into SQANTI2 ([Installation Instructions](https://git.exeter.ac.uk/sl693/general/blob/master/Reference/CreatingCondaEnv_Installation.sh)) 
+RNASeq: Short-read RNA-Seq data is used to 1) support junction sequence (splice site) from long-read Iso-Seq data from *STAR* output (SJ.bed) and 2) validate isoforms from RNA-Seq alignment using *Kallisto* - which is all integrated into *SQANTI*. 
 
 ---
-## Bioinformatics Pipeline 
-1. **Iso-Seq3 QC**: Contain scripts for testing paramaters and for general QC of Iso-Seq3 output. 
-    + Determining parameters for number of passes and minimum base accuracy (RQ) for CCS generation from the [number of output reads](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/Isoseq3_QC/IsoSeq_Summary_Testing.Rmd) and [ERCC detection](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/Isoseq3_QC/IsoSeq_ERCC_Testing.Rmd)
-    + [Yield](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/Isoseq3_QC/Tg4510_RunStats.Rmd) from Sequel Run output across Tg4510 samples 
-    + [Validated](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/Isoseq3_QC/Tg4510_hMAPT.R) WT samples did not have any human MAPT (i.e. check samples are wild type)
+## 1. **Transcriptome_Annotation**:
+Iso-Seq Analysis pipeline accurately annotates the whole and targeted transcriptome. Pipeline starts from IsoSeq3 tools (*CCS, lima, refine, cluster*), alignment to mouse transcriptome using *minimap2*, collapse and chaining of multiple samples with *Cupcake*, to transcriptome annotation with *SQANTI* using multiple input from RNA-Seq data, CAGE peaks and polyA motifs. All analyses pertaining to the whole transcriptome annotation of the whole transcriptome can be found in the Whole_Transcriptome_Paper directory. The bioinformatic pipeline for analysing the targeted transcriptome dataset is the same as the whole transcriptome, with the exception of demultiplexing barcodes at *lima*. 
 
-<br>
+For both Iso-Seq datasets, all the respective samples were merged at *Iso-Seq3 Refine* to generate one big reference annotation. The abundance for each of the individual samples in whole transcriptome was then obtained from *cupcake*'s read_stat.txt, which tabulates all the FL transcripts, with unique id specific to the sample (sequel run id), associated to each isoform. Similarly, obtaining abundance for each of the barcoded samples in the targeted transcriptome ws obtained from *cupcake* with the addition of the refine report from the individual samples (before merging, but after demultiplexing) for differentiation of transcripts by the barcoded samples. 
 
-2. **Iso-Seq3**: Run Isoseq3 bioinformatics pipeline on [all Tg4510 samples](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/Isoseq3_all.sh), [WT Tg4510 samples only](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/WT_Whole_Isoseq3.sh) and [TG Tg4510 samples only](https://git.exeter.ac.uk/sl693/IsoSeq3_Tg4510/-/blob/master/Isoseq3/TG_Whole_Isoseq3.sh), from sourcing [function script](https://git.exeter.ac.uk/sl693/general/-/blob/master/IsoSeq/Isoseq3.2.2_Functions.sh)
-
-<br>
-
-3. **Post Iso-Seq3** 
-   
 ---
+## 2. **Transcriptome Characterisation**:
+
+
+---
+## 3. **Differential Analysis**:
+
+Differential Analysis involves investigating changes at the gene and isoform level associated with rTg4510 pathology and progressively over age. Both datasets generated from the whole and targeted transcriptome approach were explored, and isoforms were visualised with Swan.
+
+Different methods were trialled: IsoformSwitchAnalyzeR, DESeq2, pipeline from ONT and custom scripts (using non-parametic methods). In the end, we worked with results from tappAS as the tool was designed for time-series experiments, with the ability to investigate differential feature usage.
 

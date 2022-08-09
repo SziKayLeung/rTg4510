@@ -2,3 +2,16 @@
 .Rhistory
 .RData
 .Ruserdata
+.oe.tar.gz
+/Images/*
+/Output/*
+*.e*
+*.o*
+*.pdf*
+*.png*
+*.csv*
+*.xlsx*
+*.pdf*
+*.tsv*
+
+
