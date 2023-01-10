@@ -17,9 +17,10 @@
 
 # source config file and function script
 module load Miniconda2/4.3.21
+FICLE_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/FICLE/
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
-source $SC_ROOT/2_Merged_Isoform_Characterisation/rTg4510_merged.config
-source $SC_ROOT/2_Merged_Isoform_Characterisation/01_source_functions.sh
+source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/rTg4510_merged.config
+source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/01_source_function.sh
 
 ##-------------------------------------------------------------------------
 
@@ -47,5 +48,16 @@ colour_by_abundance $NAME $WKD_ROOT/3_sqanti3/$NAME"_genename_corrected.gtf" $WK
 # subset_gene_reference 
 subset_gene_reference 
 
+# extract reference information
+python $FICLE_ROOT/reference/extract_reference_info.py --r ${GENOME_GTF} --glist ${TGENES[@]} --split ${TGENES_REF} --exc ${TGENES_REF}/Gencode_transcript_exclusion.csv  --short_read  ${RNASEQ_COUNTS} --o ${TGENES_REF}
+
 # run_transdecoder <name> <root_dir>
 run_transdecoder $NAME $WKD_ROOT
+
+# full_characterisation <name> <gene> <sq_filter>
+# Filtered/Unfiltered refers to SQANTI filtered gtf for parsing to FICLE
+Tgenes=(Rhbdf2 Clu)
+for gene in ${Tgenes[@]}; do 
+  full_characterisation $NAME $gene Filtered 
+  full_characterisation $NAME $gene Unfiltered
+done

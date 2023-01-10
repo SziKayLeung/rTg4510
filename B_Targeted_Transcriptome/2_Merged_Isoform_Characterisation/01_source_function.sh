@@ -170,24 +170,36 @@ run_transdecoder(){
 }
 
 
-# full_characterisation <gene>
+# full_characterisation <name> <gene> <sq_filter>
 full_characterisation(){
   
-  mkdir -p $WKD_ROOT/10_characterise/TargetGenes
+  mkdir -p $WKD_ROOT/4_characterise/TargetGenes/$3
+  mkdir -p $WKD_ROOT/4_characterise/TargetGenes/$3/Log
   
   # variables 
-  ref_dir=$WKD_ROOT/10_characterise/TargetGenesRef/
-    input_bed=$WKD_ROOT/9_sqanti3/basic/$1.collapsed_corrected_sorted.bed12
-  input_gtf=$WKD_ROOT/9_sqanti3/basic/$1.collapsed_classification.filtered_lite.gtf
-  noISM_path=$WKD_ROOT/9b_filter_cont/no3ISM/basic/$1"_ISMrem.classification.txt"
-  ORF_dir=$WKD_ROOT/10_characterise/CPAT/$1"_cpat.ORF_prob.best.tsv"  
+  ref_dir=$WKD_ROOT/4_characterise/TargetGenesRef/
+  noISM_path=$WKD_ROOT/3_sqanti3/$1"_ISMrem.classification.txt"
+  input_bed=$WKD_ROOT/3_sqanti3/$1.collapsed_corrected_sorted.bed12
+  ORF_dir=$WKD_ROOT/4_characterise/CPAT/$1".ORF_prob.best.tsv"  
+  output_dir=$WKD_ROOT/4_characterise/TargetGenes/$3/
+  
+  if [ $3 == "Filtered" ]; then 
+    input_gtf=$WKD_ROOT/3_sqanti3/$1.collapsed_classification.filtered_lite.gtf
+  elif [ $3 == "Unfiltered" ]; then
+    input_gtf=$WKD_ROOT/3_sqanti3/$1.collapsed_corrected.gtf
+  else
+    echo "Unfiltered/Filtered for 3rd parameter"
+  fi
+  
+  echo "***** $3 dataset"
+  echo $input_gtf
   
   source activate sqanti2_py3 
-  python $FULLANNO --gene=$2 --ref=$ref_dir \
+  python $FICLE --gene=$2 --ref=$ref_dir \
   --i_bed=$input_bed \
   --i_gtf=$input_gtf \
   --noISM=$noISM_path \
   --orf=$ORF_dir \
-  --o_dir=$WKD_ROOT/10_characterise/TargetGenes/ &> $WKD_ROOT/10_characterise/TargetGenes/$2"_characterise.log"
+  --o_dir=$output_dir &> $output_dir/Log/$2"_characterise.log"
   
 }
