@@ -1,42 +1,58 @@
 ## ----------Script-----------------
 ##
-## Script name: 
+## Purpose: Generate post-sqanti plots for summary of Iso-Seq targeted mouse transcriptome datasets
 ##
-## Purpose of script: Functions script for ADBDR dataset 
-##
-## Author: Szi Kay Leung
-##
-## Email: S.K.Leung@exeter.ac.uk
-##
-## ----------Notes-----------------
-##
-## 
-##   
-##
+## Author: Szi Kay Leung (S.K.Leung@exeter.ac.uk)
 ##
 
 
 ## ---------- Source function and config files -----------------
 
-OUTPUT_DIR = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Targeted_Transcriptome"
+# source all general scripts related to long-read sequencing
+LOGEN = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
+source(paste0(LOGEN, "aesthetics_basics_plots/pthemes.R"))
+source(paste0(LOGEN, "aesthetics_basics_plots/draw_density.R"))
 
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/02_source_characterise_functions.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/rTg4510_isoseq_characterise.config.R")
+sapply(list.files(path = paste0(LOGEN,"longread_QC"), pattern="*.R", full = T), source,.GlobalEnv)
+sapply(list.files(path = paste0(LOGEN,"compare_datasets"), pattern="*.R", full = T), source,.GlobalEnv)
+
+# project related scripts and functions
+SC_ROOT <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/"
+source(paste0(SC_ROOT, "02_source_characterise_functions.R"))
+source(paste0(SC_ROOT, "rTg4510_isoseq_characterise.config.R"))
+
+# output directory
+output_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Targeted_Transcriptome"
 
 
-## ---------- Apply functions ----------------
-# QC plots of Iso-Seq pipeline
-QC_yield <- QC_yield_plot() 
+## ---------- QC output --------------------------------------
+
+# Number of Iso-Seq reads
+Reads <- number_iso_reads(misc_input$ccs_output,
+                          misc_input$lima_output,
+                          spec_dirnames$refine,
+                          spec_dirnames$cluster)
+
+Reads$Reads$Genotype <- sapply(Reads$Reads$sample, function(x) classify_genotype(x, case_samples, control_samples,"Batch"))
+Reads$CCS_values$Genotype <- sapply(Reads$CCS_values$sample, function(x) classify_genotype(x, case_samples, control_samples,"Batch"))
+write.csv(Reads$Reads,paste0(output_dir,"/Tg4510_IsoSeqTargetedReadsStats.csv"))
+
+# Plots relating to the number of Iso-Seq reads
+QC_yield <- iso_QC_yield_batch(Reads$Reads, misc_input$targetedpheno, misc_input$tg4510_samples)
 
 # Target rate of probes
-ontarget <- on_target_plot()
+ontarget <- on_target_plot(Probes_files, misc_input$targetedpheno,"notbatched")
+
+
+## ---------- Compare datasets ------------------------------
 
 # Whole Transcriptome vs Targeted Transcriptome plots 
-wholevstargeted <- whole_vs_targeted_plots()
+wholevstargeted <- whole_vs_targeted_plots(misc_input$cuff_tmap, misc_input$TargetGene,input.class.files$whole_isoseq, input.class.files$subsettargeted_isoseq)
 
 
-## ---------- Output ----------------
-pdf (paste0(OUTPUT_DIR,"/TargetedTranscriptome.pdf"), width = 10, height = 15)
+## ---------- Pdf Output ----------------
+
+pdf(paste0(output_dir,"/TargetedTranscriptome.pdf"), width = 10, height = 15)
 # pg 1 - QC
 top_row <- plot_grid(QC_yield[[1]], labels = c('A'), label_size = 30, label_fontfamily = "CM Roman", scale = 0.9)
 bottom_row <- plot_grid(QC_yield[[3]],QC_yield[[2]],labels = c('B', 'C'), label_size = 30, label_fontfamily = "CM Roman", ncol = 2,scale = 0.9)

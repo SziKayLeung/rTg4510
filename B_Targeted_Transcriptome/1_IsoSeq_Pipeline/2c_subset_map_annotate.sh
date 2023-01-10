@@ -18,8 +18,8 @@
 # source config file and function script
 module load Miniconda2/4.3.21
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
-source $SC_ROOT/1_IsoSeq_Pipeline/rTg4510_isoseq.config
-source $SC_ROOT/1_IsoSeq_Pipeline/01_source_functions.sh
+source $SC_ROOT/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/rTg4510_isoseq.config
+source $SC_ROOT/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/01_source_functions.sh
 
 ##-------------------------------------------------------------------------
 echo "#*************************************  Isoseq3 [Function 1, 2, 3, 6]"
@@ -62,5 +62,3 @@ TAMA_sqanti_filter $SUBNAME full
 
 ## 16) TAMA_tappas_input <sample> <mode=basic/full/nokallisto/lncrna>
 TAMA_tappas_input $SUBNAME full
-
-

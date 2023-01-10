@@ -19,9 +19,8 @@
 # source config file and function script
 module load Miniconda2/4.3.21
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
-source $SC_ROOT/1_IsoSeq_Pipeline/rTg4510_isoseq.config
-source $SC_ROOT/1_IsoSeq_Pipeline/01_source_functions.sh
-
+source $SC_ROOT/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/rTg4510_isoseq.config
+source $SC_ROOT/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/01_source_functions.sh
 
 
 ##-------------------------------------------------------------------------
@@ -60,13 +59,14 @@ run_kallisto $NAME $WKD_ROOT
 
 ##-------------------------------------------------------------------------
 echo "#************************************* SQANTI3 [Function 12]"
-## 12) run_sqanti3 <sample> <mode=basic/full/nokallisto/lncrna>
+## 12) run_sqanti3 <sample> <mode=basic/full/nokallisto/lncrna/nornaseq>
 run_sqanti3 $NAME full
 run_sqanti3 $NAME basic
+run_sqanti3 $NAME nornaseq
 
 ##-------------------------------------------------------------------------
 echo "#************************************* TAMA filter [Function 13,14,16]"
-## 13) TAMA_remove_fragments <sample> <mode=basic/full/nokallisto/lncrna> <io_dir>
+## 13) TAMA_remove_fragments <sample> <mode=basic/full/nokallisto/lncrna/nornaseq> <io_dir>
 TAMA_remove_fragments $NAME full $WKD_ROOT
 
 ## 14) TAMA_sqanti_filter <sample> <mode=basic/full/nokallisto/lncrna> <io_dir>
@@ -74,6 +74,9 @@ TAMA_sqanti_filter $NAME full $WKD_ROOT
 
 ## 16) TAMA_tappas_input <sample> <mode=basic/full/nokallisto/lncrna> <io_dir>
 TAMA_tappas_input $NAME full $WKD_ROOT
+
+# remove_3ISM <sample> <mode=basic/full/nokallisto/lncrna/nornaseq>
+remove_3ISM $NAME nornaseq
 
 ##-------------------------------------------------------------------------
 echo "#************************************* QC [Function 15]"
@@ -89,5 +92,3 @@ find_humanMAPT
 ##-------------------------------------------------------------------------
 echo "#************************************* Whole vs Targeted Transcriptome "
 # In Targeted_Part3.sh
-
-

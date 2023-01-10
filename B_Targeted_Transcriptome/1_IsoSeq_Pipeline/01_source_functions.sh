@@ -398,7 +398,7 @@ run_kallisto(){
 ################################################################################################
 #************************************* SQANTI3 [Function 12]
 
-# run_sqanti3 <sample> <mode=basic/full/nokallisto/lncrna> <io_dir>
+# run_sqanti3 <sample> <mode=basic/full/nokallisto/lncrna/nornaseq> <io_dir>
 run_sqanti3(){
 
     source activate sqanti2_py3
@@ -459,6 +459,11 @@ run_sqanti3(){
       python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $gtf $LNCRNA_GTF $GENOME_FASTA --cage_peak $CAGE_PEAK --polyA_motif_list $POLYA \
       -c "./*SJ.out.bed" --skipORF --fl_count $abundance \
       --genename --isoAnnotLite --gff3 $GFF3 --report pdf &> $sample.sqanti.qc.log
+      
+       elif [ $2 == "nornaseq" ]; then
+      echo "Processing with gencode.vM22.annotation.gtf for genome annotation and no RNASeq Junction"
+      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $gtf $GENOME_GTF $GENOME_FASTA --cage_peak $CAGE_PEAK --polyA_motif_list $POLYA \
+      --fl_count $abundance --genename --isoAnnotLite --gff3 $GFF3 --report pdf &> $1.sqanti.qc.log
 
     else
       echo "2nd argument required"
@@ -546,6 +551,12 @@ remove_3ISM(){
   Rscript $ISMREMOVE $3/9_sqanti3/$2/$1.collapsed_classification.filtered_lite_classification.txt \
   $sq_dir/$1.collapsed_classification.filtered_lite.gtf \
   $sq_dir/$1.collapsed_classification.filtered_lite_junctions.txt $3/9b_filter_cont/no3ISM/$2 $1
+  
+  # create fasta files 
+  sq_fasta=$(ls $sq_dir/*.filtered_lite.fasta*)
+  rem_isoform=$(ls *_ISMrem.isoform.txt*)
+  
+  python $TAMASUBSETFASTA $sq_fasta $rem_isoform $1"_ISMrem.fasta"
   
 }
 
