@@ -29,6 +29,10 @@ run_merge(){
   echo "Merging following fastq files in $1"
   cd $1
   zcat *.gz > $RAW_ROOT_DIR/$2"_Merged.fq"
+  
+  # count the number of reads
+  grep -o 'read' $2"_Merged.fq" | wc -l > $2"_Merged_ReadCount.txt"
+  
   source deactivate
 
 }
@@ -41,8 +45,11 @@ run_nanofilt(){
     mkdir -p $3/1_nanofilt; cd $3/1_nanofilt
 
     echo "Processing: $1"
-    cat $1 | NanoFilt -q 7 > $/$2_filtered_pass_reads.fastq
+    cat $1 | NanoFilt -q 7 > $2"_filtered_pass_reads.fastq"
     mv NanoFilt.log $3/$2_NanoFilt.log
+    
+    # count the number of reads
+    grep -o 'read' $2"_filtered_pass_reads.fastq" | wc -l > $2"_Filtered_ReadCount.txt"
 
     source deactivate
     
@@ -63,32 +70,7 @@ run_QC(){
     pycoQC --summary_file $sequencing_summary --bam_file $bam_input -o $sample"_QC.html"
     Rscript $minionQC -i $sequencing_summary -s TRUE -o $output_dir
     source deactivate
-}
-
-
-# on_target_rate <sample> <input_basecalled_dir> <input_mapped_dir> <input_bed_file> <output_directory>
-on_target_rate(){
-    # variables
-    sample=$1
-    input_basecalled_dir=$2
-    input_mapped_dir=$3
-    input_bed_file=$4
-    output_dir=$5
-
-    REFERENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019
-    SEQUENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence
-    CUPCAKE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake
-
-    source activate sqanti2_py3
-    cd $output_dir
-
-    export PYTHONPATH=$PYTHONPATH:$SEQUENCE
-
-    echo "Processing combined.fasta: $input_basecalled_dir/$sample"_combined_reads.fasta""
-    echo "Processing input_mapped.fasta.sam: $input_mapped_dir/$sample"_combined_sorted_reads.sam""
-    echo "Writing output: $sample"
-    python $CUPCAKE/targeted/calc_probe_hit_from_sam.py $input_bed_file $input_basecalled_dir/$sample"_combined_reads.fasta" $input_mapped_dir/$sample"_combined_sorted_reads.sam" --start_base 0 --end_base 0 --o $sample.fasta.sam.probe_hit.txt
-    source deactivate
+    
 }
 
 
@@ -163,6 +145,9 @@ post_targeted_porechop(){
   	seqtk subseq $2/2_demultiplex/chopped/$1"_filtered_reads_choped.fq" $2/2_demultiplex/$1"_Demultiplex"/All_Minus_Reads.txt > $1"_minus_reads.fastq"
     seqtk seq -r $1"_minus_reads.fastq" > $1"_reverse_minus_reads.fastq"
     
+    # count the number of demultiplexed reads in each sample 
+    cd $2/2_demultiplex/$1"_Demultiplex"; for i in *Strand_Reads.txt*; do  wc -l $i; done > $1"_Reads_Count.txt"
+    
 }
 
 
@@ -216,6 +201,9 @@ run_minimap2(){
 	mkdir -p $2/4_minimap $2/4_minimap/$3
 	cd $3/4_minimap/$3
 	
+	# for downstream 
+	mkdir -p $2/4b_target_rate
+	
 	echo "Alignment using Minimap2: $1"
 	
 	minimap2 -t 46 -ax splice $GENOME_FASTA $2/2_demultiplex/$3"_Demultiplex"/$1"_combined_reads.fasta" > $1"_combined_reads.sam" 2> $1"_Minimap2.log"
@@ -223,6 +211,33 @@ run_minimap2(){
 
   source deactivate
   
+}
+
+
+# on_target_rate <sample> <input_basecalled_dir> <input_mapped_dir> <input_bed_file> <output_directory>
+on_target_rate(){
+    # variables
+    sample=$1
+    input_basecalled_dir=$2
+    input_mapped_dir=$3
+    input_bed_file=$4
+    output_dir=$5
+    
+    mkdir -p $output_dir; cd $output_dir
+
+    REFERENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019
+    SEQUENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence
+    CUPCAKE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake
+
+    source activate sqanti2_py3
+
+    export PYTHONPATH=$PYTHONPATH:$SEQUENCE
+
+    echo "Processing combined.fasta: $input_basecalled_dir/$sample"_combined_reads.fasta""
+    echo "Processing input_mapped.fasta.sam: $input_mapped_dir/$sample"_combined_sorted_reads.sam""
+    echo "Writing output: $sample"
+    python $CUPCAKE/targeted/calc_probe_hit_from_sam.py $input_bed_file $input_basecalled_dir/$sample"_combined_reads.fasta" $input_mapped_dir/$sample"_combined_sorted_reads.sam" --start_base 0 --end_base 0 --o $sample.fasta.sam.probe_hit.txt
+    source deactivate
 }
 
 # run_transcriptclean <sample> <root_dir> <batch>
