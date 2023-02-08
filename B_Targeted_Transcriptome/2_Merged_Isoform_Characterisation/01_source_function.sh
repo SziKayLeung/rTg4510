@@ -1,7 +1,7 @@
 #run_gff_compare <output_name> <ref_gtf> <2nd_gtf> <root_dir>
 run_gff_compare(){
   
-  mkdir -p $WKD_ROOT/1_gffcompare; cd $WKD_ROOT/1_gffcompare
+  mkdir -p $4/1_gffcompare; cd $4/1_gffcompare
   cp $2 . 
   cp $3 . 
   
@@ -10,22 +10,23 @@ run_gff_compare(){
   
 }
 
-# identify_common_transcripts <root_dir>
+# identify_common_transcripts <root_dir> <targetgenelist> <samplelist>
 # Custom script to identify_common_targeted_transcripts for merged output
 identify_common_transcripts(){
   
-  mkdir -p $1/2_common_transcripts; cd $1/2_common_transcripts
+  mkdir -p $1/2_common_transcripts
   
   source activate sqanti2_py3
   python $COMMONSC \
   --iso $ISOSEQ_SQ_DIR/$ISO_NAME.collapsed_classification.filtered_lite_classification.txt \
   --iso_gtf $ISOSEQ_SQ_DIR/$ISO_NAME.collapsed_classification.filtered_lite.gtf \
   --ont_gtf $ONT_UNFILTERED_SQ_DIR/$ONT_NAME"_unfiltered_talon_corrected.gtf" \
-  --ont_1 $ONT_UNFILTERED_SQ_DIR/$ONT_NAME"_unfiltered_talon_classification.txt" \
-  --ont_2 $ONT_FILTERED_SQ_DIR/$ONT_NAME"_filtered_talon_classification.txt" \
-  --a_ont $ONT_UNFILTERED_DIR/$ONT_NAME"_unfiltered_talon_abundance.tsv" \
+  --ont_unfil $ONT_UNFILTERED_SQ_DIR/$ONT_NAME"_unfiltered_talon_classification_counts.txt" \
+  --ont_fil $ONT_FILTERED_SQ_DIR/$ONT_NAME"_filtered_talon_classification_counts.txt" \
   --cuff $1/1_gffcompare/$NAME.$ONT_NAME"_unfiltered_talon_corrected.gtf.tmap" \
-  --o_dir 2_common_transcripts &> identify_transcripts.log
+  --o_dir $1/2_common_transcripts \
+  --tgenes_ens $2 \
+  --sample $3 #&> identify_transcripts.log
     
 }
 
@@ -202,4 +203,30 @@ full_characterisation(){
   --orf=$ORF_dir \
   --o_dir=$output_dir &> $output_dir/Log/$2"_characterise.log"
   
+}
+
+
+# run_minimap <output_name> <output_dir> <input_fasta>
+run_minimap(){
+  
+  mkdir -p $2; cd $2
+  
+  source activate nanopore  
+  minimap2 -t 30 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $GENOME_FASTA $3 > $1.sam 2> $1.map.log
+  samtools sort -O SAM $1.sam > $1.sorted.sam
+
+  
+}
+
+
+# optimise_collapse <output_name> <input_fasta> <input_map_dir> <max_5_diff> <max_3_diff> 
+optimise_collapse(){
+  
+  output_root_dir="$(dirname $3)"  
+  mkdir -p $output_root_dir/$4_5diff_$5_3diff
+  cd $output_root_dir/$4_5diff_$5_3diff
+
+  source activate sqanti2_py3
+  collapse_isoforms_by_sam.py -c 0.99 -i 0.99 --dun-merge-5-shorter --input $2 -s $3/$1.sorted.sam --max_5_diff=$4 --max_3_diff=5 -o $1 &>> $1.collapse.log
+
 }
