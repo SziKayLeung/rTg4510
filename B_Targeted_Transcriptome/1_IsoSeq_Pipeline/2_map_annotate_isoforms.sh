@@ -19,8 +19,10 @@
 # source config file and function script
 module load Miniconda2/4.3.21
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
+LOGEN_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/
 source $SC_ROOT/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/rTg4510_isoseq.config
 source $SC_ROOT/B_Targeted_Transcriptome/1_IsoSeq_Pipeline/01_source_functions.sh
+export PATH=$PATH:${LOGEN}/assist_isoseq_processing
 
 
 ##-------------------------------------------------------------------------
@@ -43,6 +45,9 @@ run_map_cupcakecollapse $NAME $WKD_ROOT $WKD_ROOT
 
 # demux_targeted <output_name> <input_root_dir> <output_root_dir>
 demux_targeted $SUBNAME $WKD_ROOT $WKD_ROOT
+
+# demultiplex merged cluster report using sample FLNC read id
+demux_merged_cluster.py $WKD_ROOT/3_refine $WKD_ROOT/5_merged_cluster/AllMouseTargeted.clustered.cluster_report.csv
 
 ##-------------------------------------------------------------------------
 echo "#************************************* RNAseq [Function 9, 10]"
