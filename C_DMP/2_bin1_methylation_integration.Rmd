@@ -1,0 +1,212 @@
+---
+title: "Bin1 Integration"
+author: "Szi Kay Leung"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# libraries
+suppressMessages(library("ggrepel"))
+
+# output directory
+output <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/DMP"
+
+# Specific analysis related
+SC_ROOT <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/"
+source(paste0(SC_ROOT,"C_DMP/01_source_functions.R"))
+
+# General functions
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/sqanti_general.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_aesthetics.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_tappas_analysis.R")
+
+# Config files 
+source(paste0(SC_ROOT,"B_Targeted_Transcriptome/3_Differential_Analysis/rTg4510_differential.config.R"))
+source(paste0(SC_ROOT,"C_DMP/rTg4510_methylation.config.R"))
+
+# Bin1 charcterisation files (generated for Thesis)
+bin1_stats = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/Merged_Targeted/4_characterise/TargetGenes/Bin1/Stats"
+bin1_char.files.names <- list(
+  co = paste0(bin1_stats, "/Bin1flattened_gencode.csv"),
+  ES = paste0(bin1_stats, "/Bin1_Exonskipping_tab.csv"),
+  ES_general = paste0(bin1_stats, "/Bin1_Exonskipping_generaltab.csv"),
+  novelexon_co = paste0(bin1_stats, "/Bin1_novelexon_coordinates.csv"),
+  noveexon = paste0(bin1_stats, "/Bin1_NovelExon_generaltab.csv")
+) 
+bin1_char <- lapply(bin1_char.files.names, function(x) read.csv(x))
+
+## ---------- Load tappAS files -----------------
+
+loaded <- list(
+  iso = input_tappasfiles(TAPPAS_INPUT_DIR$iso),
+  ont = input_tappasfiles(TAPPAS_INPUT_DIR$ont)
+)
+
+
+## ---------- Annotate tappAS files -----------------
+
+annotated <- list(
+  iso = annotate_tappasfiles(class.files$iso,loaded$iso$input_normalized_matrix,phenotype$iso),
+  ont = annotate_tappasfiles(class.files$ont,loaded$ont$input_normalized_matrix,phenotype$ont)
+)
+
+
+
+```
+
+## Aims
+
+1. Identify the samples where the differentially methylated position in *Bin1* is upregulated  
+2. Identify the samples where there is an upregulated expression of *Bin1-205* (PB.3915.33_ENSMUST00000234496.1)
+3. Idntify how many isoforms have exon 17 skipped (this is the exon that is located slighly downstream of the DMP)
+4. Identify how many isoforms with exon 17 skipped that are also differentially expressed (from tapppAS analysis)
+5. In designing primers specific to PB.3915.33_ENSMUST00000234496.1, spanning across exon 12 and exon 17, identify the isoforms detected from long-read sequencing that also have this same splicing event (i.e skipped exons between 12 and 17)
+6. Expression of a negative control 
+
+
+## Samples 
+
+```{r plot1_plot2, message=FALSE}
+# check samples where DMP is upregulated
+p1 <- RRBS_completebetas %>% filter(position == "chr18:32431597") %>% 
+  reshape2::melt() %>% 
+  left_join(., RRBS_Phenotype[,c("Sample_ID", "Genotype", "Age_months")], by = c("variable" = "Sample_ID")) %>% 
+  filter(Age_months == "8") %>% 
+  mutate(value = ifelse(is.na(value), 0, value)) %>%
+  ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() + 
+  labs(x = "Genotype", y = "Methylation") + 
+  geom_label_repel(aes(label = variable), box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') 
+
+# check samples where isoform is upregulated
+p2 <- annotated$ont$Norm_transcounts %>% filter(isoform == "ENSMUST00000234496.1") %>% 
+  filter(time == 8) %>%
+  mutate(Genotype = factor(ifelse(group == "CONTROL", "WT", "TG"), levels = c("WT","TG"))) %>% 
+  ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() +
+  labs(x = "Genotype", y = "Expression (normalised counts)") + 
+  geom_label_repel(aes(label = sample), box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') 
+
+plot_grid(p1,p2)
+
+
+```
+
+## Isoforms with Exon17 skipped
+
+```{r e17_skipped, echo=FALSE}
+## Exon 17 skipped in isoform of interest
+#bin1_char$ES %>% filter(transcript_id == "PB.3915.33_ENSMUST00000234496.1")
+#bin1_char$co %>% filter(updated_exon_number == 17)
+
+# check the number of isoforms also with exon 17 skipped
+iso_E17_skipped <- bin1_char$ES %>% filter(ES == "Gencode_17") %>% 
+  # extract the ONT id from ID that are commonly detected in PacBio and ONT (i.e. PBID_TALONID)
+  mutate(ONT_isoform = word(transcript_id, c(2), sep = fixed("_"))) %>% 
+  mutate(ONT_isoform = ifelse(grepl("_", transcript_id), word(transcript_id, c(2), sep = fixed("_")),as.character(transcript_id)),
+         ONT_isoform = ifelse(grepl("PB",ONT_isoform),"NA",ONT_isoform))
+
+# identify the number of isoforms that are skipped with exon 17 and also differentially expressed
+diff_exon17_skipped <- loaded$ont$results_trans %>% tibble::rownames_to_column(., var = "isoform") %>% filter(isoform %in% iso_E17_skipped$ONT_isoform) 
+
+p3 <- annotated$ont$Norm_transcounts %>% 
+  filter(isoform %in% diff_exon17_skipped$isoform) %>% 
+  mutate(Genotype = factor(ifelse(group == "CONTROL", "WT", "TG"), levels = c("WT","TG"))) %>% 
+  filter(time == 8) %>%
+  ggplot(., aes(x = Genotype, y = log10(value))) + geom_boxplot() + geom_jitter() + 
+  facet_grid(~isoform)  + 
+  labs(x = "Genotype", y = "Expression (log10 normalised counts)") +
+  theme(strip.text.x = element_text(angle = 90))
+
+```
+
+Number of isoforms with also exon 17 skipped: `r nrow(iso_E17_skipped)`\
+Number of isoforms with also exon 17 skipped and differentially expressed: `r nrow(diff_exon17_skipped)`
+
+```{r}
+p3
+```
+
+## Isoforms with similar AS pattern
+
+```{r}
+# check that the primers unique to ENSMUST00000234496.1 (span across 12 - 18)
+# exon 12: 32424820 32424967
+# exon 18: 32431983 32432093 
+# ENSMUST00000234496.1 contain Gencode 12, and 18, but skipped 13, 14, 15, 16, 17
+
+primer_specific <- bin1_char$ES_general %>% filter(Gencode_12 == "No" & Gencode_18 == "No" & 
+                                  Gencode_13 == "Yes" & Gencode_14 == "Yes" &
+                                  Gencode_15 == "Yes" & Gencode_16 == "Yes" & Gencode_17 == "Yes") %>% 
+  mutate(ONT_isoform = ifelse(grepl("_", X), word(X, c(2), sep = fixed("_")),as.character(X)),
+         ONT_isoform = ifelse(grepl("PB",ONT_isoform),"NA",ONT_isoform))
+
+
+p4 <- annotated$ont$Norm_transcounts %>% filter(isoform %in% primer_specific$ONT_isoform) %>% 
+  filter(time == 8) %>%
+  mutate(Genotype = factor(ifelse(group == "CONTROL", "WT", "TG"), levels = c("WT","TG"))) %>% 
+  ggplot(., aes(x = Genotype, y = log10(value))) + geom_boxplot() + geom_jitter() + 
+  facet_grid(~isoform) +
+  labs(x = "Genotype", y = "Expression (log10 normalised counts)") +
+  theme(strip.text.x = element_text(angle = 90))
+
+```
+
+Number of isoforms with the same splicing pattern: `r length(unique(primer_specific$ONT_isoform))`\
+overlap between exon 17 skipped and upregulated vs primer specific isoforms:
+`r intersect(primer_specific$ONT_isoform,diff_exon17_skipped$isoform)`
+
+```{r,  message=FALSE, warning=FALSE, fig.dim = c(12, 6)}
+p4
+
+```
+
+## Negative control 
+```{r}
+# 2. primer to negative control (TALONT000794296)
+# also upregulated: TALONT000761829
+
+mean_counts <- annotated$ont$Norm_transcounts %>% filter(associated_gene == "Bin1") %>%
+  filter(time == 8) %>%
+  group_by(isoform, group) %>% tally(value)
+
+isoform_exp <- function(transcript){
+  p <- annotated$ont$Norm_transcounts %>% 
+  filter(isoform == transcript) %>% 
+  mutate(Genotype = factor(ifelse(group == "CONTROL", "WT", "TG"), levels = c("WT","TG"))) %>% 
+  filter(time == 8) %>%
+  ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() + 
+  facet_grid(~isoform)  + 
+  labs(x = "Genotype", y = "Expression (normalised counts)")
+  
+  return(p)
+}
+
+
+p5 <- isoform_exp("TALONT000794296")
+#isoform_exp("TALONT000794610")
+#isoform_exp("TALONT000794726")
+#isoform_exp("TALONT000761939")
+
+p5
+```
+
+```{r}
+# output plots 
+
+pdf(paste0(output,"/Bin1_DMP.pdf"), width = 10, height = 8)
+plot_grid(p2,p1, labels = c("A","B"))
+p3
+p4
+p5
+dev.off()
+
+
+```
+
