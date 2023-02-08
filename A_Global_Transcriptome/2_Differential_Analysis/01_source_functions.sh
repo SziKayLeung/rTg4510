@@ -1,159 +1,75 @@
 #!/bin/bash
-################################################################################################
-## Define functions for Diff_Whole.sh
-## SQANTI3 & TAMA Filter
-# 1) run_sqanti3 <input_tofu_prefix> <input_gtf> <input_tofu_dir> <input_RNASEQ_dir> <input_KALLISTO_file> <input_abundance> <output_dir> <mode=genome/rnaseq/lncrna>
-# 2) TAMA_remove_fragments <input_collapsed.filtered.gff> <input/output_prefix_name> <input/output_dir>
-# 3) TAMA_sqanti_filter <TAMA_remove_fragments.output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_fasta> <sqanti_output_junc> <output_prefix_name> <output_dir>
-## RNA-Seq Expression Matrix on Iso-Seq scaffold
-# 4) mouse_merge_fastq <RNASEQ_input_dir> <Kallisto_output_dir> <sample_prefix_output_name>
-# 5) run_kallisto <sample_prefix_output_name> <input_tofu_fasta> <merged_fastq_input_dir> <output_dir>
-# 6) run_kallisto_1sample <input_RNASEQ_rawdir> <sample> <input_ref_name_idx> <output_dir>
-## Prepare Input files for tappAS
-# 7) counts_subset_4tappas <input_class> <output_class> <type_genes>
 
 
-################################################################################################
-#************************************* SQANTI3 & TAMA Filter [Function 1 - 3]
-# run_sqanti3 <input_tofu_prefix> <input_gtf> <input_tofu_dir> <input_RNASEQ_dir> <input_KALLISTO_file> <input_abundance> <output_dir> <mode=genome/rnaseq/lncrna>
-run_sqanti3(){
+# run_star <list_of_samples> <J20/Tg4510_input_directory> <output_dir>
+# Aim: Individually align RNASeq filtered fastq files to STAR-indexed genome using STAR, and subsequently input SJ.out.bed file into SQANTI2
+run_star(){
+    source activate sqanti2
+    echo "STAR Version"
+    STAR --version
+    # samtools version: Version: 1.9 (using htslib 1.9)
 
-    source activate sqanti2_py3
+    # extract official sample name from all_filtered directory
+    # extract only files with "fastq.filtered", beginning with sample name, and R1/R2
 
-    # variables
-    SQANTI2_DIR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/SQANTI2
-    SQANTI3_DIR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/SQANTI3
-    CUPCAKE_SEQUENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/Post_Isoseq3/cDNA_Cupcake/sequence
-    REFERENCE=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019
-    CAGE_DIR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/reference_2019/CAGE
-    TAPPAS_dir=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/TAPPAS
-    GENERALFUNC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/General/2_Transcriptome_Annotation
+    # cd to $J20/Tg4510_input_directory
+    F_name=$(find $2 -name "*fastq.filtered" -exec basename \{} \; | grep ^$1 | grep "R1" )
+    R_name=$(find $2 -name "*fastq.filtered" -exec basename \{} \; | grep ^$1 | grep "R2" )
+    # save path directory of files as variable for later mapping
+    F_File=$(find $2 -name "$F_name")
+    R_File=$(find $2 -name "$R_name")
 
-    # copy STAR output SJ.out.bed files
-    SJ_OUT_BED=($(
-        for rnaseq in ${SAMPLES_NAMES[@]}; do
-            name=$(find $4 -name "*SJ.out.bed" -exec basename \{} \; | grep ^$rnaseq)
-            File=$(find $4 -name "$name")
-            echo $File
-        done
-        ))
-    for file in ${SJ_OUT_BED[@]}; do cp $file $7 ;done
-
-    # create tab separated file from kallisto
-    # Rscript script.R <input.file_fromkallisto> <output.file_intosqanti>
-    Rscript $GENERALFUNC/TabSeparated_Kallisto.R $5 $7/$1".mod2.abundance.tsv"
-    kallisto_expfile=$7/$1".mod2.abundance.tsv"
-    echo "Using $kallisto_expfile"
-
-    # prepare sqanti
-    cd $7
-    export PYTHONPATH=$PYTHONPATH:$CUPCAKE_SEQUENCE
-    python $SQANTI3_DIR/sqanti3_qc.py -v
-
-    # sqanti qc
-    echo "Processing Sample $1 for SQANTI2 QC"
-
-    # no kalliso file
-    if [ $8 == "rnaseq" ]; then
-      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed --coverage "./*SJ.out.bed" --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
-
-    elif [ $8 == "lncrna" ]; then
-      echo "Processing with lncRNA.gtf for genome annotation "
-      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM25.long_noncoding_RNAs.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed --coverage "./*SJ.out.bed" --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --skipORF --fl_count $6 --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
-
-    elif [ $8 == "genome" ]; then
-      echo "Processing with gencode.vM22.annotation.gtf for genome annotation "
-      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed -c ./"*SJ.out.bed" --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --expression $kallisto_expfile --fl_count $6 --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
-    
-    elif [ $8 == "basic" ]; then
-      echo "Processing with gencode.vM22.annotation.gtf for genome annotation and basic"
-      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
-      
-    elif [ $8 == "nornaseq" ]; then
-      echo "Processing with gencode.vM22.annotation.gtf for genome annotation and no RNASeq Junction"
-      python $SQANTI3_DIR/sqanti3_qc.py -t 30 --gtf $3/$2 $REFERENCE/gencode.vM22.annotation.gtf $REFERENCE/mm10.fa --cage_peak $SQANTI3_DIR/data/ref_TSS_annotation/mouse.refTSS_v3.1.mm10.bed --polyA_motif_list $SQANTI2_DIR/../human.polyA.list.txt --fl_count $6 --genename --isoAnnotLite --gff3 $TAPPAS_dir/Mus_musculus_GRCm38_Ensembl_86.gff3 --report pdf &> $1.sqanti.qc.log
-
-
+    # cd to $WKD
+    cd $3
+    if [ -f $1.SJ.out.bed ]; then
+        echo "$1.SJ.out.bedalready exists; STAR Mapping not needed on Sample $1"
     else
-      echo "8th argument required"
+        mkdir $1
+        cd $1
+        echo "Processing Sample $1 for STAR"
+        echo "Processing Forward Reads: $F_File"
+        echo "Processing Reverse Reads: $R_File"
+
+      # Parameters according to https://github.com/jennylsmith/Isoseq3_workflow/blob/master/shell_scripts/8__STAR_Junctions_ShortReads.sh
+      # 2-pass mode alignment with chimeric read detection
+      # at least 25 bp of one read of a pair maps to a different loci than the rest of the read pair
+      # require 20 pb on either side of chimeric junction
+      # include chimeric reads in the output BAM
+      # don't include chimeras that map to reference genome contig with Ns
+      # --outSAMtype BAM SortedByCoordinate, output sorted by coordinate Aligned.sortedByCoord.out.bam file, similar to samtools sort command.
+      # note STAR indexed with genocde vM22 primary assembly annotation gtf therefore no need to include into command line, otherwise create additional folders
+        STAR --runMode alignReads --runThreadN 32 --genomeDir ${STAR_REF_DIR} \
+        --readFilesIn $F_File $R_File \
+        --outSAMtype BAM SortedByCoordinate \
+        --chimSegmentMin 25 \
+    		--chimJunctionOverhangMin 20 \
+    		--chimOutType WithinBAM \
+    		--chimFilter banGenomicN \
+    		--chimOutJunctionFormat 1 \
+    		--twopassMode Basic \
+    		--twopass1readsN -1 #use all reads
+          #--readFilesCommand zcat \
+          #--sjdbGTFfile $4/gencode.vM22.primary_assembly.annotation.gtf \
+
+        # to remove duplicates between samples
+        picard MarkDuplicates INPUT=$3/$1".sorted.bam" OUTPUT=$1".sorted.nodup.bam" METRICS_FILE=$1".dup.txt" VALIDATION_STRINGENCY=LENIENT REMOVE_DUPLICATES=true 2> $1.PicardDup.log
+
+        # rename output files
+        mv Aligned.sortedByCoord.out.bam $1.sorted.bam
+        mv Log.final.out $1.Log.final.out
+        mv Log.out $1.Log.out
+        mv Log.progress.out $1.Log.progress.out
+        mv SJ.out.tab $1.SJ.out.bed
+        mv $1.SJ.out.bed ../
     fi
-
-    echo "Processing Sample $1 for SQANTI2 filter"
-    python $SQANTI3_DIR/sqanti3_RulesFilter.py $1"_classification.txt" $1"_corrected.fasta" $1"_corrected.gtf" -a 0.6 -c 3 &> $1.sqanti.filter.log
-
-    # remove temp SJ.out bed files
-    rm *SJ.out.bed
     source deactivate
 }
 
-
-# TAMA_remove_fragments <input_collapsed.filtered.gff> <input/output_prefix_name> <input/output_dir>
-# remove short fragments from post tofu
-# Prerequisite: Require TAMA_prepare.R to change column 4 of bed12 to gene_name: transcript_name for correct file TAMA format
-TAMA_remove_fragments(){
-
-    TAMAFUNCTIONS=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/General/2_Transcriptome_Annotation/TAMA
-    TAMA_DIR=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/softwares/tama/tama_go/filter_transcript_models
-    source activate sqanti2_py3
-    cd $3
-
-    # convert gtf to bed12
-	  gtfToGenePred $1 $2.genepred
-	  genePredToBed $2.genepred > $2.bed12
-    awk -F'\t' '{print $1,$2,$3,$4,"40",$6,$7,$8,"255,0,0",$10,$11,$12}' $2.bed12| sed s/" "/"\t"/g|sed s/",\t"/"\t"/g|sed s/",$"/""/g > Tama_$2.bed12
-
-    # Rscript script.R <name>.bed12 <input_dir>
-	  Rscript $TAMAFUNCTIONS/TAMA_Merge_Prepare.R Tama_$2 $3
-    source activate sqanti2
-	  python $TAMA_DIR/tama_remove_fragment_models.py -f Tama_$2_mod.bed12 -o $2
-
-	  rm *Tama*
-
-    echo "Number of isoforms filtered by TAMA:"
-    wc -l $2"_discarded.txt"
-
-	  source deactivate
-}
-
-# TAMA_sqanti_filter <TAMA_remove_fragments.output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_fasta> <sqanti_output_junc> <output_prefix_name> <output_dir>
-TAMA_sqanti_filter(){
-  source activate sqanti2_py3
-  GENERALFUNC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/General/2_Transcriptome_Annotation
-# Rscript .R <path/tama_filtered_output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_junc_txt> <output_prefix_name> <output_dir>
-  Rscript $GENERALFUNC/TAMA/tama_sqanti_classgtfsubset.R $1 $2 $3 $4 $6 $7 $8
-  # extract fasta sequence based on the pbid (https://www.biostars.org/p/319099/)
-  # script.py <path/sqanti_filtered.fasta> <path/retained_pbid_tama.txt> <path/output.fasta>
-  cd $8
-  awk '{ print $4 }' $1| cut -d ";" -f 2  > tama_retained_pbid.txt
-  python $GENERALFUNC/TAMA/tama_sqanti_fastasubset.py $2/$5 $8/tama_retained_pbid.txt $8/$7"_sqantifiltered_tamafiltered_classification.fasta"
-
-  # reinsert the quotation marks around the transcript id, gene id etc as required for recognition by SQANTI2
-  # note, these are removed after processing in R
-  sed 's/transcript_id \([^;]\+\)/transcript_id \"\1\"/g' $7"_sqantitamafiltered.classification.gtf" | sed 's/gene_id \([^;]\+\)/gene_id \"\1\"/g' | sed 's/gene_name \([^;]\+\)/gene_name \"\1\"/g' | sed 's/ref_gene_id \([^;]\+\)/ref_gene_id \"\1\"/g' > $7"_sqantitamafiltered.final.classification.gtf"
-}
-
-collapse_filter(){
-  source activate sqanti2_py3
-  GENERALFUNC=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/General/2_Transcriptome_Annotation
-# Rscript .R <path/tama_filtered_output> <sqanti_filtered_dir> <sqanti_output_txt> <sqanti_output_gtf> <sqanti_output_junc_txt> <output_prefix_name> <output_dir>
-  Rscript $GENERALFUNC/sqanti_classgtfsubset.R $1 $2 $3 $4 $6 $7 $8 &> $8/$7"_subset.classgtf.log"
-  python $GENERALFUNC/TAMA/tama_sqanti_fastasubset.py $2/$5 $1 $8/$7"_sqantisubset_classification.fasta" &> $8/$7"_subset.fasta.log"
-
-  # reinsert the quotation marks around the transcript id, gene id etc as required for recognition by SQANTI2
-  # note, these are removed after processing in R
-  cd $8
-  sed 's/transcript_id \([^;]\+\)/transcript_id \"\1\"/g' $7"_sqantisubset.classification.gtf" | sed 's/gene_id \([^;]\+\)/gene_id \"\1\"/g' | sed 's/gene_name \([^;]\+\)/gene_name \"\1\"/g' | sed 's/ref_gene_id \([^;]\+\)/ref_gene_id \"\1\"/g' > $7"_sqantisubset.final.classification.gtf"
-}
-
-
-
-################################################################################################
-#************************************* RNA-Seq Expression Matrix on Iso-Seq scaffold [Function 4, 5, 6]
 # mouse_merge_fastq <RNASEQ_input_dir> <Kallisto_output_dir> <sample_prefix_output_name>
 # Aim: Merge forward and reverse of all RNASeq filtered fastq, for further downstream alignment to IsoSeq Tofu output using Kallisto
 mouse_merge_fastq(){
     R1_READS=($(
-        for i in ${SAMPLES_NAMES[@]}; do
+        for i in ${RNASEQ_SQ_INPUT[@]}; do
             F_name=$(find $1 -name "*fastq.filtered" -exec basename \{} \; | grep ^$i | grep "R1" )
             F_File=$(find $1 -name "$F_name")
             echo $F_File
@@ -161,7 +77,7 @@ mouse_merge_fastq(){
     ))
 
     R2_READS=($(
-        for i in ${SAMPLES_NAMES[@]}; do
+        for i in ${RNASEQ_SQ_INPUT[@]}; do
             R_name=$(find $1 -name "*fastq.filtered" -exec basename \{} \; | grep ^$i | grep "R2" )
             R_File=$(find $1 -name "$R_name")
             echo $R_File
@@ -179,48 +95,6 @@ mouse_merge_fastq(){
     cd $2
     cat $R1_READS_MERGE > $3_R1.fq
     cat $R2_READS_MERGE > $3_R2.fq
-}
-
-
-# run_kallisto <sample_prefix_output_name> <input_tofu_fasta> <merged_fastq_input_dir> <output_dir>
-# Aim: Align merged RNASeq fastq files to IsoSeq Tofu output fasta using Kallisto
-# Prerequisite:
-    # run mouse_merge_fastq/any equivalent merging of all RNASeq fastq files (note sample_prefix_output name is the same)
-# Output: <output_prefix>.mod.abundance.tsv for input into Sqanti_qc.py (not modified script to take in space delimited rather than tab file)
-run_kallisto(){
-    #source activate nanopore
-    #check_strandedness --gtf $REFERENCE/gencode.vM22.annotation.gtf --transcripts $REFERENCE/mm10transcriptome.fa --reads_1 $RNASeq_Filtered/Tg4510_filtered/K17/K17_S1_R1_001.fastq.filtered --reads_2 $RNASeq_Filtered/Tg4510_filtered/K17/K17_S1_R2_001.fastq.filtered
-
-    source activate sqanti2
-
-    echo "Processing Kallisto for $1"
-    cd $4
-    kallisto version
-    time kallisto index -i $1_Kallisto.idx $2 2> $1_Kallisto.index.log
-    time kallisto quant -i $4/$1_Kallisto.idx --rf-stranded $3/$1_R1.fq $3/$1_R2.fq -o $4 2> $1_Kallisto.quant.log
-    mv abundance.tsv $1.abundance.tsv
-
-    # problem: retained co-ordinates, which does not input well into SQANTI2
-    echo "Kallisto original $1.abundance.tsv"
-    head $1.abundance.tsv
-    # solution: retain the PB.ID
-    while read line ; do
-	    first=$( echo "$line" |cut -d\| -f1 ) # each read line, and remove the first part i.e. PacBio ID
-	    rest=$( echo "$line" | cut -d$'\t' -f2-5 ) #save the remaining columns
-	    echo $first $rest # concatenate
-    done < $4/$1.abundance.tsv > $4/$1.temp.abundance.tsv
-
-    header=$(head -n 1 $4/$1.abundance.tsv)
-	sed -i '1d' $4/$1.temp.abundance.tsv # remove header of temp.file to be replaced
-    echo $header > foo
-	cat foo $4/$1.temp.abundance.tsv > $4/$1.mod.abundance.tsv
-
-    echo "Kallisto $1.mod.abundance.tsv"
-    head $4/$1.mod.abundance.tsv
-    rm $1.temp.abundance.tsv
-	rm foo
-
-    source deactivate
 }
 
 # run_kallisto_1sample <input_RNASEQ_rawdir> <sample> <input_ref_name_idx> <output_dir>
