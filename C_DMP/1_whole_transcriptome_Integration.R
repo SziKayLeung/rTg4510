@@ -22,13 +22,13 @@ SC_ROOT <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
 source(paste0(SC_ROOT,"C_DMP/01_source_functions.R"))
 
 # General functions
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/sqanti_general.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/plot_aesthetics.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/plot_tappas_analysis.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/sqanti_general.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_aesthetics.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_tappas_analysis.R")
 
 # Config files 
 source(paste0(SC_ROOT,"A_Global_Transcriptome/2_Differential_Analysis/rTg4510_differential.config.R"))
-source(paste0(SC_ROOT,"C_DMP/rTg4510_whole_methylation.config.R"))
+source(paste0(SC_ROOT,"C_DMP/rTg4510_methylation.config.R"))
 
 ## ---------- Load tappAS files -----------------
 

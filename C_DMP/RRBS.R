@@ -51,3 +51,6 @@ DMP_numprobes = lapply(DMPgene$gene, function(x) num_gene_probes(DMPgene,x))
 names(DMP_numprobes) = DMPgene$gene  
 DMP_uscsgenome = lapply(DMP_numprobes, function(x) x %>% mutate(Position2 = Position) %>% select(Chromosome,Position,Position2))
 write.table(DMP_uscsgenome$Ank1,"ANK1_DMP.txt",quote = F, row.names = F, col.names = F)
+
+# subset into chromosome 18 
+RRBS_chr18 <- RRBS %>% filter(Chromosome == "chr18")

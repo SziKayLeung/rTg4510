@@ -30,6 +30,20 @@ suppressMessages(library(stringr))
 suppressMessages(library(extrafont))
 suppressMessages(loadfonts())
 
+
+# plot label colour
+label_colour <- function(genotype){
+  if(genotype == "CONTROL"){colour = wes_palette("Royal1")[2]}else{
+    if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
+      if(genotype == "CASE"){colour = wes_palette("Royal1")[1]}else{
+        if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
+          if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
+            if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
+              if(genotype == "known"){colour = wes_palette("Darjeeling1")[5]}else{
+              }}}}}}}
+  return(colour)
+}
+
 simple_diff_stats <- function(trans, transExp, type){
   
   df <- transExp %>% filter(isoform == trans) %>% mutate(Exp = value)
