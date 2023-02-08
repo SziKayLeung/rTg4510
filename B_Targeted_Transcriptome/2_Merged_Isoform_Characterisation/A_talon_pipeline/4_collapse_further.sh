@@ -50,7 +50,7 @@ for i in {2..4}; do
 done
 
 # identify raw reads for collapsing to visualise on UCSC genome browser
-dir=$MERGED_DIR/4_characterise/CollapseMore
+dir=$MERGE_DIR/4_characterise/CollapseMore
 inGtf=$WKD_ROOT/3_sqanti3/IsoSeqONT.collapsed_corrected.gtf
 identify_raw_cupcake_collapse.py $dir/50_5diff_50_3diff/IsoSeqONT.collapsed.group.txt $inGtf --isoform TALONT000440029 --rep
 identify_raw_cupcake_collapse.py $dir/1000_5diff_100_3diff/IsoSeqONT.collapsed.group.txt $inGtf --isoform TALONT000440029 --rep
