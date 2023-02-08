@@ -1,41 +1,69 @@
 # Szi Kay Leung: sl693@exeter.ac.uk
 # Global files for analysis 
 
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/Output/SQANTI_General.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/sqanti_general.R")
 
-# root dir
-diffroot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/DiffAnalysis_Final/"
-rawroot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Raw_Data/Whole_Transcriptome"
-fig_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/Tables4Figures/"
-tabroot_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/IsoSeq/Whole_Transcriptome/All_Tg4510/DiffAnalysis_Final/TAPPAS_OUTPUT"
+## --------------------------- 
+# directory names
+root_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/"
+dirnames <- list(
+  glob_metadata = paste0(root_dir, "rTg4510/0_metadata/A_isoseq_whole"),
+  glob_root = paste0(root_dir, "rTg4510/A_IsoSeq_Whole"),
+  glob_rnaseq = paste0(root_dir,"rTg4510/C_RNASeq/1_RNASeq_Isabel"),
+  glob_tabroot = paste0(root_dir, "rTg4510/A_IsoSeq_Whole/3_differential/2_Results"),
+  glob_output = paste0(root_dir, "/rTg4510/01_figures_tables/Whole_Transcriptome")
+)
 
+
+## --------------------------- 
 # Final classification file
-class.names.files = paste0(diffroot_dir, "/SQANTI3/WholeIsoSeq.collapsed_classification.filtered_lite_classification.txt")
-class.files <- SQANTI_class_preparation(class.names.files,"standard")
+class.names.files <- list(
+  glob_iso = paste0(dirnames$glob_root, "/2_post_isoseq3//9_sqanti3/WholeIsoSeq.collapsed_classification.filtered_lite_classification.txt")
+) 
+class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"standard"))
 
+
+## ---------------------------
 # Isabel's supplementary table of differentially expressed genes in rTg4510 
-Isabel_gene_Tg4510AgeGenotypeDEG = read.csv(paste0(fig_dir, "/Isabel_Supp4_Tg4510AgeGenotypeDEG.csv"), header = T, as.is = T)
-Isabel_gene_Tg4510GenotypeDEG = read.csv(paste0(fig_dir, "/Isabel_Supp2_Tg4510GenotypeDEG.csv"), header = T, as.is = T)
+rnaseq_results <- list(
+  AgeGenotypeDEG = read.csv(paste0(dirnames$glob_rnaseq, "/Isabel_Supp4_Tg4510AgeGenotypeDEG.csv"), header = T, as.is = T),
+  GenotypeDEG = read.csv(paste0(dirnames$glob_rnaseq, "/Isabel_Supp2_Tg4510GenotypeDEG.csv"), header = T, as.is = T)
+)
 
 
-#### TAPPAS (Differential Analysis) ###############################################
-tappasiso_input_dir <- paste0(diffroot_dir, "TAPPAS_OUTPUT/IsoSeq_Expression")
-tappasrna_input_dir <- paste0(diffroot_dir, "TAPPAS_OUTPUT/RNASeq_Expression")
-tappasiso_phenotype <- read.table(paste0(rawroot_dir, "/WholeIsoSeq_PhenotypeTAPPAS.txt"), header = T) %>% mutate(variable = paste0(sample))
-tappasrna_phenotype <- read.table(paste0(rawroot_dir,"/WholeAllMouse_PhenotypeTAPPAS.txt"), header = T) %>% mutate(col_names = paste0(group,".",sample),age = paste0(time, "_mos"), pheno = ifelse(group == "CONTROL", "WT", "TG"), variable = paste0("FL.", sample,"_",pheno,"_",age))
+## ---------------------------
+# TAPPAS (Differential Analysis) 
+tappas_dir <- list(
+  glob_iso = paste0(dirnames$glob_tabroot, "/IsoSeq_Expression"), 
+  glob_rna = paste0(dirnames$glob_tabroot, "/RNASeq_Expression")
+)
+
+phenotype <- list(
+  glob_iso = read.table(paste0(dirnames$glob_metadata, "/WholeIsoSeq_PhenotypeTAPPAS.txt"), header = T) %>% 
+    mutate(variable = paste0(sample)),
+  glob_rna = read.table(paste0(dirnames$glob_metadata,"/WholeAllMouse_PhenotypeTAPPAS.txt"), header = T) %>% 
+    mutate(col_names = paste0(group,".",sample),
+           age = paste0(time, "_mos"), 
+           pheno = ifelse(group == "CONTROL", "WT", "TG"), 
+           variable = paste0("FL.", sample,"_",pheno,"_",age))
+  
+)
 
 #### DGE/DTE - Differential Gene and Transcript Expression #########
 # Output from Tappas_DEA.R
-tappassiggene <- excel_sheets(paste0(tabroot_dir,"/DifferentialGeneExpression_Analysis.xlsx")) %>% set_names() %>% purrr::map(read_excel, path = paste0(tabroot_dir,"/DifferentialGeneExpression_Analysis.xlsx"))
+tappassiggene <- excel_sheets(paste0(dirnames$glob_tabroot,"/DifferentialGeneExpression_Analysis.xlsx")) %>% 
+  set_names() %>% purrr::map(read_excel, path = paste0(dirnames$glob_tabroot,"/DifferentialGeneExpression_Analysis.xlsx"))
 
-tappassigtrans <- excel_sheets(paste0(tabroot_dir, "/DifferentialTransExpression_Analysis.xlsx")) %>%  set_names() %>% purrr::map(read_excel, path = paste0(tabroot_dir, "/DifferentialTransExpression_Analysis.xlsx"))
+tappassigtrans <- excel_sheets(paste0(dirnames$glob_tabroot, "/DifferentialTransExpression_Analysis.xlsx")) %>%  set_names() %>% purrr::map(read_excel, path = paste0(dirnames$glob_tabroot, "/DifferentialTransExpression_Analysis.xlsx"))
+
 
 #### DIU - Differential Isoform Usage #########
-tappasDIU <- excel_sheets(paste0(tabroot_dir, "/DifferentialTranscriptUsage_Analysis.xlsx")) %>%  set_names() %>% purrr::map(read_excel, path = paste0(tabroot_dir, "/DifferentialTranscriptUsage_Analysis.xlsx")) 
+tappasDIU <- excel_sheets(paste0(dirnames$glob_tabroot, "/DifferentialTranscriptUsage_Analysis.xlsx")) %>%  
+  set_names() %>% purrr::map(read_excel, path = paste0(dirnames$glob_tabroot, "/DifferentialTranscriptUsage_Analysis.xlsx")) 
 # only keep the genes that show significant differential transcript usage
 tappasDIU <- lapply(tappasDIU, function(x) x %>% filter(adjPValue < 0.05))
 
-tappasDIU$rnaseq <- read.table(paste0(tabroot_dir,"/tappAS_RNASeq_DIUGene_Transcripts.tsv"), as.is = T, sep = "\t")
+tappasDIU$rnaseq <- read.table(paste0(dirnames$glob_tabroot,"/tappAS_RNASeq_DIUGene_Transcripts.tsv"), as.is = T, sep = "\t")
 colnames(tappasDIU$rnaseq) <- c("gene","description","DIU","adjPValue","podiumChange","Ctrl_2","Ctr_4","Ctrl_6","Ctrl_8","TG_2","TG_4","TG_6","TG_8")
 
 #### FDA - Functional Diversity Analysis #########

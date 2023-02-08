@@ -37,8 +37,10 @@ suppressMessages(loadfonts())
 # do not output log files for venn diagrams
 futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
 
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/DiffAnalysis/GeneralPlots.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/DiffAnalysis/DifferentialPlots.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Figures_Thesis/DiffAnalysis/GeneralPlots.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Figures_Thesis/DiffAnalysis/DifferentialPlots.R")
+source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Figures_Thesis/DiffAnalysis/TappAS_DIU.R")
+
 
 #
 

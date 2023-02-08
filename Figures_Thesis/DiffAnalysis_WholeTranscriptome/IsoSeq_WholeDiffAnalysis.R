@@ -1,12 +1,12 @@
 # Szi Kay Leung
 # Call Functions script for Thesis Chapter on Whole Transcriptome IsoSeq
 
-source_root_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/IsoSeq_Tg4510/Figures_Thesis/"
-output_helpfig_dir = paste0(source_root_dir, "/Tables4Figures")
-output_plot_dir = paste0(source_root_dir, "/DiffAnalysis_WholeTranscriptome/Pdf")
+source_root_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Figures_Thesis/"
+output_helpfig_dir = paste0(source_root_dir, "Tables4Figures")
+output_plot_dir = paste0(source_root_dir, "DiffAnalysis_WholeTranscriptome/Pdf")
 
 # results from Whole transcriptome paper
-input_table_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/Scripts/Whole_Transcriptome_Paper/Output/Tables"
+input_table_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/Whole_Transcriptome_Paper/Output/Tables"
 
 # source function scripts
 source(paste0(source_root_dir,"DiffAnalysis_WholeTranscriptome/IsoSeq_WholeDiffAnalysis_Functions.R"))    ## Global Functions
@@ -21,12 +21,12 @@ suppa2.output= dASevents_files$suppa2.output
 AS_output = AS_events_diff(group.mono.class.files,dASevents_files$annotated_sqanti_gtf,dASevents_files$suppa2.output)
 
 ##### Load Files ############################# 
-tappasiso <- input_tappasfiles(tappasiso_input_dir, "isoseq")
-tappasrna <- input_tappasfiles(tappasrna_input_dir, "rnaseq")
+tappasiso <- input_tappasfiles(tappas_dir$glob_iso, "isoseq")
+tappasrna <- input_tappasfiles(tappas_dir$glob_rna, "rnaseq")
 
 # Annotate files
-IsoExp <- tappas_resultsanno(class.files,tappasiso$input_norm,tappasiso_phenotype)
-RNAExp <- tappas_resultsanno(class.files,tappasrna$input_norm,tappasrna_phenotype)
+IsoExp <- tappas_resultsanno(class.files$glob_iso,tappasiso$input_norm,phenotype$glob_iso)
+RNAExp <- tappas_resultsanno(class.files$glob_iso,tappasrna$input_norm,phenotype$glob_rna)
 
 #####  Different models from Tappas output ############################# 
 # segregate differential gene and transcript expression results by the different models (using beta coefficient as filters)
@@ -44,11 +44,26 @@ trans_sig_WholeRNA_lst = segregate_tappasresults(tappassigtrans$WholeRNA_Transex
 genesigs_model = sapply(gene_sigs_WholeIso_lst$models, function(x) x[3,1]) %>% reshape2::melt(value.name = "Gene")
 genesigs_model_plots = lapply(lapply(1:length(genesigs_model$Gene), function(i) plot_mergedexp(genesigs_model$Gene[[i]],"NA",IsoExp$GeneExp,IsoExp$Norm_transcounts,paste0("Model ",i))),ggplotGrob)
 
-Interaction = rbind(gene_sigs_WholeIso_lst$models$`Model 4 Interaction`,
-      gene_sigs_WholeIso_lst$models$`Model 5 Interaction`,
-      gene_sigs_WholeIso_lst$models$`Model 6 Interaction`,
-      gene_sigs_WholeIso_lst$models$`Model 7 Interaction`)
-write.csv(Interaction, paste0(fig_dir,"/Interaction_WholeIsoSeq.csv"))
+gene_sigs_seg = rbind(
+  gene_sigs_WholeIso_lst$models$`Model 1 Genotype` %>% mutate(Effect = "Genotype"),
+  gene_sigs_WholeIso_lst$models$`Model 2 Genotype+Age` %>% mutate(Effect = "Genotype & Age"),    
+  gene_sigs_WholeIso_lst$models$`Model 3 Age` %>% mutate(Effect = "Age"),
+  gene_sigs_WholeIso_lst$models$`Model 4 Interaction` %>% mutate(Effect = "Interaction"),
+  gene_sigs_WholeIso_lst$models$`Model 5 Interaction` %>% mutate(Effect = "Interaction"),
+  gene_sigs_WholeIso_lst$models$`Model 6 Interaction` %>% mutate(Effect = "Interaction"),
+  gene_sigs_WholeIso_lst$models$`Model 7 Interaction` %>% mutate(Effect = "Interaction"))
+write.table(gene_sigs_seg, paste0(output_helpfig_dir,"/DGE_Effect_WholeIsoSeq.csv"), sep = ",", row.names=FALSE)
+
+
+trans_sigs_seg = rbind(
+      trans_sigs_WholeIso_lst$models$`Model 1 Genotype` %>% mutate(Effect = "Genotype"),
+      trans_sigs_WholeIso_lst$models$`Model 2 Genotype+Age` %>% mutate(Effect = "Genotype & Age"),    
+      trans_sigs_WholeIso_lst$models$`Model 3 Age` %>% mutate(Effect = "Age"),
+      trans_sigs_WholeIso_lst$models$`Model 4 Interaction` %>% mutate(Effect = "Interaction"),
+      trans_sigs_WholeIso_lst$models$`Model 5 Interaction` %>% mutate(Effect = "Interaction"),
+      trans_sigs_WholeIso_lst$models$`Model 6 Interaction` %>% mutate(Effect = "Interaction"),
+      trans_sigs_WholeIso_lst$models$`Model 7 Interaction` %>% mutate(Effect = "Interaction"))
+write.table(trans_sigs_seg, paste0(output_helpfig_dir,"/DTE_Effect_WholeIsoSeq.csv"), sep = ",", row.names=FALSE)
 
 Genesigs = rbind(gene_sigs_WholeIso_lst$models$`Model 1 Genotype`,
                  gene_sigs_WholeIso_lst$models$`Model 2 Genotype+Age`,
