@@ -18,7 +18,7 @@ sapply(list.files(path = paste0(LOGEN,"transcriptome_stats"), pattern="*.R", ful
 # project related scripts and functions
 SC_ROOT <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/B_Targeted_Transcriptome/1_ONT_Pipeline/"
 source(paste0(SC_ROOT, "02_source_characterise_functions.R"))
-source(paste0(SC_ROOT, "rTg4510_ont_characterise.config.R"))
+source(paste0(SC_ROOT, "rTg4510_ont_qc_runs.config.R"))
 
 # output directory
 output_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Targeted_Transcriptome"
