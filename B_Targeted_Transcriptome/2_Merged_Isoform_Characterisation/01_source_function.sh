@@ -1,3 +1,12 @@
+# source functions
+LOGEN_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
+FICLE_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/FICLE
+export PATH=$PATH:${LOGEN_ROOT}/target_gene_annotation
+export PATH=$PATH:${LOGEN_ROOT}/merge_characterise_dataset
+export PATH=$PATH:${FICLE_ROOT}
+export PATH=$PATH:${FICLE_ROOT}/reference
+
+
 #run_gff_compare <output_name> <ref_gtf> <2nd_gtf> <root_dir>
 run_gff_compare(){
   
@@ -83,7 +92,7 @@ run_sqanti3(){
 # run_cpat <input_fasta> <output_name> <output_dir>
 run_cpat(){
   mkdir -p $3/4_characterise
-  mkdir -p $3/4_characterise; cd $3/4_characterise/CPAT
+  mkdir -p $3/4_characterise/CPAT; cd $3/4_characterise/CPAT
   
   source activate sqanti2_py3
   cpat.py -x $HEXAMER -d $LOGITMODEL -g $1 --min-orf=50 --top-orf=50 -o $2 2> $2"_cpat.e"
@@ -98,7 +107,7 @@ extract_best_orf(){
   io_dir=$2/4_characterise/CPAT
   
   cd $io_dir
-  python $BESTORF --fa $io_dir/$1".ORF_seqs.fa" --orf $io_dir/$1".ORF_prob.best.tsv" --o_name $1"_bestORF" --o_dir $io_dir &> orfextract.log
+  extract_fasta_bestorf.py --fa $io_dir/$1".ORF_seqs.fa" --orf $io_dir/$1".ORF_prob.best.tsv" --o_name $1"_bestORF" --o_dir $io_dir &> orfextract.log
 }
 
 
@@ -124,31 +133,36 @@ convert_gtf_bed12(){
   #./bedToBigBed -as=bedExample2.as -type=bed9+3 -extraIndex=name $sample"_Modified.bed12" $REFERENCE/mm10.chrom.filtered.sizes $sample.bb
 }
 
-# colour_by_abundance <sample> <input_gtf> <root_dir>
+# colour_by_abundance <sample> <input_gtf> <abundance_path> <root_dir>
 colour_by_abundance(){
+  
+  mkdir -p $4/4_characterise/bed12Files
   
   convert_gtf_bed12 $2
   bed12=${2%.gtf}_sorted.bed12
   sample="$(basename $2)" 
-  output_bed12=${sample%.gtf}_sorted_coloured.bed12
+  outputname=${sample%.gtf}
+  echo $outputname
   
-  python $COLOURTRANS \
+  colour_common_targeted_transcripts.py \
   --bed $bed12 \
-  --cpat $3/4_characterise/CPAT/$1".ORF_prob.best.tsv" \
-  --noORF $3/4_characterise/CPAT/$1".no_ORF.txt" \
-  --a $3/2_common_transcripts/Final_Merged_Abundance.csv \
-  --o $3/4_characterise/$output_bed12
+  --cpat $4/4_characterise/CPAT/$1".ORF_prob.best.tsv" \
+  --noORF $4/4_characterise/CPAT/$1".no_ORF.txt" \
+  --a $3 \
+  --o $outputname \
+  --dir $4/4_characterise/bed12Files/ \
+  --species mouse
   
 }
 
 
-# subset_gene_reference 
+# subset_gene_reference <root_dir>
 subset_gene_reference(){
   
-  mkdir -p $WKD_ROOT/4_characterise/TargetGenesRef
+  mkdir -p $1/4_characterise/TargetGenesRef
   
   source activate sqanti2_py3
-  python $TGENEPREP --r=$GENOME_GTF --glist ${TGENES[@]} --o $WKD_ROOT/4_characterise/TargetGenesRef
+  subset_reference_by_gene.py --r=${GENOME_GTF} --glist ${TGENES[@]} --o $1/4_characterise/TargetGenesRef
 
 }
 
@@ -196,12 +210,12 @@ full_characterisation(){
   echo $input_gtf
   
   source activate sqanti2_py3 
-  python $FICLE --gene=$2 --ref=$ref_dir \
-  --i_bed=$input_bed \
-  --i_gtf=$input_gtf \
-  --noISM=$noISM_path \
-  --orf=$ORF_dir \
-  --o_dir=$output_dir &> $output_dir/Log/$2"_characterise.log"
+  ficle.py --gene=$2 --ref=$ref_dir \
+    --i_bed=$input_bed \
+    --i_gtf=$input_gtf \
+    --noISM=$noISM_path \
+    --orf=$ORF_dir \
+    --o_dir=$output_dir &> $output_dir/Log/$2"_characterise.log"
   
 }
 

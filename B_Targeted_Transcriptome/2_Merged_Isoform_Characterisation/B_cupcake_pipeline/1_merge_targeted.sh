@@ -26,7 +26,7 @@ export PATH=$PATH:${LOGEN}/assist_ont_processing
 ##-------------------------------------------------------------------------
 
 source activate sqanti2_py3
-mkdir -p ${WKD_ROOT_REVISED}/1_merge_collapse
+mkdir -p ${CUPMERGE_DIR}/1_merge_collapse
 
 # ONT transcript clean fasta
 ont_tclean_fa=($(ls ${ONT_TCLEAN_DIR}/*/*.fa)) 
@@ -34,10 +34,10 @@ ont_tclean_fa=($(ls ${ONT_TCLEAN_DIR}/*/*.fa))
 echo "Merging:"
 ls ${ont_tclean_fa[@]}
 ls ${ISO_MERGED_CLUSTER_DIR}/AllMouseTargeted.clustered.hq.fasta 
-cat ${ont_tclean_fa[@]} ${ISO_MERGED_CLUSTER_DIR}/AllMouseTargeted.clustered.hq.fasta > ${WKD_ROOT_REVISED}/1_merge_collapse/all_iso_ont.fasta
+cat ${ont_tclean_fa[@]} ${ISO_MERGED_CLUSTER_DIR}/AllMouseTargeted.clustered.hq.fasta > ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta
 
 
-export dir=${WKD_ROOT_REVISED}/1_merge_collapse
+export dir=${CUPMERGE_DIR}
 export samplename=all_iso_ont
 
 cd ${dir}
@@ -47,11 +47,11 @@ mkdir -p 1_align 2_collapse 3_sqanti3
 ##-------------------------------------------------------------------------
 
 # align
-echo "Aligning ${WKD_ROOT_REVISED}/1_merge_collapse/all_iso_ont.fasta ..."
+echo "Aligning ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta ..."
 echo "Output: ${dir}/1_align/${samplename}_mapped.bam"
 source activate isoseq3
 cd ${dir}/1_align
-pbmm2 align --preset ISOSEQ --sort ${GENOME_FASTA} ${WKD_ROOT_REVISED}/1_merge_collapse/all_iso_ont.fasta ${samplename}_mapped.bam \
+pbmm2 align --preset ISOSEQ --sort ${GENOME_FASTA} ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta ${samplename}_mapped.bam \
   --unmapped --log-level TRACE --log-file ${samplename}_mapped.log
 
 # collapse
