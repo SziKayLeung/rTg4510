@@ -17,9 +17,11 @@
 # source config file and function script
 module load Miniconda2/4.3.21
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/A_Global_Transcriptome
+LOGEN_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
 source $SC_ROOT/1_IsoSeq_Pipeline/rTg4510_isoseq.config
 source $SC_ROOT/1_IsoSeq_Pipeline/01_source_functions.sh
-
+export PATH=$PATH:${LOGEN_ROOT}/miscellaneous
+export PATH=$PATH:${LOGEN_ROOT}/assist_ont_processing
 
 ##-------------------------------------------------------------------------
 
@@ -53,8 +55,30 @@ source activate sqanti2_py3
 Rscript ${ISMREMOVE} ${SQPATH}_classification.txt ${SQPATH}.gtf ${SQPATH}_junctions.txt $WKD_ROOT/2_post_isoseq3/9_sqanti3 ${NAME}
 python ${TAMASUBSETFASTA} ${SQPATH}.fasta $WKD_ROOT/2_post_isoseq3/9_sqanti3/${NAME}_ISMrem.isoform.txt ${SQPATH}_ISMrem.fasta
 
-
 # index for downstream alignment with rnaseq files
 cd $WKD_ROOT/2_post_isoseq3/10_rnaseq2isoseq
 kallisto index -i AllRNASeq_Kallisto.idx ${SQPATH}_ISMrem.fasta 2> AllRNASeq_Kallisto.index.log
 
+
+##-------------------------------------------------------------------------
+# find human transgene sequences 
+
+# create a file listing all the readID in cluster report (output = pre_cluster_read.csv)
+mkdir ${WKD_ROOT}/2_post_isoseq3/11_transgene 
+cd ${WKD_ROOT}/1_isoseq3/4_cluster/
+for i in *cluster_report.csv*; do wc -l $i; done > pre_cluster_read.csv
+sed -i 's/ \+/,/g' pre_cluster_read.csv 
+sed -i '1 i num_reads,file' pre_cluster_read.csv
+mv pre_cluster_read.csv ${WKD_ROOT}/2_post_isoseq3/11_transgene 
+
+
+# grep transgene sequences in clustered .fasta
+name=(hmapt1 hmapt2 mmapt1)
+seq=($hMAPT_1 $hMAPT_2 $mMAPT_1)
+for i in {0..2}; do
+  echo ${name[$i]}
+  echo ${seq[$i]}
+  search_fasta_by_sequence.py --fasta=${WKD_ROOT}/1_isoseq3/4_cluster --i=hq.fa \
+    --seq=${seq[$i]} -o=${name[$i]} \
+    -d=${WKD_ROOT}/2_post_isoseq3/11_transgene 
+done

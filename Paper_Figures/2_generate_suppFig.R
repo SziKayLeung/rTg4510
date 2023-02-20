@@ -19,6 +19,7 @@ SC_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/
 source(paste0(SC_ROOT, "0_source_functions.R"))
 source(paste0(SC_ROOT, "rTg4510_config.R"))
 source(paste0(SC_ROOT,"bin/draw_heatmap_gene_level.R"))
+source(paste0(SC_ROOT,"bin/find_mapt.R"))
 
 
 # heatmap 
@@ -43,3 +44,16 @@ dat <- aggregate(Exp ~ group + associated_gene, data = dat, mean) %>%
 rnaseq_results$GenotypeDEG %>% filter(Gene %in% common_diff_genes) %>% 
   mutate(WT_Mean = word(Mean.WT..SD.,c(1), sep = fixed(" ")),
          TG_Mean = word(Mean.TG..SD.,c(1), sep = fixed(" ")))
+
+
+# transgene
+p_mapt <- list(
+  glob_iso = find_mapt_isoseq(paste0(dirnames$glob_root,"/2_post_isoseq3/11_transgene"),phenotype$whole_rTg4510_iso),
+  targ_iso = find_mapt_isoseq(paste0(dirnames$targ_iso_root,"/10_characterise/transgene"),phenotype$targeted_rTg4510_iso),
+  targ_ont = find_mapt_ont(paste0(dirnames$targ_ont_root,"/0_characterise/transgene"),phenotype$targeted_rTg4510_ont)
+)
+
+
+## ---------- Output -----------------
+
+plot_grid(p_mapt$glob_iso[[2]],get_legend(p_mapt$glob_iso[[1]]),p_mapt$targ_iso[[2]], p_mapt$targ_ont, labels = c("A","","B","C"))

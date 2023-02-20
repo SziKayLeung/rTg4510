@@ -106,7 +106,7 @@ run_REFINE(){
     time isoseq3 refine $WKD_ROOT/2b_lima_batches/$1.fl.primer_5p--primer_3p.bam $FASTA $1.flnc.bam --require-polya
     echo "refine $1 successful"
     ls $1.flnc*
-  fi
+  fita
 
   source deactivate
 }
@@ -605,38 +605,4 @@ run_target_rate(){
     $WKD_ROOT/6b_target_rate/$i".fasta.sam.probe_hit.txt"
 
   done
-}
-
-
-################################################################################################
-#************************************* Find human MAPT 
-# find_humanMAPT 
-# cluster_dir = directory containing hq.fasta
-# aim: to grep only the clustered hq reads with human MAPT sequence in all the samples in the clustered directory
-find_humanMAPT(){
-  hMAPT_1=TGGTTAATCACTTAACCTGCTTTTGTCACTCGGCTTTGGCTCGGGACTTCAAAATCAGTGATGGGAGTAAGAGCAAATTTCATCTTTCCAAATTGATGGGTGGGCTAGTAATAAAATATTTAAAAAAAAACATTCAAAAACATGGCCACATCCAACATTTCCTCAGGCAATTCCTTTTGATTCTTTTTTCTTCCCCCTCCATGTA
-  hMAPT_2=AAAATCAGTGATGGGAGTAAGAGCAAATTTCATCTTTCCAAATTGATGGGTGGGCTAGTAATAAAATATTTAAAAAAAAACATTCAAAAACATGGCCACATCCAACATTTCCTCAGGCAATTCCTTTTGATTCTTTTTTCTTCCCCCTCCATGTAGAAGAGGGAGAAGGAGAGGCTCTGAAAGCTGCTTCTGGGGGATTT
-  mMAPT_1=ATTGAAACCCACAAGCTGACCTTCAGGGAGAATGCCAAAGCCAAGACAGACCATGGAGCAGAAATTGTGTATAAGTCACCCGTGGTGTCTGGGGACACATCTCCACGGCACCTCAGCAATGTGTCTTCCACGGGCAGC
-
-  # variables
-  merged_cluster=$WKD_ROOT/5_merged_cluster/$NAME.clustered.hq.fasta
-  
-  mkdir -p $WKD_ROOT/10_characterise $hMAPT_DIR
-
-  for sample in ${ALL_SAMPLES_NAMES[@]}; do
-    count=$(grep $hMAPT_2 $WKD_ROOT/4_cluster/$sample".clustered.hq.fasta" | wc -l)
-    echo "$sample $count"
-  done > $hMAPT_DIR/hMAPT_counts.txt
-
-  for sample in ${ALL_SAMPLES_NAMES[@]}; do
-    #count=$(grep $mMAPT_1$WKD_ROOT/4_cluster/$sample".clustered.hq.fasta" | wc -l)
-    count=$(grep $mMAPT_1 $sample".clustered.hq.fasta" | wc -l)
-    echo "$sample $count"
-  done > $hMAPT_DIR/mMAPT_counts.txt
-
-  # Merged Cluster
-  source activate sqanti2_py3
-  #script.py <path/input.fasta> <outputname> <path/outputdir>
-  python $FINDMAPT $merged_cluster $NAME $hMAPT_DIR > $hMAPT_DIR/$NAME.out
-  mv $hMAPT_DIR/$NAME $hMAPT_DIR/$NAME.clustered.hq.fasta
 }

@@ -21,7 +21,8 @@ source(paste0(LOGEN, "longread_QC/number_ont_reads.R"))
 dirnames <- list(
   root = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/F_ONT_Targeted/",
   raw = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/1_raw/F_ont_targeted/",
-  meta = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/0_metadata/F_ont_targeted/"
+  meta = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/0_metadata/F_ont_targeted/",
+  mapt = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/F_ONT_Targeted/0_characterise/transgene/"
 )
 
 
@@ -41,10 +42,10 @@ misc_input <- list(
   B2_seq_summary  = paste0(dirnames$raw, "sequencing_summary_FAO06462_2abef59d.txt"), 
   
   # Batch 3 sequencing summary 
-  B3_seq_summary  = paste0(dirnames$raw, "/sequencing_summary_FAO06635_ecb1ad97.txt")#,
+  B3_seq_summary  = paste0(dirnames$raw, "/sequencing_summary_FAO06635_ecb1ad97.txt"),
   
   # read counts 
-  #ReadCounts = read_batch_readcounts(dirnames$raw, dirnames$root, 2, 3)
+  ReadCounts = read_batch_readcounts(dirnames$raw, dirnames$root, 2, 3)
 
 )
 
@@ -60,7 +61,7 @@ sequencing_data <- list(
 )
 
 # Summarise the number of sequencing counts in batch 2 and 3 (sequenced and basecalled)
-Sequencing_Counts <- batch_summarise_counts(sequencing_data)
+Sequencing_Counts <- batch_summarise_ont_seq_reads(sequencing_data)
 
 
 ## ---------- Target Rate -----------------

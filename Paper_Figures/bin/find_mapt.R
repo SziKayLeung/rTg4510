@@ -1,73 +1,5 @@
-## ---------- Script -----------------
-##
-## Script name: 
-##
-## Purpose of script: 
-##
-## Author: Szi Kay Leung
-##
-## Email: S.K.Leung@exeter.ac.uk
-##
-## ---------- Notes -----------------
-##
-## 
-##   
-##
-## 
-
-## ---------- Packages -----------------
-
-suppressMessages(library(reshape2))
-suppressMessages(library(dplyr))
-suppressMessages(library(tibble))
-suppressMessages(library(rjson)) # json files
-suppressMessages(library(plyr)) # revalue
-suppressMessages(library(ggplot2))
-suppressMessages(library(scales))
-suppressMessages(library(reshape))
-suppressMessages(library(gridExtra))
-suppressMessages(library(grid))
-suppressMessages(library(dplyr))
-suppressMessages(library(stringr)) 
-suppressMessages(library(viridis)) 
-suppressMessages(library(wesanderson)) 
-suppressMessages(library(extrafont))
-suppressMessages(library(tidyr))
-suppressMessages(library(purrr))
-suppressMessages(library(tibble))
-suppressMessages(library(VennDiagram))
-suppressMessages(library(directlabels))
-suppressMessages(library(cowplot))
-suppressMessages(library(readxl))
-suppressMessages(library(ggdendro))
-suppressMessages(library(pheatmap))
-suppressMessages(library(extrafont))
-suppressMessages(loadfonts())
-
-
-## ----------Plot colours-----------------
-
-# plot label colour
-label_colour <- function(genotype){
-  if(genotype %in% c("Control","WT")){colour = wes_palette("Royal1")[1]}else{
-    if(genotype %in% c("Case", "TG")){colour = wes_palette("Royal1")[2]}else{
-      if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
-        if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
-          if(genotype == "known"){colour = wes_palette("Darjeeling1")[5]}else{
-            if(genotype == "targeted"){colour = wes_palette("Darjeeling1")[2]}else{
-              if(genotype == "whole"){colour = wes_palette("Darjeeling1")[1]}else{
-                if(genotype == "whole+targeted"){colour = wes_palette("Darjeeling2")[1]}else{
-                  if(genotype == "isoseq"){colour = wes_palette("Darjeeling2")[2]}else{
-                    if(genotype == "rnaseq"){colour = wes_palette("Darjeeling2")[1]}else{
-                    }}}}}}}}}}
-  return(colour)
-}
-
-
-## ---------- Dataset defined functions -----------------
-
 # Aim: find the mapt transgene sequencing after grep mapt human and mouse sequence in clustered.fasta
- # while using clustered.fasta, plot shows the occurence of transgene in original raw reads 
+# while using clustered.fasta, plot shows the occurence of transgene in original raw reads 
 # since use the clustered_report.csv description detailing the number of raw reads clustered to each transcript
 # Input:
   # maptdir = str: directory path of files containing hmapt1_all_reads.csv, mmapt1_all_reads.csv, pre_cluster_read.csv
@@ -75,7 +7,7 @@ label_colour <- function(genotype){
 # Output:
   # p1: ratio of human and mouse transgene reads compared to all reads
 
-find_mapt <- function(maptdir, phenotype){
+find_mapt_isoseq <- function(maptdir, phenotype){
   
   # input 
   mapt_files <- list.files(path = maptdir, pattern = ".csv", full.names = T)
@@ -112,6 +44,9 @@ find_mapt <- function(maptdir, phenotype){
       summarise_at(vars(normalised), funs(mean(., na.rm=TRUE))) %>% 
       mutate(mapt_specific = species) %>% as.data.frame()
     
+    # remove samples with no phenotype
+    tallied <- tallied %>% filter(!is.na(Genotype))
+    
     output = list(all_reads, tallied, mean_reads)
     names(output) = c("all","tallied","mean")
     
@@ -122,16 +57,63 @@ find_mapt <- function(maptdir, phenotype){
   mouseMAPT <- species_specific(mapt_files[["mmapt1_all_reads.csv"]], phenotype, mapt_files[["pre_cluster_read.csv"]], "Mouse")
   
   p1 <- bind_rows(humanMAPT$tallied,mouseMAPT$tallied) %>% 
-    filter(Genotype != c("WT","TG")) %>%
     ggplot(., aes(x = Age_in_months, y = normalised, color = Genotype)) + geom_jitter(width = 0.09) + mytheme +
     scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
-    labs(x = "Age (months)", y = "Ratio of species-specific \n MAPT reads/ total reads") +
-    mytheme + 
-    theme(legend.position = c("bottom"), axis.text.y = element_text(angle = 90)) + 
-    scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
+    labs(x = "Age (months)", y = "Ratio of \nMAPT reads to total reads") +
+    mytheme + #scale_y_continuous(labels = function(x) format(x, scientific = TRUE))  +
+    theme(legend.position = c("right"), axis.text.y = element_text(angle = 90)) + 
     stat_summary(data=bind_rows(humanMAPT$mean, mouseMAPT$mean), aes(x=Age_in_months, y=normalised, group=Genotype), 
                  fun.y="mean", geom="line", linetype = "dotted") + 
     facet_wrap(~mapt_specific) + theme(strip.background = element_blank())
   
+  p1a <- p1 + theme(legend.position = "none")
+  
+  return(list(p1,p1a))
+}
+
+
+find_mapt_ont <- function(maptdir, phenotype){
+  
+  # input all_counts.csv 
+  mapt_files <- list.files(path = maptdir, pattern = "all_counts.csv", full.names = T, recursive = TRUE)
+  mapt_files <- lapply(mapt_files, function(x) read.csv(x))
+  names(mapt_files) <- list.files(path = maptdir, pattern = "all_counts.csv", recursive = TRUE)
+  
+  # combine different datasets across human and mouse grepped reads
+  all_counts <- data.frame(do.call(rbind, mapt_files)) %>% rownames_to_column(., var = "Dataset")
+  
+  # datawrnagle to generate barcodedSample for downstream merging with phenotype file
+  # keep only output files grepped to hmapt1 and mmapt1
+  all_counts <- all_counts %>% 
+    mutate(Sample = word(sample,c(1), sep = fixed("_")),
+           Batch =  word(Dataset,c(1), sep = fixed("/")),
+           BarcodedSample = paste0(Batch,Sample),
+           mapt_specific = word(word(Dataset,c(2),sep = fixed("/")),c(1),sep=fixed("_"))) %>% 
+    filter(mapt_specific %in% c("hmapt1","mmapt1")) %>%
+    mutate(mapt_specific = recode(mapt_specific, hmapt1 = 'Human', mmapt1 = 'Mouse'))
+  
+  # tally the number of matched reads (across human and mapt sequence) per sample 
+  tallied <- all_counts %>% group_by(BarcodedSample, all_reads, mapt_specific) %>% tally(matched_reads)
+  
+  # assign phenotype data to samples
+  tallied <- merge(tallied,phenotype,by = "BarcodedSample", all = T) %>%
+    # note WT would not have human-specific MAPT reads therefore replace NA with 0
+    mutate(matched_reads = replace_na(n, 0)) %>%
+    # normalise with ratio
+    mutate(normalised = n/all_reads)
+  
+  # remove samples with no phenotype
+  tallied <- tallied %>% filter(!is.na(Phenotype))
+  
+  p1 <- ggplot(tallied, aes(x = Age, y = normalised, color = Phenotype)) + geom_jitter(width = 0.09) + mytheme +
+    scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) +
+    labs(x = "Age (months)", y = "Ratio of \nMAPT reads to total reads") +
+    mytheme + #scale_y_continuous(labels = function(x) format(x, scientific = TRUE))  +
+    theme(legend.position = c("None"), axis.text.y = element_text(angle = 90)) + 
+    stat_summary(data = tallied, aes(x=Age, y=normalised, group=Phenotype), 
+                 fun="mean", geom="line", linetype = "dotted") + 
+    facet_wrap(~mapt_specific) + theme(strip.background = element_blank()) 
+  
   return(p1)
 }
+

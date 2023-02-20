@@ -91,8 +91,27 @@ parse_stats_per_sample $NAME
 run_target_rate
 
 ##-------------------------------------------------------------------------
-echo "#************************************* Characterisation of isoforms"
-find_humanMAPT
+# find transgene
+
+# create a file listing all the readID in cluster report (output = pre_cluster_read.csv)
+mkdir -p $WKD_ROOT/10_characterise/transgene
+cd ${WKD_ROOT}/4_cluster/
+for i in *cluster_report.csv*; do wc -l $i; done > pre_cluster_read.csv
+sed -i 's/ \+/,/g' pre_cluster_read.csv 
+sed -i '1 i num_reads,file' pre_cluster_read.csv
+mv pre_cluster_read.csv $WKD_ROOT/10_characterise/transgene
+
+
+# grep transgene sequences in clustered .fasta
+name=(hmapt1 hmapt2 mmapt1)
+seq=($hMAPT_1 $hMAPT_2 $mMAPT_1)
+for i in {0..2}; do
+  echo ${name[$i]}
+  echo ${seq[$i]}
+  search_fasta_by_sequence.py --fasta=${WKD_ROOT}/4_cluster --i=hq.fa \
+    --seq=${seq[$i]} -o=${name[$i]} \
+    -d=$WKD_ROOT/10_characterise/transgene
+done
 
 ##-------------------------------------------------------------------------
 echo "#************************************* Whole vs Targeted Transcriptome "

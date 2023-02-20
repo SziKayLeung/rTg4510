@@ -75,97 +75,77 @@ label_name <- function(variable){
 }
 
 
+# Aim: find the mapt transgene sequencing after grep mapt human and mouse sequence in clustered.fasta
+# while using clustered.fasta, plot shows the occurence of transgene in original raw reads 
+# since use the clustered_report.csv description detailing the number of raw reads clustered 
+# Input:
+  # maptdir = str: directory path of files containing hmapt1_all_reads.csv, mmapt1_all_reads.csv, pre_cluster_read.csv
+  # phenotype = df: phenotype data of samples <Sample.ID, Age_in_months, Genotype>
+  # mapfile = df : alignment statistics output 
+# Output:
+  # p1: ratio of human and mouse transgene reads compared to all reads
+  # p2: alignment of human transgene reads
 
-### Human MAPT #################################################################
-## Determine the number of Cluster reads with human-specific MAPT sequence for each sample
-#hMAPT.header for each file contains multiple HQ, FL-polished transcripts (different transcript names e.g "@transcriptX", "@transcriptY"), but which all contain the same hMAPT sequence. Reason that there are multiple transcripts is due to collapsed properly (redundancy) from Iso-Seq3. For this reason, the count of human-specific MAPT in each sample is calculated by the sum of FL counts for all these multiple transcripts.
-
-########### Read in hMAPT.header from TG mice (counts of human-specific MAPT sequences)
-find_mapt <- function(){
+find_mapt <- function(maptdir, phenotype, mapfile){
   
-  twomos <- c("K18","O18","S18", "K17","M21","Q21")
-  WT <- c("K17","M21","Q21","K23","O23","S23")
+  # input 
+  mapt_files <- list.files(path = maptdir, pattern = ".csv", full.names = T)
+  mapt_files <- lapply(mapt_files, function(x) read.csv(x))
+  names(mapt_files) <- list.files(path = maptdir, pattern = ".csv")
+  mapt_files$pre_cluster_read.csv <- mapt_files$pre_cluster_read.csv %>% mutate(sample = word(file,c(1),sep=fixed(".")))
   
-  species_specific_mapt <- function(MAPT_input){
-    # only input MAPT2.header files with data entry i.e. from TG mice
-    # Note: files of WT mice for hMAPT should be empty i.e file.size == 0 given no human-specific MAPT sequence
-    # first save file path into file_input_names, then read table and assign name to table based on filename
-    count = 1
-    file_input_names <- c()
-    for (file in MAPT_input){
-      if (file.size(file) == 0) next
-      file_input_names[[count]] <- file
-      count = count + 1
-    }
-    file_input <- lapply(file_input_names, read.table)
-    names(file_input) <- lapply(file_input_names, function(x) word(word(x,c(12),  sep = fixed ('/')),c(1), sep = fixed(".")))
+  species_specific <- function(all_reads, phenotype, cluster_reads, species){
+    # all_reads format <matched_reads;sample>
+    # matched_reads = transcript/X full_length_coverage=X;length=Y; want to extract X
+    # X = number of raw CCS reads clustered to transcript
+    all_reads <- all_reads %>% 
+      mutate(readID = word(matched_reads, c(1), sep = ";")) %>% 
+      mutate(matched_num_reads = as.numeric(word(readID, c(2), sep = "=")),
+             readID = word(readID, c(1), sep = " "))
     
-    # Tabulate the number of CCS reads for each @transcriptX/@transcriptY and then sum across all transcripts per sample (as above, same transcript even though named diferently due to redundancy of collapse)
-    # split V2 from MAPT.header to extract the number of CCS reads
-    file_input <- lapply(file_input, function(x) x %>% mutate(cluster_reads = word(V2, c(1), sep = ";")) %>% mutate(cluster_reads = as.numeric(word(cluster_reads, c(2), sep = "="))))
-    # for each file (/sample), sum the number of CCS reads across all transcripts
-    MAPT_reads <- data.frame()
-    count = 1
-    for(i in 1:length(file_input)){
-      sample <- names(file_input)[i]
-      sum_cluster_reads <- sum(file_input[[i]]$cluster_reads)
-      MAPT_reads[count,1] <- sample
-      MAPT_reads[count,2] <- sum_cluster_reads
-      count = count + 1
-    }
-    colnames(MAPT_reads) <- c("sample","sum_cluster_reads")
-    return(MAPT_reads)
+    # tally the number of matched reads per sample 
+    tallied <- all_reads %>% group_by(sample) %>% tally(matched_num_reads)
+    
+    # assign phenotype data to samples
+    tallied <- merge(tallied, phenotype, by = "sample", by.y = "Sample.ID", all = T)
+    
+    # tabulate with the total number of raw reads in each sample 
+    tallied <- merge(tallied, cluster_reads, by = "sample", all = T)
+    
+    # some samples in phenotype have 0 matched reads, therefore no entry in all_reads file
+    # therefore in merged dataset, replace NA in n (tally matched_num_reads) wih 0
+    tallied <- tallied %>% mutate(n = ifelse(is.na(n), 0, n),
+                                      normalised = n/num_reads, 
+                                      mapt_specific = species)
+    
+    # calculate the mean across age and genotype
+    mean_reads <- tallied %>% group_by(Age_in_months, Genotype) %>%  
+      summarise_at(vars(normalised), funs(mean(., na.rm=TRUE))) %>% 
+      mutate(mapt_specific = species) %>% as.data.frame()
+    
+    output = list(all_reads, tallied, mean_reads)
+    names(output) = c("all","tallied","mean")
+    
+    return(output)
   }
   
-  hMAPT_reads <- species_specific_mapt(hMAPT_input)
-  mMAPT_reads <- species_specific_mapt(mMAPT_input)
-
-  # read in cluster_report.csv from all 12 samples, combine as one big dataframe and use "sample" identifier from file name
-  cluster_reads_input <- lapply(cluster_reads, function(x) read.table(x, header = T))
-  names(cluster_reads_input) <- lapply(cluster_reads, function(x) word(x,c(12),  sep = fixed ('/')))
-  cluster_reads_input_all <- do.call(rbind, cluster_reads_input)
-  cluster_reads_input_all <- setDT(cluster_reads_input_all, keep.rownames = TRUE)[] %>% mutate(sample = word(rn, c(1), sep = fixed(".")))
+  humanMAPT <- species_specific(mapt_files[["hmapt1_all_reads.csv"]], phenotype, mapt_files[["pre_cluster_read.csv"]], "Human")
+  mouseMAPT <- species_specific(mapt_files[["mmapt1_all_reads.csv"]], phenotype, mapt_files[["pre_cluster_read.csv"]], "Mouse")
   
-  # tally the number of CCS reads per sample
-  total_cluster_reads <- cluster_reads_input_all %>% group_by(sample) %>% tally() %>% as.data.frame()
-  
-  # Prepare plot by merging counts of human-specific MAPT reads and total reads
-  plot_species_MAPT <- function(MAPT_reads,species){
-    plot_reads <- merge(MAPT_reads, total_cluster_reads, by = "sample", all = T) %>%
-      # do not include other J20 samples
-      filter(!sample %in% c("C21","E18","C20","B21")) %>%
-      # classifiers of Age and Genotype
-      mutate(Age = ifelse(grepl(paste(twomos,collapse="|"), sample),"2","8")) %>%
-      mutate(Genotype = ifelse(grepl(paste(WT,collapse="|"), sample),"WT","TG")) %>%
-      # note WT would not have human-specifici MAPT reads therefore replace NA with 0
-      mutate(sum_cluster_reads = replace_na(sum_cluster_reads, 0)) %>%
-      # normalise with ratio
-      mutate(normalised = sum_cluster_reads/n, mapt_specific = species)
-    
-    mean_reads = plot_reads %>% group_by(Age,Genotype) %>%  summarise_at(vars(normalised), funs(mean(., na.rm=TRUE))) %>% 
-      mutate(mapt_specific = species)
-    
-    return(list(plot_reads, as.data.frame(mean_reads)))
-  }
-  
-   
-  final_humanMAPT <- plot_species_MAPT(hMAPT_reads,"Human")
-  final_mouseMAPT <- plot_species_MAPT(mMAPT_reads,"Mouse")
-  
-  p1 <- bind_rows(final_humanMAPT[[1]],final_mouseMAPT[[1]]) %>% 
-   ggplot(., aes(x = Age, y = normalised, color = Genotype)) + geom_jitter(width = 0.09) + mytheme +
+  p1 <- bind_rows(humanMAPT$tallied,mouseMAPT$tallied) %>% 
+   ggplot(., aes(x = Age_in_months, y = normalised, color = Genotype)) + geom_jitter(width = 0.09) + mytheme +
     scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
     labs(x = "Age (months)", y = "Ratio of species-specific \n MAPT transcripts/ total transcripts") +
     mytheme + scale_y_continuous(lim = c(0,0.006), labels = function(x) format(x, scientific = TRUE))  +
     theme(legend.position = c("bottom"), axis.text.y = element_text(angle = 90)) + 
-    stat_summary(data=bind_rows(final_humanMAPT[[2]],final_mouseMAPT[[2]]), aes(x=Age, y=normalised, group=Genotype), 
+    stat_summary(data=bind_rows(humanMAPT$mean, mouseMAPT$mean), aes(x=Age_in_months, y=normalised, group=Genotype), 
                  fun.y="mean", geom="line", linetype = "dotted") + 
     facet_wrap(~mapt_specific) + theme(strip.background = element_blank())
   
   
   # aligment identity and length of hMAPT reads from all clustered
-  p2 <- map %>% 
-    filter(name_of_read %in% hMAPT_input_all$V1) %>%
+  p2 <- mapfile %>% 
+    filter(name_of_read %in% humanMAPT$all$readID) %>%
     mutate(identity =alignment_identity * 100) %>% 
     mutate(length = alignment_length_perc * 100) %>%
     ggplot(., aes(x = length, y = identity)) +
@@ -177,8 +157,6 @@ find_mapt <- function(){
     annotate("rect", xmin = 0, xmax = 75, ymin = 95, ymax = 101, fill = wes_palette("Zissou1")[3], alpha = 0.2) +
     annotate("rect", xmin = 25, xmax = 75, ymin = 25, ymax = 70, fill = wes_palette("Zissou1")[1], alpha = 0.2) +
     annotate("rect", xmin = 95, xmax = 100, ymin = 85, ymax = 100, fill = "palegreen", alpha = 0.2) 
-  
-  #View(map %>% filter(name_of_read == c("transcript/6355")))
   
   return(list(p1,p2))
 }

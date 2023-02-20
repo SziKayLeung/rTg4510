@@ -1,13 +1,20 @@
 # Szi Kay Leung: sl693@exeter.ac.uk
 
+LOGEN <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
+source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
+
+
 ## --------------------------- 
 # variables
 TargetGene <- c("Abca1","Sorl1","Mapt","Bin1","Tardbp","App","Abca7",
                 "Ptk2b","Ank1","Fyn","Clu","Cd33","Fus","Picalm","Snca","Apoe","Trpa1","Rhbdf2","Trem2","Vgf")
 
-samples <- c("K17","K18","K23","K24","L22","M21","O18","O23","Q20","Q21","S18","S23")
-TG <- c("K18","K24", "L22","O18","Q20","S18")
-WT <- setdiff(samples, TG)
+wholesamples <- c("K17","K18","K23","K24","L22","M21","O18","O23","Q20","Q21","S18","S23")
+wholeTG <- c("K18","K24", "L22","O18","Q20","S18")
+wholeWT <- setdiff(samples, wholeTG)
+
+targetedWT <- c("K19","K23","K21","K17","S19","M21","O23","P19","Q21","S23","Q17","Q23")
+targetedTG <- c("K18","K20","K24","L22","O18","O22","T20","Q20","S18","Q18","L18","T18")
 
 ## --------------------------- 
 # directory names
@@ -23,9 +30,9 @@ dirnames <- list(
   # targeted sequencing (Iso-Seq, ONT)
   targ_iso_metadata = paste0(root_dir,"rTg4510/0_metadata/B_isoseq_targeted"),
   targ_ont_metadata = paste0(root_dir,"rTg4510/0_metadata/F_ont_targeted"),
-  targ_iso_root = paste0(root_dir, "/rTg4510/B_IsoSeq_Targeted/thesis_dump/DiffAnalysis_noRNASEQ"),
-  targ_ont_root = paste0(root_dir, "/rTg4510/F_ONT_Targeted/thesis_dump/TALON"),
-  targ_anno = paste0(root_dir,"/rTg4510/F_ONT_Targeted/thesis_dump/TALON/All/Merged/TargetGenes")
+  targ_iso_root = paste0(root_dir, "rTg4510/B_IsoSeq_Targeted"),
+  targ_ont_root = paste0(root_dir, "rTg4510/F_ONT_Targeted"),
+  targ_anno = paste0(root_dir,"rTg4510/F_ONT_Targeted/thesis_dump/TALON/All/Merged/TargetGenes")
 )
 
 
@@ -33,8 +40,8 @@ dirnames <- list(
 # Final classification file
 class.names.files <- list(
   glob_iso = paste0(dirnames$glob_root, "/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed_classification.filtered_lite_classification.txt"),
-  targ_iso = paste0(dirnames$targ_iso_root, "/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
-  targ_ont = paste0(dirnames$targ_ont_root, "/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt")
+  targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
+  targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt")
 ) 
 class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard"))
 
@@ -56,8 +63,8 @@ rnaseq_results <- list(
 tappas_dir <- list(
   glob_iso = paste0(dirnames$glob_tabroot, "/IsoSeq_Expression"), 
   glob_rna = paste0(dirnames$glob_tabroot, "/RNASeq_Expression"),
-  targ_iso = paste0(dirnames$targ_iso_root, "/TAPPAS_OUTPUT/IsoSeq_Expression"),
-  targ_ont = paste0(dirnames$targ_ont_root, "/TAPPAS_OUTPUT")
+  targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/IsoSeq_Expression"),
+  targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/TAPPAS_OUTPUT")
 )
 
 phenotype <- list(
@@ -70,20 +77,24 @@ phenotype <- list(
            variable = paste0("FL.", sample,"_",pheno,"_",age)),
   
   targ_iso = read.table(paste0(dirnames$targ_iso_metadata, "/TargetedMouse_PhenotypeTAPPAS.txt"), header = T) %>% mutate(variable = paste0(sample)),
-  targ_ont = read.table(paste0(dirnames$targ_ont_metadata, "/ONT_phenotype.txt"), header = T) %>% mutate(variable = paste0(sample))
+  targ_ont = read.table(paste0(dirnames$targ_ont_metadata, "/ONT_phenotype.txt"), header = T) %>% mutate(variable = paste0(sample)),
+  tg4510_samples = read.csv(paste0(dirnames$glob_metadata, "/Tg4510_fullsample.csv"))[,c("Genotype","Age_in_months", "Sample.ID","RIN","ng.ul")]
   
 )
+phenotype$whole_rTg4510_iso <- phenotype$tg4510_samples %>% filter(Sample.ID %in% wholesamples)
+phenotype$targeted_rTg4510_iso <- phenotype$tg4510_samples %>% filter(Sample.ID %in% c(targetedTG, targetedWT))
+phenotype$targeted_rTg4510_ont <- read.csv(paste0(dirnames$targ_ont_metadata, "/ONTBarcoded_Phenotype.csv"))
 
 
 # Output from Tappas_DEA.R
 tappassiggene <- list(
   glob = read_dea_files(paste0(dirnames$glob_tabroot,"/DifferentialGeneExpression_Analysis.xlsx")),
-  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx")),
-  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx"))
+  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx")),
+  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/thesis_dump/TALON/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx"))
 )
 
 tappassigtrans <- list(
   glob = read_dea_files(paste0(dirnames$glob_tabroot,"/DifferentialTransExpression_Analysis.xlsx")),
-  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx")),
-  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx"))
+  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx")),
+  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/thesis_dump/TALON/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx"))
 )
