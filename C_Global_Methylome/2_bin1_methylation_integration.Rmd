@@ -21,7 +21,7 @@ output <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figur
 
 # Specific analysis related
 SC_ROOT <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/"
-source(paste0(SC_ROOT,"C_DMP/01_source_functions.R"))
+source(paste0(SC_ROOT,"C_Global_Methylome/01_source_functions.R"))
 
 # General functions
 source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/sqanti_general.R")
@@ -29,11 +29,11 @@ source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_T
 source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_tappas_analysis.R")
 
 # Config files 
-source(paste0(SC_ROOT,"B_Targeted_Transcriptome/3_Differential_Analysis/rTg4510_differential.config.R"))
-source(paste0(SC_ROOT,"C_DMP/rTg4510_methylation.config.R"))
+source(paste0(SC_ROOT,"B_Targeted_Transcriptome/3_Differential_Analysis/A_tappAS/rTg4510_differential.config.R"))
+source(paste0(SC_ROOT,"C_Global_Methylome/rTg4510_methylation.config.R"))
 
 # Bin1 charcterisation files (generated for Thesis)
-bin1_stats = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/Merged_Targeted/4_characterise/TargetGenes/Bin1/Stats"
+bin1_stats = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/G_Merged_Targeted/A_talon_pipeline/4_characterise/TargetGenes/Filtered/Bin1/Stats"
 bin1_char.files.names <- list(
   co = paste0(bin1_stats, "/Bin1flattened_gencode.csv"),
   ES = paste0(bin1_stats, "/Bin1_Exonskipping_tab.csv"),
@@ -46,16 +46,16 @@ bin1_char <- lapply(bin1_char.files.names, function(x) read.csv(x))
 ## ---------- Load tappAS files -----------------
 
 loaded <- list(
-  iso = input_tappasfiles(TAPPAS_INPUT_DIR$iso),
-  ont = input_tappasfiles(TAPPAS_INPUT_DIR$ont)
+  iso = input_tappasfiles(tappas_dirnames$iso),
+  ont = input_tappasfiles(tappas_dirnames$ont)
 )
 
 
 ## ---------- Annotate tappAS files -----------------
 
 annotated <- list(
-  iso = annotate_tappasfiles(class.files$iso,loaded$iso$input_normalized_matrix,phenotype$iso),
-  ont = annotate_tappasfiles(class.files$ont,loaded$ont$input_normalized_matrix,phenotype$ont)
+  iso = annotate_tappasfiles(input.class.files$iso,loaded$iso$input_normalized_matrix,misc_input$iso),
+  ont = annotate_tappasfiles(input.class.files$ont,loaded$ont$input_normalized_matrix,misc_input$ont)
 )
 
 
@@ -72,30 +72,61 @@ annotated <- list(
 6. Expression of a negative control 
 
 
-## Samples 
+## Details
+- position of BIN1 DMP: chr18:32431597
+- position of BIN1 exon skipped: chr18:32431671-32431742
+- BIN1 isoform upregulated: ENSMUST00000234496.1
+
+
+## Samples {.tabset .tabset-fade}
+
+### 2 months
+
+```{r function_plot, message=FALSE}
+
+subset_DMP <- function(age){
+  
+    # check samples where DMP is upregulated
+  p1 <- RRBS_completebetas %>% filter(position == "chr18:32431597") %>% 
+    reshape2::melt() %>% 
+    left_join(., RRBS_Phenotype[,c("Sample_ID", "Genotype", "Age_months")], by = c("variable" = "Sample_ID")) %>% 
+    filter(Age_months == age) %>% 
+    mutate(value = ifelse(is.na(value), 0, value)) %>%
+    ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() + 
+    labs(x = "Genotype", y = "Methylation") + 
+    geom_label_repel(aes(label = variable), box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') 
+  
+  # check samples where isoform is upregulated
+  p2 <- annotated$ont$Norm_transcounts %>% filter(isoform == "ENSMUST00000234496.1") %>% 
+    filter(time == age) %>%
+    mutate(Genotype = factor(ifelse(group == "CONTROL", "WT", "TG"), levels = c("WT","TG"))) %>% 
+    ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() +
+    labs(x = "Genotype", y = "Expression (normalised counts)") + 
+    geom_label_repel(aes(label = sample), box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') 
+  
+  return(plot_grid(p1,p2))
+}
+
+subset_DMP(2)
+
+```
+
+### 4 months
 
 ```{r plot1_plot2, message=FALSE}
-# check samples where DMP is upregulated
-p1 <- RRBS_completebetas %>% filter(position == "chr18:32431597") %>% 
-  reshape2::melt() %>% 
-  left_join(., RRBS_Phenotype[,c("Sample_ID", "Genotype", "Age_months")], by = c("variable" = "Sample_ID")) %>% 
-  filter(Age_months == "8") %>% 
-  mutate(value = ifelse(is.na(value), 0, value)) %>%
-  ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() + 
-  labs(x = "Genotype", y = "Methylation") + 
-  geom_label_repel(aes(label = variable), box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') 
+subset_DMP(4)
+```
 
-# check samples where isoform is upregulated
-p2 <- annotated$ont$Norm_transcounts %>% filter(isoform == "ENSMUST00000234496.1") %>% 
-  filter(time == 8) %>%
-  mutate(Genotype = factor(ifelse(group == "CONTROL", "WT", "TG"), levels = c("WT","TG"))) %>% 
-  ggplot(., aes(x = Genotype, y = value)) + geom_boxplot() + geom_jitter() +
-  labs(x = "Genotype", y = "Expression (normalised counts)") + 
-  geom_label_repel(aes(label = sample), box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') 
+### 6 months
 
-plot_grid(p1,p2)
+```{r}
+subset_DMP(6)
+```
 
+### 8 months
 
+```{r}
+subset_DMP(8)
 ```
 
 ## Isoforms with Exon17 skipped
@@ -200,12 +231,12 @@ p5
 ```{r}
 # output plots 
 
-pdf(paste0(output,"/Bin1_DMP.pdf"), width = 10, height = 8)
-plot_grid(p2,p1, labels = c("A","B"))
-p3
-p4
-p5
-dev.off()
+#pdf(paste0(output,"/Bin1_DMP.pdf"), width = 10, height = 8)
+#plot_grid(p2,p1, labels = c("A","B"))
+#p3
+#p4
+#p5
+#dev.off()
 
 
 ```
