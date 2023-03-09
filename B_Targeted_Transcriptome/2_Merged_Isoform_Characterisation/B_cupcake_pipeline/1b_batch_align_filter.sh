@@ -9,8 +9,8 @@
 #SBATCH --mail-type=END # send email at job completion
 #SBATCH --mail-user=sl693@exeter.ac.uk # email address
 #SBATCH --array=0-18%9 #19 samples (9 ONT batch2, 9 ONT batch 3, 1 merged Iso-Seq)
-#SBATCH --output=../../../bash_output/1b_merge_targeted-%A_%a.o
-#SBATCH --error=../../../bash_output/1b_merge_targeted-%A_%a.e
+#SBATCH --output=../../../bash_output/1b_batch_align_filter-%A_%a.o
+#SBATCH --error=../../../bash_output/1b_batch_align_filter-%A_%a.e
 
 ##-------------------------------------------------------------------------
 
