@@ -19,6 +19,58 @@ run_gff_compare(){
   
 }
 
+
+# filter_alignment <input_name> <input_mapped_dir>
+filter_alignment(){
+  
+  source activate nanopore
+  
+  cd $2
+  echo "Converting bam to sam and sort"
+  samtools view -h $1.bam > $1.sam
+  samtools bam2fq $1.bam| seqtk seq -A > $1.fa
+  samtools sort -O SAM $1.sam > $1.sorted.sam
+
+  # Alignment stats
+  # Use the inforation in the paf file to create a new file where the columns correspond to the following: 
+    #col1: name of the nanopore read 
+    #col2: name of the sequence where nanopore read aligns (target sequence)
+    #col3: start position of the alignment on the target sequence 
+    #col4: length of the original nanopore read 
+    #col5: length of the aligned part of the nanopore read  
+    #col6: fraction of the aligned part of the nanopore read over the orginal length 
+    #col7: fraction of the aligned part of the target sequence over the orginal length of the target sequence
+    #col8: strand where the nanopore read aligns
+    #col8: number of matched nucleotides of the nanopore read alignment on the target sequence
+    #col9: identity (percentage of matched nucleotides over the aligned length of the nanopore read)
+    #col10: number of mismatches of the nanopore read alignment on the target sequence
+    #col11: number of insertions of the nanopore read alignment on the target sequence
+    #col12: number of deletions of the nanopore read alignment on the target sequence
+  
+  echo "Dissecting alignment statistics"
+  mkdir -p PAF; cd PAF
+  htsbox samview -pS $2/$1.sorted.sam > $1.paf
+  awk -F'\t' '{if ($6!="*") {print $0}}' $1.paf > $1.filtered.paf
+  awk -F'\t' '{print $1,$6,$8+1,$2,$4-$3,($4-$3)/$2,$10,($10)/($4-$3),$5,$13,$15,$17}' $1.filtered.paf | sed -e s/"mm:i:"/""/g -e s/"in:i:"/""/g -e s/"dn:i:"/""/g | sed s/" "/"\t"/g > $1"_mappedstats.txt"
+  ## filter based on alignable length (>0.85) and identity (>0.95)
+  awk -F'\t' '{if ($6>=0.85 && $8>=0.95) {print $1}}' $1"_mappedstats.txt" > $1_filteredreads.txt
+
+  source activate sqanti2
+  picard FilterSamReads I=$2/$1.bam O=$2/$1.filtered.bam READ_LIST_FILE=$2/PAF/$1_filteredreads.txt FILTER=includeReadList &> $2/PAF/$1.picard.log
+  
+  source activate nanopore
+  samtools bam2fq $2/$1.filtered.bam| seqtk seq -A > $2/$1.filtered.fa
+  samtools sort -O SAM $2/$1.filtered.bam -o $2/$1.filtered.sorted.bam
+  
+  # https://bioinformatics.stackexchange.com/questions/3380/how-to-subset-a-bam-by-a-list-of-qnames
+  #source activate nanopore
+  #samtools view $2/$1.bam | grep -f $1_filteredreads.txt > $1.filtered.sam
+  #samtools view -bS $1.filtered.sam > $1.filtered.bam
+  #samtools bam2fq $2/$1.filtered.bam| seqtk seq -A > $2/$1.filtered.fa
+
+}
+  
+ 
 # identify_common_transcripts <root_dir> <targetgenelist> <samplelist>
 # Custom script to identify_common_targeted_transcripts for merged output
 identify_common_transcripts(){
@@ -144,7 +196,7 @@ colour_by_abundance(){
   outputname=${sample%.gtf}
   echo $outputname
   
-  colour_common_targeted_transcripts.py \
+  colour_transcripts_by_countandpotential.py \
   --bed $bed12 \
   --cpat $4/4_characterise/CPAT/$1".ORF_prob.best.tsv" \
   --noORF $4/4_characterise/CPAT/$1".no_ORF.txt" \

@@ -2,14 +2,15 @@
 #SBATCH --export=ALL # export all environment variables to the batch job
 #SBATCH -D . # set working directory to .
 #SBATCH -p mrcq # submit to the parallel queue
-#SBATCH --time=10:00:00 # maximum walltime for the job
+#SBATCH --time=20:00:00 # maximum walltime for the job
 #SBATCH -A Research_Project-MRC148213 # research project to submit under
 #SBATCH --nodes=1 # specify number of nodes
 #SBATCH --ntasks-per-node=16 # specify number of processors per node
+#SBATCH --mem=200G # specify bytes memory to reserve
 #SBATCH --mail-type=END # send email at job completion
 #SBATCH --mail-user=sl693@exeter.ac.uk # email address
-#SBATCH --output=1_merge_targeted.o
-#SBATCH --error=1_merge_targeted.e
+#SBATCH --output=../../../bash_output/1_merge_targeted.o
+#SBATCH --error=../../../bash_output/1_merge_targeted.e
 
 ##-------------------------------------------------------------------------
 
@@ -54,13 +55,17 @@ cd ${dir}/1_align
 pbmm2 align --preset ISOSEQ --sort ${GENOME_FASTA} ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta ${samplename}_mapped.bam \
   --unmapped --log-level TRACE --log-file ${samplename}_mapped.log
 
+# filter_alignment <input_name> <input_mapped_dir>
+filter_alignment ${samplename}_mapped ${dir}/1_align
+
 # collapse
 echo "Collapsing..."
 echo "Output: ${dir}/2_collapse/${samplename}_collapsed.gff"
 cd ${dir}/2_collapse
-isoseq3 collapse ${dir}/1_align/${samplename}_mapped.bam ${samplename}_collapsed.gff --do-not-collapse-extra-5exons \
-  --log-level TRACE --log-file ${samplename}_collapsed.log
-
+isoseq3 collapse ${dir}/2_collapse/${samplename}_mapped.filtered.sorted.bam ${samplename}_collapsed.gff \
+--min-aln-coverage 0.85 --min-aln-identity 0.95 --do-not-collapse-extra-5exons \
+--log-level TRACE --log-file ${samplename}_collapsed.log
+  
 # demultiplex 
 # demux_ont_isoseq_cupcake_collapse.py <merged_read_stat.txt> <ont_sample_id.csv> <iso_sample_id.csv>
 source activate sqanti2_py3
