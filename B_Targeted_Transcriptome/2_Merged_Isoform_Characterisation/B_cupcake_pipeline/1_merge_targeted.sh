@@ -21,22 +21,14 @@ LOGEN_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/rTg4510_merged.config
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/01_source_function.sh
-export PATH=$PATH:${LOGEN}/assist_ont_processing
-  
+export PATH=$PATH:${LOGEN_ROOT}/assist_ont_processing
+export PATH=$PATH:${LOGEN_ROOT}/miscellaneous
+
   
 ##-------------------------------------------------------------------------
 
 source activate sqanti2_py3
 mkdir -p ${CUPMERGE_DIR}/1_merge_collapse
-
-# ONT transcript clean fasta
-ont_tclean_fa=($(ls ${ONT_TCLEAN_DIR}/*/*.fa)) 
-
-echo "Merging:"
-ls ${ont_tclean_fa[@]}
-ls ${ISO_MERGED_CLUSTER_DIR}/AllMouseTargeted.clustered.hq.fasta 
-cat ${ont_tclean_fa[@]} ${ISO_MERGED_CLUSTER_DIR}/AllMouseTargeted.clustered.hq.fasta > ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta
-
 
 export dir=${CUPMERGE_DIR}
 export samplename=all_iso_ont
@@ -47,25 +39,32 @@ mkdir -p 1_align 2_collapse 3_sqanti3
 
 ##-------------------------------------------------------------------------
 
+# copy and replace filename in ONT transcript clean directory
+echo "Replacing filenames in ONT transcript clean directory"
+replace_filenames_with_csv.py --copy -i=${ONT_TCLEAN_DIR}/Batch2 -f=$META_ROOT/ONT_Batch2_Tclean_rename.csv -d=${ONT_TCLEAN_DIR}/AllBatch2Batch3
+replace_filenames_with_csv.py --copy -i=${ONT_TCLEAN_DIR}/Batch3 -f=$META_ROOT/ONT_Batch3_Tclean_rename.csv -d=${ONT_TCLEAN_DIR}/AllBatch2Batch3
+cd ${ONT_TCLEAN_DIR}/AllBatch2Batch3; rm *clean.sam* *clean.log*
+  
 # align
-echo "Aligning ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta ..."
-echo "Output: ${dir}/1_align/${samplename}_mapped.bam"
-source activate isoseq3
-cd ${dir}/1_align
-pbmm2 align --preset ISOSEQ --sort ${GENOME_FASTA} ${CUPMERGE_DIR}/1_merge_collapse/all_iso_ont.fasta ${samplename}_mapped.bam \
-  --unmapped --log-level TRACE --log-file ${samplename}_mapped.log
+sbatch $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/B_cupcake_pipeline/1b_batch_align_filter.sh
+wait
 
-# filter_alignment <input_name> <input_mapped_dir>
-filter_alignment ${samplename}_mapped ${dir}/1_align
+# merge alignment
+echo "Collapsing..."
+allfilteredmapped=($(ls ${dir}/1_align/*mapped.filtered.sorted.bam)) 
+ls ${allfilteredmapped[@]}
+source activate nanopore
+samtools merge -f ${dir}/2_collapse/${samplename}_mapped.filtered.sorted.bam ${allfilteredmapped[@]}
 
 # collapse
 echo "Collapsing..."
 echo "Output: ${dir}/2_collapse/${samplename}_collapsed.gff"
 cd ${dir}/2_collapse
+source activate isoseq3
 isoseq3 collapse ${dir}/2_collapse/${samplename}_mapped.filtered.sorted.bam ${samplename}_collapsed.gff \
---min-aln-coverage 0.85 --min-aln-identity 0.95 --do-not-collapse-extra-5exons \
---log-level TRACE --log-file ${samplename}_collapsed.log
-  
+  --min-aln-coverage 0.85 --min-aln-identity 0.95 --do-not-collapse-extra-5exons \
+  --log-level TRACE --log-file ${samplename}_collapsed.log
+
 # demultiplex 
 # demux_ont_isoseq_cupcake_collapse.py <merged_read_stat.txt> <ont_sample_id.csv> <iso_sample_id.csv>
 source activate sqanti2_py3
