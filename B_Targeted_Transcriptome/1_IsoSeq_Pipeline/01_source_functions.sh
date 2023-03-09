@@ -33,8 +33,6 @@ isoseq3 --version #isoseq3 3.4.0 (commit v3.4.0)
 source activate sqanti2_py3
 samtools --version # echo version
 echo "Minimap2 version:" $(minimap2 --version) # echo version
-echo "ToFU Cupcake Version"
-head $CUPCAKE/README.md
 
 echo "FASTA SEQUENCE (CLONTECH PRIMERS) FOR NON-MULTIPLEXING"
 cat $FASTA
@@ -106,7 +104,7 @@ run_REFINE(){
     time isoseq3 refine $WKD_ROOT/2b_lima_batches/$1.fl.primer_5p--primer_3p.bam $FASTA $1.flnc.bam --require-polya
     echo "refine $1 successful"
     ls $1.flnc*
-  fita
+  fi
 
   source deactivate
 }
@@ -194,34 +192,19 @@ run_CLUSTER(){
 
 ################################################################################################
 #************************************* Post_Isoseq3 (Minimap2, Cupcake, Demultiplex) [Function 7,8]
-# run_map_cupcakecollapse <output_name> <root_input_directory> <root_output_directory>
-run_map_cupcakecollapse(){
 
-    source activate sqanti2_py3
+# run_pbmm2align <output_name> <clustered_dir> <mapped_dir> 
+run_pbmm2align(){
 
-    # convert between fasta and fastq for downstream process
-    echo "fasta2fastq conversion"
-    python $SEQUENCE/fa2fq.py $2/5_merged_cluster/$1.clustered.hq.fasta
-
-    samtools --version # echo version
-    echo "Minimap2 version:" $(minimap2 --version) # echo version
-
-    echo "Processing Sample $1 for Minimap2 and sort"
-    mkdir -p $3/6_minimap; cd $3/6_minimap 
-    minimap2 -t 30 -ax splice -uf --secondary=no -C5 -O6,24 -B4 $GENOME_FASTA $2/5_merged_cluster/$1.clustered.hq.fastq > $1.sam 2> $1.map.log
+    source activate isoseq3
+    echo "Processing Sample $1 for pbmm2 and sort"
+    mkdir -p $3; cd $3 #cd to $MAP directory for output
+    pbmm2 align --preset ISOSEQ --sort ${GENOME_FASTA} $2/$1.clustered.hq.fasta $1.bam --log-level TRACE --log-file $1.map.log
+    
+    source activate nanopore
+    samtools view -h $1.bam > $1.sam
+    samtools bam2fq $1.bam| seqtk seq -A > $1.fa
     samtools sort -O SAM $1.sam > $1.sorted.sam
-
-    echo "Processing Sample $1 for TOFU, with coverage 85% and identity 95%"
-    source activate cupcake
-    mkdir -p $3/7_tofu; cd $3/7_tofu
-    collapse_isoforms_by_sam.py -c 0.85 -i 0.95 --input $2/5_merged_cluster/$1.clustered.hq.fastq --fq -s $3/6_minimap/$1.sorted.sam --dun-merge-5-shorter -o $1 &>> $1.collapse.log
-    get_abundance_post_collapse.py $1.collapsed $2/5_merged_cluster/$1.clustered.cluster_report.csv &>> $1.abundance.log
-
-    source activate sqanti2_py3
-    # convert rep.fq to rep.fa for SQANTI2 input
-    seqtk seq -a $1.collapsed.rep.fq > $1.collapsed.rep.fa
-    echo "Processing Sample $1 for TOFU successful"
-    source deactivate
 }
 
 
@@ -238,17 +221,85 @@ run_minimap2(){
 }
 
 
-# demux_targeted <output_name> <input_root_dir> <output_root_dir>
-# read in read.stat file from cupcake collapse output and count abundance of each sample based on CCS ID obtained from each refine report of the sample
-demux_targeted(){
-    source activate sqanti2_py3
-
-    # script.R <refine_dir> <input_cluster_report> <input_tofu_readstat> <output_path_file>
-    Rscript $DEMUXFUNCTIONS/Demultiplex_Cupcake.R $2 \
-      $3/5_merged_cluster/$1.clustered.cluster_report.csv \
-      $3/7_tofu/$1.collapsed.read_stat.txt \
-      $3/7_tofu/$1.Demultiplexed_Abundance.txt
+# filter_alignment <name> <mapped_dir>
+filter_alignment(){
+  
+    source activate nanopore
+    
+    cd $2
+    # Alignment stats
+    # Use the inforation in the paf file to create a new file where the columns correspond to the following: 
+      #col1: name of the nanopore read 
+      #col2: name of the sequence where nanopore read aligns (target sequence)
+      #col3: start position of the alignment on the target sequence 
+      #col4: length of the original nanopore read 
+      #col5: length of the aligned part of the nanopore read  
+      #col6: fraction of the aligned part of the nanopore read over the orginal length 
+      #col7: fraction of the aligned part of the target sequence over the orginal length of the target sequence
+      #col8: strand where the nanopore read aligns
+      #col8: number of matched nucleotides of the nanopore read alignment on the target sequence
+      #col9: identity (percentage of matched nucleotides over the aligned length of the nanopore read)
+      #col10: number of mismatches of the nanopore read alignment on the target sequence
+      #col11: number of insertions of the nanopore read alignment on the target sequence
+      #col12: number of deletions of the nanopore read alignment on the target sequence
+    
+    echo "Dissecting alignment statistics"
+    mkdir -p PAF; cd PAF
+    htsbox samview -pS $2/$1.sorted.sam > $1.paf
+    awk -F'\t' '{if ($6!="*") {print $0}}' $1.paf > $1.filtered.paf
+    awk -F'\t' '{print $1,$6,$8+1,$2,$4-$3,($4-$3)/$2,$10,($10)/($4-$3),$5,$13,$15,$17}' $1.filtered.paf | sed -e s/"mm:i:"/""/g -e s/"in:i:"/""/g -e s/"dn:i:"/""/g | sed s/" "/"\t"/g > $1"_mappedstats.txt"
+    ## filter based on alignable length (>0.85) and identity (>0.95)
+    awk -F'\t' '{if ($6>=0.85 && $8>=0.95) {print $1}}' $1"_mappedstats.txt" > $1_filteredreads.txt
+  
+    source activate sqanti2
+    picard FilterSamReads I=$2/$1.bam O=$2/$1.filtered.bam READ_LIST_FILE=$2/PAF/$1_filteredreads.txt FILTER=includeReadList &> $2/PAF/$1.picard.log
+    
+    source activate nanopore
+    samtools bam2fq $2/$1.filtered.bam| seqtk seq -A > $2/$1.filtered.fa
+    samtools sort -O SAM $2/$1.filtered.bam -o $2/$1.filtered.sorted.bam
 }
+
+
+# merge_run_isoseqcollapse <name> <mapped_dir> <outputdir> <samples....>  
+merge_run_isoseqcollapse(){
+  
+  mkdir -p $3; cd $3
+  echo "Collapsing..."
+  Merge_Samples=$(echo "${@:4}")
+  all_bams=$(for i in ${Merge_Samples[@]}; do echo $(find $2 -name "*.filtered.sorted.bam" | grep "$i" ); done)
+  echo ${all_bams[@]}
+
+  source activate nanopore
+  printf '%s\n' "${all_bams[@]}" > $3/$1.fofn
+  samtools merge -f $3/$1.filtered.sorted.bam ${all_bams[@]}
+  
+  # collapse
+  echo "Output: $3/$1.gff"
+
+  source activate isoseq3
+  isoseq3 collapse $3/$1.filtered.sorted.bam $1.gff --min-aln-coverage 0.85 --min-aln-identity 0.95 --do-not-collapse-extra-5exons \
+    --log-level TRACE --log-file $1.log
+  
+}
+
+
+# demux <name> <refine_dir> <cluster_report> <tofu_dir> 
+# run Cupcake_Demultiplex.R, read in read.stat file from cupcake collapse output and count abundance of each sample based on CCS_ID
+demux(){
+  
+    # variables
+    refine_dir=$2
+    cluster_report=$3
+    cluster_dir=$(dirname $3)
+    collapse_dir=$4
+    
+    source activate nanopore
+    demux_merged_cluster.py $refine_dir $cluster_report -o $1
+    # output = /path/to/cluster_report_dir/name.clustered.demuxed.cluster_report.csv
+    
+    demux_cupcake_collapse.py $4/$1.read_stat.txt ${cluster_dir}/$1.clustered.demuxed.cluster_report.csv --dataset=isoseq -o $1
+}
+
 
 
 ################################################################################################
