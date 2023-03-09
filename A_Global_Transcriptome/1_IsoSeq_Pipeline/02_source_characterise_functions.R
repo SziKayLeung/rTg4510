@@ -56,10 +56,10 @@ sapply(file.sources,source,.GlobalEnv)
 
 # plot label colour
 label_colour <- function(genotype){
-  if(genotype == "WT"){colour = wes_palette("Royal1")[2]}else{
-    if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
-      if(genotype == "TG"){colour = wes_palette("Royal1")[1]}else{
-        if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
+  if(genotype %in% c("WT","CONTROL","Control")){colour = wes_palette("Royal1")[1]}else{
+    if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
+      if(genotype %in% c("TG","CASE","Case")){colour = wes_palette("Royal1")[2]}else{
+        if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
           if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
             if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
               if(genotype == "known"){colour = wes_palette("Darjeeling1")[5]}else{
@@ -74,6 +74,12 @@ label_name <- function(variable){
   return(name)
 }
 
+label_group <- function(variable){
+  if(variable == "Control"){name = "WT"}else{
+    if(variable == "Case"){name = "TG"}
+  }
+  return(name)
+}
 
 # Aim: find the mapt transgene sequencing after grep mapt human and mouse sequence in clustered.fasta
 # while using clustered.fasta, plot shows the occurence of transgene in original raw reads 
