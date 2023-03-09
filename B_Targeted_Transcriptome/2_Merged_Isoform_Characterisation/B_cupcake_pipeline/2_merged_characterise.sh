@@ -24,6 +24,7 @@ source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/rTg45
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/01_source_function.sh
 export PATH=$PATH:${LOGEN_ROOT}/target_gene_annotation
 export PATH=$PATH:${LOGEN_ROOT}/merge_characterise_dataset
+export PATH=$PATH:${LOGEN_ROOT}/miscellaneous 
 export PATH=$PATH:${FICLE_ROOT}
 export PATH=$PATH:${FICLE_ROOT}/reference
 
@@ -33,13 +34,19 @@ export PATH=$PATH:${FICLE_ROOT}/reference
 
 # LOGEN: subset cupcake classification file by target genes
 # merge cupcake classification file with abundance
-# filter cupcake classification file with minimum number of reads and counts
 source activate nanopore
+subset_quantify_filter_tgenes.R \
+--classfile ${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed_RulesFilter_result_classification.txt \
+--expression ${CUPMERGE_DIR}/2_collapse/demux_fl_count.csv \
+--target_genes ${TGENES_TXT} 
+
+# filter cupcake classification file with minimum number of reads and counts
 subset_quantify_filter_tgenes.R \
 --classfile ${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed_RulesFilter_result_classification.txt \
 --expression ${CUPMERGE_DIR}/2_collapse/demux_fl_count.csv \
 --target_genes ${TGENES_TXT} \
 --filter --nsample=5 --nreads=10
+
 
 # working variables
 finalanno=${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt 
