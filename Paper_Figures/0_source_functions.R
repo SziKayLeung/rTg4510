@@ -41,6 +41,8 @@ suppressMessages(library(cowplot))
 suppressMessages(library(readxl))
 suppressMessages(library(ggdendro))
 suppressMessages(library(pheatmap))
+suppressMessages(library(ggrepel))
+suppressMessages(library(forcats))
 suppressMessages(library(extrafont))
 suppressMessages(loadfonts())
 
@@ -48,21 +50,21 @@ suppressMessages(loadfonts())
 ## ----------Functions-----------------
 
 # load all the functions
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_aesthetics.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_tappas_analysis.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/sqanti_general.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/comp_characterise.R")
-
-SC_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Paper_Figures/"
-source(paste0(SC_ROOT,"bin/segregate_tappasresults.R"))
-
+LOGEN_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
+source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/pthemes.R"))
+source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_venn.R"))
+source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_density.R"))
+source(paste0(LOGEN_ROOT, "compare_datasets/base_comparison.R"))
+source(paste0(LOGEN_ROOT, "differential_analysis/plot_transcript_level.R"))
+source(paste0(LOGEN_ROOT, "differential_analysis/plot_usage.R"))
+sapply(list.files(path = paste0(LOGEN_ROOT,"target_gene_annotation"), pattern="*summarise*", full = T), source,.GlobalEnv)
 
 ## ----------Theme-----------------
 
 label_colour <- function(genotype){
-  if(genotype %in% c("WT","Control")){colour = wes_palette("Royal1")[1]}else{
+  if(genotype %in% c("WT","Control","CONTROL")){colour = wes_palette("Royal1")[1]}else{
     if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
-      if(genotype %in% c("TG","Case")){colour = wes_palette("Royal1")[2]}else{
+      if(genotype %in% c("TG","Case","CASE")){colour = wes_palette("Royal1")[2]}else{
         if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
           if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
             if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
@@ -72,34 +74,49 @@ label_colour <- function(genotype){
 }
 
 label_group <- function(genotype){
-  if(genotype %in% c("Case","CASE")){group = "TG"}else{
-    if(genotype %in% c("Control","CONTROL")){group = "WT"}}
+  if(genotype %in% c("TG","Case","CASE")){group = "TG"}else{
+    if(genotype %in% c("WT","Control","CONTROL")){group = "WT"}}
   return(group)
 }
 
-## ---------- Load tappAS files -----------------
+vennONTvsIso <- function(classf){
+  ont <- classf %>% filter(Dataset %in% c("ONT","Both")) %>% mutate(Dataset = "ONT") 
+  isoseq <- classf  %>% filter(Dataset %in% c("Both","Iso-Seq")) %>% mutate(Dataset = "Iso-Seq") 
+  
+  p <- twovenndiagrams(ont$isoform,isoseq $isoform, "ONT", "Iso-Seq")
+  return(p)
+}
 
-loaded <- list(
-  glob_iso = input_tappasfiles(tappas_dir$glob_iso),
-  glob_rna = input_tappasfiles(tappas_dir$glob_rna),
-  targ_iso = input_tappasfiles(tappas_dir$targ_iso),
-  targ_ont = input_tappasfiles(tappas_dir$targ_ont)
-)
-
-## ---------- Annotate tappAS files -----------------
-
-annotated <- list(
-  glob_iso = annotate_tappasfiles(class.files$glob_iso,loaded$glob_iso$input_normalized_matrix,phenotype$glob_iso),
-  glob_rna = annotate_tappasfiles(class.files$glob_iso,loaded$glob_rna$input_normalized_matrix,phenotype$glob_rna),
-  targ_iso = annotate_tappasfiles(class.files$targ_iso,loaded$targ_iso$input_normalized_matrix,phenotype$targ_iso),
-  targ_ont = annotate_tappasfiles(class.files$targ_ont,loaded$targ_ont$input_normalized_matrix,phenotype$targ_ont)
-)
-
-
-## ---------- Differential expression models -----------------
-# segregate differential gene and transcript expression results by the different models (using beta coefficient as filters)
-diff_models <- list(
-  glob_iso_siggenes = segregate_tappasresults(tappassiggene$glob$WholeIso_Genexp,"IsoSeq"),
-  glob_rna_siggenes = segregate_tappasresults(tappassiggene$glob$WholeRNA_Genexp,"RNASeq")
-)
-
+pSensitivity <- function(classf){
+  
+  dat <- classf %>% arrange(-nreads) %>% mutate(cumreads = cumsum(nreads), relative = prop.table(nreads), cumrel = cumsum(relative)) 
+  p <- ggplot(dat, aes(x = isoform, y = cumrel, label = paste0(associated_gene,", ",associated_transcript))) + 
+    geom_point() + 
+    aes(x = fct_reorder(isoform, cumrel)) + 
+    scale_x_discrete(labels = NULL, breaks = NULL) + labs(x = "XX") +
+    geom_label_repel(data          = subset(dat, cumrel < 0.48),
+                     size          = 4,
+                     box.padding   = 0.5,
+                     point.padding = 0.5,
+                     force         = 100,
+                     segment.size  = 0.2,
+                     segment.color = "grey50",
+                     direction     = "x") +
+    labs(x = "Isoform", y = "Cumulative read proportion") + mytheme
+  
+  return(p)
+  
+  #densityfill <- function(x){
+  #  if(x <= 10){return("<10")
+  #  }else if (10 < x & x <= 100){return("10-100")
+  #  }else if (100 < x & x < 200){return("100-200")
+  #  }else {return(">200")}
+  #}
+  #class.files$targ_all$ndensity <- factor(unlist(lapply(class.files$targ_all$nreads, function(x) densityfill(x))),
+  #                                        levels = c("<10","10-100","100-200",">200"))
+  #ggplot(class.files$targ_all, aes(x = associated_gene, fill = as.factor(ndensity))) + 
+  #  geom_bar() + labs(x = "Target genes", y = "Number of isoforms") + 
+  #  scale_fill_discrete(name = "Number of total reads") + mytheme +
+  #  theme(legend.position="bottom")
+  
+}
