@@ -100,19 +100,18 @@ isoResTranEffects
 ## ---------- Output -----------------
 
 saveRDS(ontResTranAnno, file = paste0(dirnames$output, "/Ont_DESeq2TranscriptLevel.RDS"))
-saveRDS(isoResTranAnno, file = paste0(dirnames$output, "/IsoSeq_DESeq2GeneLevel.RDS"))
+saveRDS(isoResTranAnno, file = paste0(dirnames$output, "/IsoSeq_DESeq2TranscriptLevel.RDS"))
 
 
 ## ---------- Iso-Seq Differential gene expression -----------------
 
 # run DESeq2
 resGene <- list(
-  wald = run_DESeq2(test="Wald",input$gene_expression,input$phenotype,exprowname="associated_gene",threshold=10,controlname="CONTROL",interaction="On"),
-  lrt = run_DESeq2(test="LRT",input$gene_expression,input$phenotype,exprowname="associated_gene",threshold=10,controlname="CONTROL",interaction="On")
+  wald = run_DESeq2(test="Wald",input$gene_expression,input$isoPhenotype,exprowname="associated_gene",threshold=10,controlname="CONTROL",design="time_series",
+                    interaction="On"),
+  lrt = run_DESeq2(test="LRT",input$gene_expression,input$ontPhenotype,exprowname="associated_gene",threshold=10,controlname="CONTROL",design="time_series",
+                   interaction="On")
 )
 
 # annotate results
 resGeneAnno <- lapply(resGene, function(x) anno_DESeq2(x,input$classfiles,input$phenotype,controlname="CONTROL",level="gene",sig=0.1))
-
-resGeneAnno$wald$norm_counts
-
