@@ -2,6 +2,7 @@
 ##
 ## Purpose: perform differential analysis on mouse rTg4510 ONT and Iso-Seq targeted datasets using linear regression
 ## Transcript level separate analysis
+## Gene level separate analysis
 ##
 ## Author: Szi Kay Leung (S.K.Leung@exeter.ac.uk)
 # https://hbctraining.github.io/DGE_workshop/lessons/04_DGE_DESeq2_analysis.html
@@ -97,21 +98,27 @@ isoResTranEffects <- do.call(rbind,dissect_DESeq2(wald=isoResTranAnno$wald$anno_
 isoResTranEffects
 
 
+## ---------- Iso-Seq Differential gene expression -----------------
+
+# run DESeq2
+ontResGene <- list(
+  wald = run_DESeq2(test="Wald",input$gene_expression %>% select(-associated_gene),input$ontPhenotype,threshold=10,controlname="CONTROL",design="time_series",interaction="On"),
+  lrt = run_DESeq2(test="LRT",input$gene_expression %>% select(-associated_gene),input$ontPhenotype,threshold=10,controlname="CONTROL",design="time_series",interaction="On")
+)
+
+isoResGene <- list(
+  wald = run_DESeq2(test="Wald",input$gene_expression %>% select(-associated_gene),input$isoPhenotype,threshold=10,controlname="CONTROL",design="time_series",interaction="On"),
+  lrt = run_DESeq2(test="LRT",input$gene_expression %>% select(-associated_gene),input$isoPhenotype,threshold=10,controlname="CONTROL",design="time_series",interaction="On")
+)
+
+# annotate results
+ontResGeneAnno <- lapply(ontResGene, function(x) anno_DESeq2(x,input$classfiles,input$ontPhenotype,controlname="CONTROL",level="gene",sig=0.1))
+isoResGeneAnno <- lapply(isoResGene, function(x) anno_DESeq2(x,input$classfiles,input$isoPhenotype,controlname="CONTROL",level="gene",sig=0.1))
+
+
 ## ---------- Output -----------------
 
 saveRDS(ontResTranAnno, file = paste0(dirnames$output, "/Ont_DESeq2TranscriptLevel.RDS"))
 saveRDS(isoResTranAnno, file = paste0(dirnames$output, "/IsoSeq_DESeq2TranscriptLevel.RDS"))
-
-
-## ---------- Iso-Seq Differential gene expression -----------------
-
-# run DESeq2
-resGene <- list(
-  wald = run_DESeq2(test="Wald",input$gene_expression,input$isoPhenotype,exprowname="associated_gene",threshold=10,controlname="CONTROL",design="time_series",
-                    interaction="On"),
-  lrt = run_DESeq2(test="LRT",input$gene_expression,input$ontPhenotype,exprowname="associated_gene",threshold=10,controlname="CONTROL",design="time_series",
-                   interaction="On")
-)
-
-# annotate results
-resGeneAnno <- lapply(resGene, function(x) anno_DESeq2(x,input$classfiles,input$phenotype,controlname="CONTROL",level="gene",sig=0.1))
+saveRDS(ontResGeneAnno, file = paste0(dirnames$output, "/Ont_DESeq2GeneLevel.RDS"))
+saveRDS(isoResGeneAnno, file = paste0(dirnames$output, "/IsoSeq_DESeq2GeneLevel.RDS"))
