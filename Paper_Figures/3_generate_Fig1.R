@@ -68,14 +68,26 @@ Targeted_p <- list(
 
 
 # Figure 4: Trem2
+
+plot_transexp_overtime("Trem2",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.20818.54"))
+
+plot_trans_exp_individual_overtime("7179",GlobalDESeq$resGeneAnno$lrt$norm_counts,type="gene")
+
+
 Trem2_p <- list(
-  dendro = plot_dendro_Tgene(dirnames$targ_anno, "Trem2"),
-  tracks = NULL,
-  ONTGeneExp  = generate_plots("Trem2",annotated$targ_ont,"Gene_time","")$Trem2,
-  ONTTransExp = generate_plots("Trem2",annotated$targ_ont,"Transcript_Iso_Trajectory"," ",tappassigtrans$targ_ont$TargetedOnt_Transexp)$Trem2,
-  IF = plot_grid(generate_plots("Trem2",loaded$targ_ont,"IF_time_series",phenotype$targ_ont,"ONT_Targeted")[[1]]),
-  pheat = draw_heatmap_gene("Trem2", class.files$targ_ont, annotated$targ_ont$Norm_transcounts)$gtable
+  pheat = NULL,
+  
+  ONTTransExp = plot_transexp_overtime("Trem2",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.20818.54")),
+  IF = plotIF("Trem2",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
+              cfiles=class.files$targ_all,design="time_series",majorIso=NULL)
+  #dendro = plot_dendro_Tgene(dirnames$targ_anno, "Trem2"),
+  #tracks = NULL,
+  #ONTGeneExp  = generate_plots("Trem2",annotated$targ_ont,"Gene_time","")$Trem2,
+  #ONTTransExp = generate_plots("Trem2",annotated$targ_ont,"Transcript_Iso_Trajectory"," ",tappassigtrans$targ_ont$TargetedOnt_Transexp)$Trem2,
+  #IF = plot_grid(generate_plots("Trem2",loaded$targ_ont,"IF_time_series",phenotype$targ_ont,"ONT_Targeted")[[1]]),
+  #pheat = draw_heatmap_gene("Trem2", class.files$targ_ont, annotated$targ_ont$Norm_transcounts)$gtable
 )
+
 
 # Figure 5: Bin1
 Bin1_p <- list(
@@ -88,6 +100,9 @@ Bin1_p <- list(
   #pheat = draw_heatmap_gene("Bin1", class.files$targ_ont, annotated$targ_ont$Norm_transcounts)$gtable
 )
 
+plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=2,isoSpecific=c("PB.22007.224"))
+plotIF("Bin1",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
+       cfiles=class.files$targ_all,design="time_series",majorIso=NULL,isoSpecific=c("PB.22007.101","PB.22007.224","PB.22007.99","PB.22007.176"))
 
 
 pdf(paste0(output_dir,"/MainFigures2.pdf"), width = 20, height = 10)

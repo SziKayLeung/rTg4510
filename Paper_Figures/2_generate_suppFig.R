@@ -102,18 +102,24 @@ pNovelOntTargetedDiff <- list(
   Apoe = plot_transexp_overtime("Apoe",TargetedDESeq$ontResTranAnno$lrt$norm_counts,show="specific",isoSpecific=c("PB.40586.1023")) 
 )
 
+plot_transexp_overtime("Mapt",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",isoSpecific=c("PB.8675.37810"))
+plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",isoSpecific=c("PB.22007.224"))
+plot_transexp_overtime("Snca",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",isoSpecific=c("PB.38419.87"))
+plot_transexp_overtime("App",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",isoSpecific=c("PB.19309.7497"))
+
+
 ## ---------- Isoform Fraction -----------------
 
 pIF <- list(
   ontNorm = lapply(Targeted$Genes, function(x) plotIF(x,
-                                                      Exp=Exp$targ_ont$normAll,
+                                                      ExpInput=Exp$targ_ont$normAll,
                                                       pheno=phenotype$targeted_rTg4510_ont,
                                                       cfiles=class.files$targ_all,
                                                       design="time_series",
                                                       majorIso=row.names(TargetedDIU$ontDIUGeno$keptIso))),
   
   isoNorm = lapply(Targeted$Genes, function(x) plotIF(x,
-                                                      Exp=Exp$targ_iso$normAll,
+                                                      ExpInput=Exp$targ_iso$normAll,
                                                       pheno=phenotype$targeted_rTg4510_iso,
                                                       cfiles=class.files$targ_all,
                                                       design="time_series",
@@ -132,7 +138,8 @@ gIR <- plot_summarised_IR(class.files$targ_filtered, dirnames$targ_anno, Targete
 gIR1 <- generate_cowplot(gIR_plots[[1]],gIR_plots[[2]],gIR_plots[[3]], num=3,nrow=1,ncol=3)
 gIR2 <- generate_cowplot(gIR_plots[[4]],num="4D",nrow=1,ncol=1)
 
-
+IR <- input_FICLE_splicing_results(dirnames$targ_anno,"Intron")
+IR %>% filter(associated_gene == "Fus")
 ## ---------- Output -----------------
 
 pdf(paste0(output_dir,"/SuppFigures.pdf"), width = 20, height = 10)
@@ -141,6 +148,8 @@ plot_grid(pGlobIsoVsRna$genotype,pGlobIsoVsRna$interaction, labels = c("A","B"))
 plot_grid(plotlist = pGlobWTvsTG , ncol = 2, nrow = 2, labels = c("A","B","C"))
 plot_grid(plotlist = pC4b, ncol = 2, nrow = 3, labels = c("A","B","C","D","E","F"))
 plot_grid(plotlist =  pNovelOntTargetedDiff, nrow = 1, labels = c("A","B","C","D"))
+plot_grid(pIF$ontNorm$Fus[[1]],pIF$ontNorm$Bin1[[1]],pIF$ontNorm$Trpa1[[1]],pIF$ontNorm$Apoe[[1]],pIF$ontNorm$App[[1]], labels = c("A","B","C","D","E"))
+plot_grid(pIF$ontNorm$Bin1[[2]],pIF$ontNorm$Vgf[[2]],pIF$ontNorm$Clu[[2]],pIF$ontNorm$Apoe[[2]],pIF$ontNorm$Fus[[2]], labels = c("A","B","C","D","E"))
 dev.off()
 
 pdf(paste0(dirnames$targ_output,"/IsoTargetedIFUpdated.pdf"), width = 14, height = 8)
