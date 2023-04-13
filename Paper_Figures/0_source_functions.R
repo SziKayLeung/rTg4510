@@ -79,6 +79,17 @@ label_group <- function(genotype){
   return(group)
 }
 
+
+reportStats <- function(res,stats,isoList){
+  for(i in isoList){
+    print(res %>% select(!c("lfcSE","stat")) %>% filter(isoform == i))  
+    cat("Wald statistic: ")
+    cat(stats[rownames(stats) == i,"WaldStatistic_group_CASE_vs_CONTROL"],"\n")
+    cat("******************\n")
+  }
+}
+
+
 vennONTvsIso <- function(classf){
   ont <- classf %>% filter(Dataset %in% c("ONT","Both")) %>% mutate(Dataset = "ONT") 
   isoseq <- classf  %>% filter(Dataset %in% c("Both","Iso-Seq")) %>% mutate(Dataset = "Iso-Seq") 
@@ -119,4 +130,116 @@ pSensitivity <- function(classf){
   #  scale_fill_discrete(name = "Number of total reads") + mytheme +
   #  theme(legend.position="bottom")
   
+}
+
+
+#' @title draw_heatmap_gene_level
+#' @description This function uses hierarchal clustering to plot a heatmap of the gene expression across samples
+#' @param diff_genes: tappAS output of list of differentially expressed genes 
+#' @param genelevel_exp: tappAS output of normalised gene expression values
+#' @param type: "glob_isoseq" used to determine annnotation of colours
+#' @param type: "yes" or "no" whether to filter differentially expressed genes 
+
+draw_heatmap_gene_level <- function(diff_genes,genelevel_exp, type, diff){
+  
+  dat <- genelevel_exp[,c("associated_gene", "Exp","time","variable")]
+  
+  if(diff == "yes"){
+    dat <- dat %>% filter(associated_gene %in% rownames(diff_genes))
+  }
+  
+  dat <- aggregate(Exp ~ time + variable + associated_gene, data = dat, mean) %>% 
+    mutate(Exp = log2(Exp)) %>% 
+    select(variable, associated_gene, Exp) %>% 
+    spread(., variable, Exp) %>% tibble::column_to_rownames(var = "associated_gene")  
+  
+  # remove isoforms that have been removed by tappAS due to very low count 
+  # replace infinity value from log value with 0 
+  # rotate the dataframe for visualisation ease
+  dat <- dat[,colSums(is.na(dat))<nrow(dat)]
+  dat[dat == "-Inf"] <- 0
+  
+  # set the order for the column (Age, Genotype)
+  coldata = genelevel_exp[,c("sample", "time", "group")] %>% 
+    distinct(.keep_all = TRUE) %>% 
+    column_to_rownames(var = "sample") %>% 
+    mutate(time = as.factor(time)) %>% 
+    mutate(group = ifelse(group == "CONTROL","WT","TG"))
+  colnames(coldata) = c("Age (months)","Genotype")
+  
+  if(type == "glob_isoseq"){
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white", "8"="black"))
+  }else{
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white","4"="#CFCFCF","6"="#777777","8"="black"))
+  }
+  
+  if(diff == "yes"){
+    p = pheatmap(dat, annotation_col=coldata, annotation_legend = TRUE,annotation_names_col = FALSE,
+                 show_colnames = FALSE,show_rownames = TRUE, color = viridis(10),annotation_colors = annotation_colors,
+                 fontsize_col = 20)
+    
+  }else{
+    p = pheatmap(dat, annotation_col=coldata, annotation_legend = TRUE,annotation_names_col = FALSE,
+                 show_colnames = FALSE,show_rownames = FALSE, color = viridis(10),annotation_colors = annotation_colors,
+                 fontsize_col = 20)
+  }
+  
+  return(p)
+}
+
+# Draw the heatmap for the Isoform expression of the gene 
+
+draw_heatmap_gene <- function(gene, cf, Norm_transcounts, type){
+  
+  # Subset the normalised expression count to gene, and datawrangle for plot
+  dat = Norm_transcounts[Norm_transcounts$associated_gene == gene,c("isoform","normalised_counts","sample")] %>%
+    mutate(value = log2(normalised_counts)) %>%
+    spread(., isoform, value) %>% tibble::column_to_rownames(var = "sample") 
+  
+  # remove isoforms that have been removed by tappAS due to very low count 
+  # replace infinity value from log value with 0 
+  # rotate the dataframe for visualisation ease
+  dat <- dat[,colSums(is.na(dat))<nrow(dat)]
+  dat[dat == "-Inf"] <- 0
+  dat.t <- t(dat)
+  
+  # set the order for the column (Age, Genotype)
+  coldata = Norm_transcounts %>% 
+    dplyr::select(sample, time, group) %>% distinct(.keep_all = TRUE) %>% column_to_rownames(var = "sample") %>% 
+    mutate(time = as.factor(time))
+  colnames(coldata) = c("Age (months)","Genotype")
+  
+  
+  # set the order for the row (isoform structural category)
+  rowdata = cf[cf$isoform %in% colnames(dat),c("isoform","structural_category")] %>% dplyr::select(-isoform)
+  colnames(rowdata) = c("Category")
+  
+  # set annotation colours
+  if(type == "targeted"){
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white","4"="#CFCFCF","6"="#777777","8"="black"), 
+      Category = c(FSM = alpha("#00BFC4",0.8),ISM = alpha("#00BFC4",0.3),NIC = alpha("#F8766D",0.8),NNC = alpha("#F8766D",0.3)))
+  }else{
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white", "8"="black"), 
+      Category = c(FSM = alpha("#00BFC4",0.8),ISM = alpha("#00BFC4",0.3),NIC = alpha("#F8766D",0.8),NNC = alpha("#F8766D",0.3)))
+  }
+  
+  
+  # draw heatmap
+  if(nrow(dat.t) > 1){
+    p = pheatmap(dat.t, annotation_col=coldata, annotation_row = rowdata, annotation_legend = FALSE,
+                 show_colnames = FALSE,show_rownames = FALSE, color = viridis(10),annotation_colors = annotation_colors,
+                 fontsize_col = 20)
+  }else{
+    p = ggplot()
+  }
+  
+  return(p)
 }
