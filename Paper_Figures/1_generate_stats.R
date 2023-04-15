@@ -148,8 +148,8 @@ cat("Number of Trem2 transcripts with A5A3:",nTrem2A5A3,"(",round(nTrem2A5A3/nTr
 cat("Number of Trem2 transcripts with novel exons:",nTrem2NovelExon,"(",round(nTrem2NovelExon/nTrem2 * 100,2),"%)\n")
 cat("Number of Trem2 transcripts with novel exons:",nTrem2NovelExonBeyond,"(",round(nTrem2NovelExonBeyond/nTrem2 * 100,2),"%)\n")
 
-# Exon skipping
-plot_ES_Tgene(dirnames$targ_anno,"Trem2",class.files$targ_filtered)[[1]]
+# Differential expression gene level 
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$wald$stats_Wald, isoList=c("20818"))
 
 ## ---------- Bin1 ----------
 # Read in FICLE files
@@ -157,7 +157,7 @@ Bin1FICLE <- input_FICLE_all_perGene(dirnames$targ_anno,"Bin1")
 
 # Numbers
 nBin1 <- Merged_gene_class_df["Total.Number.of.Transcripts","Bin1"]
-cat("Total number of Bin1 transcripts:",nBin1,"\n")s
+cat("Total number of Bin1 transcripts:",nBin1,"\n")
 for(i in c(14,15,16)){cat("Number of Bin1 transcripts with no exon",i,":", nrow(Bin1FICLE$Exonskipping_tab %>% filter(ES == paste0("Gencode_",i))),"\n")}
 cat("Number of transcripts with IR in CLAP domain:",nrow(unique(Bin1FICLE$IntronRetention_tab %>% mutate(exon = word(IR,c(3),sep=fixed("_"))) %>% filter(exon%in%c(13,14,15,16)) %>% select("transcript_id"))),"\n")
 
@@ -167,12 +167,61 @@ Bin1Isoforms = c("PB.22007.101","PB.22007.224","PB.22007.99","PB.22007.861","PB.
 class.files$targ_all[class.files$targ_all$isoform == "PB.22007.101",c("ONT_sum_FL","Iso.Seq_sum_FL")]
 class.files$targ_all[class.files$targ_all$isoform %in% Bin1Isoforms, c("structural_category","associated_gene","associated_transcript","subcategory")]
 
-# Exon skipping
-plot_ES_Tgene(dirnames$targ_anno,"Bin1",class.files$targ_filtered)[[1]]
-
-# IR
-plot_IR_Tgene(dirnames$targ_anno,"Bin1",class.files$targ_filtered)[[2]]
-
-# Differentially expressed: PB.20818.54
+# Differential transcript and gene expression statistics
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$anno_res, stats=TargetedDESeq$ontResTranAnno$wald8mos$stats_Wald, isoList=c("PB.22007.224"))
 reportStats(res=TargetedDESeq$isoResTranAnno$wald8mos$anno_res, stats=TargetedDESeq$isoResTranAnno$wald8mos$stats_Wald, isoList=c("PB.22007.224"))
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$wald$stats_Wald, isoList=c("22007"))
+
+
+## ---------- Clu ----------
+# Read in FICLE files
+CluFICLE <- input_FICLE_all_perGene(dirnames$targ_anno,"Clu")
+
+# Numbers
+nClu <- Merged_gene_class_df["Total.Number.of.Transcripts","Clu"]
+CluFirstExon <- CluFICLE$Exonskipping_generaltab %>% filter(Gencode_1 == "FirstExon")
+nCluFirstExon_SkippedAF <- nrow(CluFICLE$Exonskipping_tab %>% filter(ES %in% c("Gencode_2","Gencode_3","Gencode_4","Gencode_5","Gencode_6")) 
+                               %>% group_by(transcript_id) %>% tally() %>% filter(n == 5))
+for(i in c(9,10,11)){cat("Number of Clu transcripts with no exon",i,":", nrow(CluFICLE$Exonskipping_tab %>% filter(ES == paste0("Gencode_",i))),"\n")}
+cat("Total number of Clu transcripts:",nClu,"\n")
+cat("Number of Clu transcripts with Gencode 1 as first exon:",nrow(CluFirstExon),"(",round(nrow(CluFirstExon)/nClu*100,2),"%)\n")
+
+# Differential transcript and gene expression statistics
+CluIso = c("PB.14646.139","PB.14646.60837","PB.14646.68849","PB.14646.39341")
+class.files$targ_all[class.files$targ_all$isoform %in% OtherIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
+reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=CluIso)
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("14646"))
+
+
+## ---------- App ----------
+# Read in FICLE files
+AppFICLE <- input_FICLE_all_perGene(dirnames$targ_anno,"App")
+
+# Numbers
+nApp <- Merged_gene_class_df["Total.Number.of.Transcripts","App"]
+nAppES <- length(unique(AppFICLE$Exonskipping_tab$transcript_id))
+cat("Number of App transcripts with exon skipping:",nAppES,"(",round(nAppES/nApp*100,2),"%)\n")
+for(i in c(7,8,14,15,17)){cat("Number of App transcripts with no exon",i,":", nrow(AppFICLE$Exonskipping_tab %>% filter(ES == paste0("Gencode_",i))),"\n")}
+
+# Differential transcript expression statistics
+AppIso = c("PB.19309.7368","PB.19309.7374","PB.19309.7389")
+class.files$targ_all[class.files$targ_all$isoform %in% AppIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
+reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=AppIso)
+reportStats(res=TargetedDESeq$ontResTranAnno$wald$res_Wald, stats=TargetedDESeq$ontResTran$wald$stats_Wald, isoList=AppIso)
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("19309"))
+
+# Differential transcript usage
+TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene == "App")
+
+
+## ---------- Apoe ----------
+
+# Differential transcript expression statistics
+ApoeIso = c("PB.40586.871","PB.40586.872","PB.40586.875")
+class.files$targ_all[class.files$targ_all$isoform %in% ApoeIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
+reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=ApoeIso)
+reportStats(res=TargetedDESeq$ontResTranAnno$wald$res_Wald, stats=TargetedDESeq$ontResTran$wald$stats_Wald, isoList=ApoeIso)
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("40586"))
+
+# Differential transcript usage
+TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene == "Apoe")
