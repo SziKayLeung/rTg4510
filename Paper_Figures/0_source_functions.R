@@ -193,12 +193,13 @@ draw_heatmap_gene_level <- function(diff_genes,genelevel_exp, type, diff){
 
 # Draw the heatmap for the Isoform expression of the gene 
 
-draw_heatmap_gene <- function(gene, cf, Norm_transcounts, type){
+draw_heatmap_gene <- function(gene, cf, normCounts, type){
   
   # Subset the normalised expression count to gene, and datawrangle for plot
-  dat = Norm_transcounts[Norm_transcounts$associated_gene == gene,c("isoform","normalised_counts","sample")] %>%
-    mutate(value = log2(normalised_counts)) %>%
-    spread(., isoform, value) %>% tibble::column_to_rownames(var = "sample") 
+  dat = normCounts[normCounts$associated_gene == gene,c("isoform","normalised_counts","sample")] %>%
+    mutate(log2normalised = log2(normalised_counts)) %>% 
+    select(isoform, log2normalised, sample) %>%
+    spread(., isoform, log2normalised) %>% tibble::column_to_rownames(var = "sample") 
   
   # remove isoforms that have been removed by tappAS due to very low count 
   # replace infinity value from log value with 0 
@@ -208,7 +209,7 @@ draw_heatmap_gene <- function(gene, cf, Norm_transcounts, type){
   dat.t <- t(dat)
   
   # set the order for the column (Age, Genotype)
-  coldata = Norm_transcounts %>% 
+  coldata = normCounts %>% 
     dplyr::select(sample, time, group) %>% distinct(.keep_all = TRUE) %>% column_to_rownames(var = "sample") %>% 
     mutate(time = as.factor(time))
   colnames(coldata) = c("Age (months)","Genotype")
@@ -221,7 +222,7 @@ draw_heatmap_gene <- function(gene, cf, Norm_transcounts, type){
   # set annotation colours
   if(type == "targeted"){
     annotation_colors = list(
-      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      Genotype = c(CONTROL=wes_palette("Royal1")[1], CASE=wes_palette("Royal1")[2]),
       `Age (months)` = c("2"="white","4"="#CFCFCF","6"="#777777","8"="black"), 
       Category = c(FSM = alpha("#00BFC4",0.8),ISM = alpha("#00BFC4",0.3),NIC = alpha("#F8766D",0.8),NNC = alpha("#F8766D",0.3)))
   }else{
