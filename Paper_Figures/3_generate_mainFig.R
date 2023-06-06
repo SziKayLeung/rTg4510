@@ -184,6 +184,24 @@ plot_grid(plot_grid(
 )
 dev.off()
 
+pdf(paste0(output_dir,"/MainFigures5.pdf"), width = 20, height = 15)
+plot_grid(
+  plot_grid(
+    plot_grid(Clu_p$dendro,Clu_p$ES, nrow = 1),
+    plot_grid(Clu_p$ONTTransExp,Clu_p$ONTGeneExp, nrow = 1),
+    plot_grid(Clu_p$IF[[1]],Clu_p$IF[[2]], nrow = 1), ncol = 1),
+  NULL, ncol = 2)
+dev.off()
+
+pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 20, height = 15)
+plot_grid(
+  plot_grid(
+    plot_grid(App_p$dendro,App_p$ES, nrow = 1),
+    plot_grid(App_p$IF[[1]],App_p$IF[[2]], nrow = 1),
+    plot_grid(App_p$ONTTransExp,App_p$ONTGeneExp, nrow = 1),ncol = 1),
+  NULL, ncol = 2)
+dev.off()
+
 pdf(paste0(output_dir,"/OtherMainFigures.pdf"), width = 15, height = 10)
 plot_grid(Apoe_p$ONTTransExp + theme(legend.position = "right"),Apoe_p$ONTGeneExp,Apoe_p$IF[[1]],Apoe_p$IF[[2]])
 plot_grid(App_p$ONTTransExp + theme(legend.position = "right"),App_p$ONTGeneExp,App_p$IF[[1]],App_p$IF[[2]])

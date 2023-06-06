@@ -16,8 +16,8 @@
 ## ---------- Source function and config files -----------------
 
 SC_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Paper_Figures/"
-#source(paste0(SC_ROOT, "rTg4510_config.R"))
-#source(paste0(SC_ROOT, "0_source_functions.R"))
+source(paste0(SC_ROOT, "rTg4510_config.R"))
+source(paste0(SC_ROOT, "0_source_functions.R"))
 #source(paste0(SC_ROOT,"bin/draw_heatmap_gene_level.R"))
 
 
@@ -126,7 +126,8 @@ isoUsage = c("PB.42931.201","PB.22007.224","PB.40586.875","PB.40586.872","PB.193
 TargetedDESeq$ontResTranAnno$wald$res_Wald %>% filter(isoform %in% c("PB.42931.201","PB.22007.224","PB.40586.875","PB.40586.872"))
 TargetedDESeq$ontResTranAnno$wald8mos$res_Wald %>% filter(isoform %in% isoUsage)
 class.files$targ_all[class.files$targ_all$isoform %in% isoUsage,c("isoform","associated_gene","structural_category","associated_transcript","subcategory")]
-
+TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene %in% c("Fus","Bin1","Trpa1","Apoe","App"))
+TargetedDIU$ontDIUPath$resultDIU %>% filter(Gene %in% c("Fus","Bin1","Apoe"))
 
 ## ---------- Trem2 ----------
 # Read in FICLE files
