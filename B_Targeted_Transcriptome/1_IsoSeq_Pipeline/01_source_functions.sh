@@ -256,7 +256,7 @@ filter_alignment(){
     
     source activate nanopore
     samtools bam2fq $2/$1.filtered.bam| seqtk seq -A > $2/$1.filtered.fa
-    samtools sort -O SAM $2/$1.filtered.bam -o $2/$1.filtered.sorted.bam
+    samtools sort $2/$1.filtered.bam -o $2/$1.filtered.sorted.bam
 }
 
 
