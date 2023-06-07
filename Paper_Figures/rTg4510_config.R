@@ -71,7 +71,8 @@ phenotype$targeted_rTg4510_ont <- phenotype$targeted_rTg4510_ont %>% mutate(samp
 class.names.files <- list(
   glob_iso = paste0(dirnames$glob_root, "/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed_RulesFilter_result_classification.txt"),
   targ_all = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts.txt"),
-  targ_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt")#,
+  targ_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt"),
+  iso_match = paste0(dirnames$targ_iso_root, "/7b_matched_only/8d_sqanti3/MatchedMouse_RulesFilter_result_classification.txt")#,
   #targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
   #targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt")
 ) 

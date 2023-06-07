@@ -60,6 +60,16 @@ for(i in c("PB.2973.16","PB.7022.9")){
   print(GlobalDESeq$resTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(LRTPvalue, LRTStatistic))
 }
 
+cat("Total number of reads in filterd dataset (ONT and Iso-Seq combined):", round(sum(class.files$targ_filtered$nreads)/1000000,2),"million \n")
+
+cat("Number of matched samples in Whole vs Targeted Transcriptome:", length(wholesamples), "\n")
+wholevsTargeted <- whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[3]]
+cat("Number of isoforms detected by both whole and targeted, whole only and unique only\n:")
+wholevsTargetedTally <- wholevsTargeted %>% group_by(dataset) %>% tally()
+wholevsTargetedTally
+cat("Ratio of targeted to whole transcriptome of detecting transcripts associated to target genes:", as.numeric(wholevsTargetedTally[wholevsTargetedTally$dataset == "Targeted","n"]/wholevsTargetedTally[wholevsTargetedTally$dataset == "Whole","n"]))
+# wholevsTargeted %>% group_by(dataset) %>% tally(sumWhole)
+# wholevsTargeted %>% group_by(dataset) %>% tally(sumTargeted)
 
 ## ---------- Merged Targeted Iso-Seq and ONT datasets -----------------
 
