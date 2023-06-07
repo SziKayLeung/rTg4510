@@ -56,7 +56,7 @@ Gfap_p <- list(
 ## ---------- Figure 2: Targeted ----------
 
 Targeted_p <- list(
-  comp = NULL,
+  comp = whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[1]],
   venn = grobTree(vennONTvsIso(class.files$targ_filtered)),
   cumulative = pSensitivity(class.files$targ_all),
   num = total_num_iso(class.files$targ_filtered %>% mutate(dataset=Dataset),""),
