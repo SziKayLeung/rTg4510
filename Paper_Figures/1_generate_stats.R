@@ -61,6 +61,14 @@ for(i in c("PB.2973.16","PB.7022.9")){
 }
 
 cat("Total number of reads in filterd dataset (ONT and Iso-Seq combined):", round(sum(class.files$targ_filtered$nreads)/1000000,2),"million \n")
+TargetedMergedCouts <- list(
+  WT = class.files$targ_filtered %>% select(contains(targetedWT)) %>% reshape2::melt() %>% mutate(dataset = word(variable,c(1),sep=fixed("_"))),
+  TG = class.files$targ_filtered %>% select(contains(targetedTG)) %>% reshape2::melt() %>% mutate(dataset = word(variable,c(1),sep=fixed("_")))
+)
+lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset) %>% tally(value))
+lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(value)))
+
+
 
 cat("Number of matched samples in Whole vs Targeted Transcriptome:", length(wholesamples), "\n")
 wholevsTargeted <- whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[3]]
@@ -168,6 +176,11 @@ Bin1FICLE <- input_FICLE_all_perGene(dirnames$targ_anno,"Bin1")
 
 # Numbers
 nBin1 <- Merged_gene_class_df["Total.Number.of.Transcripts","Bin1"]
+ES <- input_FICLE_splicing_results(dirnames$targ_anno,"Exonskipping_tab")
+Bin1ESMax <- ES %>% filter(associated_gene == "Bin1") %>% group_by(transcript_id) %>% tally() %>% filter(n > 10)
+cat("Number of Bin1 transcripts with more than 10 exons skipped:",length(Bin1ESMax$transcript_id),"(",round(length(Bin1ESMax$transcript_id)/nBin1*100,2),"%)\n")
+
+
 cat("Total number of Bin1 transcripts:",nBin1,"\n")
 for(i in c(14,15,16)){cat("Number of Bin1 transcripts with no exon",i,":", nrow(Bin1FICLE$Exonskipping_tab %>% filter(ES == paste0("Gencode_",i))),"\n")}
 cat("Number of transcripts with IR in CLAP domain:",nrow(unique(Bin1FICLE$IntronRetention_tab %>% mutate(exon = word(IR,c(3),sep=fixed("_"))) %>% filter(exon%in%c(13,14,15,16)) %>% select("transcript_id"))),"\n")
@@ -209,8 +222,11 @@ reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$
 AppFICLE <- input_FICLE_all_perGene(dirnames$targ_anno,"App")
 
 # Numbers
+ES <- input_FICLE_splicing_results(dirnames$targ_anno,"Exonskipping_tab")
 nApp <- Merged_gene_class_df["Total.Number.of.Transcripts","App"]
 nAppES <- length(unique(AppFICLE$Exonskipping_tab$transcript_id))
+AppESMax <- ES %>% filter(associated_gene == "App") %>% group_by(transcript_id) %>% tally() %>% filter(n > 10)
+cat("Number of App transcripts with more than 10 exons skipped:",length(AppESMax$transcript_id),"(",round(length(AppESMax$transcript_id)/nApp*100,2),"%)\n")
 cat("Number of App transcripts with exon skipping:",nAppES,"(",round(nAppES/nApp*100,2),"%)\n")
 for(i in c(7,8,14,15,17)){cat("Number of App transcripts with no exon",i,":", nrow(AppFICLE$Exonskipping_tab %>% filter(ES == paste0("Gencode_",i))),"\n")}
 

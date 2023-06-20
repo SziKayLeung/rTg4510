@@ -3,6 +3,7 @@
 LOGEN <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
 source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
 source(paste0(LOGEN,"/target_gene_annotation/summarise_gene_stats.R"))
+source(paste0(LOGEN,"/compare_datasets/dataset_identifer.R"))
 
 
 ## --------------------------- 
@@ -82,10 +83,19 @@ class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,
 sub_class.files <- lapply(wholesamples, function(x) subset_class_by_sample(class.files$glob_iso,x))
 names(sub_class.files) <- wholesamples
 
+# note redundant isoforms in WT and TG class.files
 group_class.files <- bind_rows(
-  subset_class_phenotype(class.files$glob_iso, phenotype$whole_rTg4510_iso, "WT") %>% mutate(Dataset = "WT"),
-  subset_class_phenotype(class.files$glob_iso, phenotype$whole_rTg4510_iso, "TG") %>% mutate(Dataset = "TG")
+  subset_class_phenotype(class.files$glob_iso, phenotype$whole_rTg4510_iso, "WT") %>% mutate(Dataset = "WT", WTFL = TotalFL),
+  subset_class_phenotype(class.files$glob_iso, phenotype$whole_rTg4510_iso, "TG") %>% mutate(Dataset = "TG", TGFL = TotalFL)
 )
+
+group_class.files.diff <- 
+      merge(group_class.files[group_class.files$Dataset == "WT",c("isoform","WTFL")],
+      group_class.files[group_class.files$Dataset == "TG",c("isoform","TGFL")], by = "isoform", all = T)
+group_class.files.diff[is.na(group_class.files.diff)] <- 0
+group_class.files.diff$Dataset <- apply(group_class.files.diff, 1, function(x) identify_dataset_by_counts(x[["WTFL"]], x[["TGFL"]],"WT","TG"))
+group_class.files.diff <- merge(group_class.files.diff,class.files$glob_iso[,c("isoform","associated_gene","exons","length")], by = "isoform", all = T)
+
 
 # Expression 
 rawExp <- list(
@@ -109,7 +119,8 @@ TargetedDESeq <- list(
   ontResGeneAnno = readRDS(file = paste0(dirnames$targ_output, "/Ont_DESeq2GeneLevel.RDS")),
   isoResGeneAnno = readRDS(file = paste0(dirnames$targ_output, "/IsoSeq_DESeq2GeneLevel.RDS"))
 ) 
-
+TargetedDESeq$ontResTranAnno$wald$anno_res <- TargetedDESeq$ontResTranAnno$wald$anno_res %>% filter(padj < 0.05)
+TargetedDESeq$ontResTranAnno$wald8mos$anno_res <- TargetedDESeq$ontResTranAnno$wald8mos$anno_res %>% filter(padj < 0.05)
 
 ## ---------- DIU results (EdgeR) -----------------
 TargetedDIU <- readRDS(file = paste0(dirnames$targ_output, "/resultsDIU.RDS"))
@@ -173,6 +184,12 @@ rnaseq_results <- list(
   GenotypeDEG = read.csv(paste0(dirnames$glob_rnaseq, "/Isabel_Supp2_Tg4510GenotypeDEG.csv"), header = T, as.is = T)
 )
 
+## --------------------------
+# gtf
+gtf <- list(
+  glob_iso = rtracklayer::import(paste0(dirnames$glob_root,"/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed.filtered.gtf")),
+  targ_merged = rtracklayer::import(paste0(dirnames$targ_root,"/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf"))
+)
 
 ## ---------------------------
 # TAPPAS (Differential Analysis) 
