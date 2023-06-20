@@ -61,7 +61,7 @@ input$phenotype$sample <- word(str_remove(as.character(input$phenotype$sample),"
 input$expression <- read.csv(input_files$expression)
 input$gene_expression <- input$expression %>% mutate(associated_gene = word(id,c(2), sep = fixed(".")))
 input$gene_expression <- aggregate(. ~ associated_gene, input$gene_expression %>% select(-"id"), sum)
-rownames(input$gene_expression) <- input$gene_expression$associated_gene
+rownames(input$gene_expression) <- NULL
 # SQANTI class files
 input$classfiles <- SQANTI_class_preparation(input_files$classfiles,"ns")
 # RNA-Seq differential results
@@ -71,7 +71,7 @@ input$rnaseq_phenotype <- read.table(input_files$rnaseq_phenotype, sep = "\t", h
 input$rnaseq_expression <- read.table(input_files$rnaseq_expression, sep = "\t", header = T)
 input$rnaseq_gene_expression <- input$rnaseq_expression %>% mutate(associated_gene = word(X,c(2), sep = fixed(".")))
 input$rnaseq_gene_expression <- aggregate(. ~ associated_gene, input$rnaseq_gene_expression %>% select(-"X"), sum)
-rownames(input$rnaseq_gene_expression) <- input$rnaseq_gene_expression$associated_gene
+rownames(input$rnaseq_gene_expression) <- NULL
 
 
 ## ---------- Iso-Seq Differential gene expression -----------------
