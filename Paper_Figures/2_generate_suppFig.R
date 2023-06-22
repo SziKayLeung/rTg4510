@@ -162,25 +162,21 @@ gIR <- plot_summarised_IR(class.files$targ_filtered, dirnames$targ_anno, Targete
 gIR1 <- plot_grid(gIR_plots[[1]],gIR_plots[[2]],gIR_plots[[3]], num=3,nrow=1,ncol=3)
 gIR2 <- generate_cowplot(gIR_plots[[4]],num="4D",nrow=1,ncol=1)
 
-ES <- input_FICLE_splicing_results(dirnames$targ_anno,"Exonskipping_tab")
-AppFSM <- class.files$targ_filtered[class.files$targ_filtered$associated_gene == "App" & class.files$targ_filtered$structural_category == "FSM",]
 AppESMax <- ES %>% filter(associated_gene == "App") %>% group_by(transcript_id) %>% tally() %>% filter(n > 15)
-Bin1FSM <- class.files$targ_filtered[class.files$targ_filtered$associated_gene == "Bin1" & class.files$targ_filtered$structural_category == "FSM",]
 Bin1ESMax <- ES %>% filter(associated_gene == "Bin1") %>% group_by(transcript_id) %>% tally() %>% filter(n > 15)
 
 AppESTrack <- ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
-            isoList = c(as.character(AppESMax$transcript_id[1:5]),as.character(AppFSM$isoform[6:10])),
+            isoList = c(as.character(AppESMax$transcript_id[1:5]),as.character(FSM$App$isoform[6:10])),
             colours = c(rep("#F8766D",5),rep("#7CAE00",5)),
             lines = c(rep("#F8766D",5),rep("#7CAE00",5))) 
 
 Bin1ESTrack <- ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
-                          isoList = c(as.character(Bin1ESMax$transcript_id[1:5]),as.character(Bin1FSM$isoform[1:5])),
+                          isoList = c(as.character(Bin1ESMax$transcript_id[1:5]),as.character(FSM$Bin1$isoform[1:5])),
                           colours = c(rep("#F8766D",5),rep("#7CAE00",5)),
                           lines = c(rep("#F8766D",5),rep("#7CAE00",5))) 
 
 
 
-IR <- input_FICLE_splicing_results(dirnames$targ_anno,"IntronRetentionCounts")
 TardbpIR <- IR %>% filter(associated_gene == "Tardbp") %>% group_by(transcript_id) %>% tally() %>% filter(n > 15)
 
 ggTranPlots(gtf$targ_merged,class.files$targ_filtered,

@@ -196,7 +196,6 @@ reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$anno_res, stats=TargetedDE
 reportStats(res=TargetedDESeq$isoResTranAnno$wald8mos$anno_res, stats=TargetedDESeq$isoResTranAnno$wald8mos$stats_Wald, isoList=c("PB.22007.224"))
 reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$wald$stats_Wald, isoList=c("22007"))
 
-
 ## ---------- Clu ----------
 # Read in FICLE files
 CluFICLE <- input_FICLE_all_perGene(dirnames$targ_anno,"Clu")
@@ -249,6 +248,11 @@ class.files$targ_all[class.files$targ_all$isoform %in% ApoeIso, c("structural_ca
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=ApoeIso)
 reportStats(res=TargetedDESeq$ontResTranAnno$wald$res_Wald, stats=TargetedDESeq$ontResTran$wald$stats_Wald, isoList=ApoeIso)
 reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("40586"))
+
+# number of isoforms with 4 known exons
+Apoe4Ex <- ApoeExon %>% select(paste0("Gencode_",c(5,6,8)))
+table(rowSums(Apoe4Ex  == "No" | Apoe4Ex  == "FirstExon" | Apoe4Ex  == "IR"))
+
 
 # Differential transcript usage
 TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene == "Apoe")

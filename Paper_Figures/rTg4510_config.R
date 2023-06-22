@@ -37,7 +37,10 @@ dirnames <- list(
   targ_ont_root = paste0(root_dir, "rTg4510/F_ONT_Targeted"),
   #targ_anno = paste0(root_dir,"rTg4510/F_ONT_Targeted/thesis_dump/TALON/All/Merged/TargetGenes")
   targ_anno = paste0(root_dir,"rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_characterise/TargetGenes"),
-  targ_output = paste0(root_dir, "/rTg4510/01_figures_tables/Targeted_Transcriptome")
+  targ_output = paste0(root_dir, "/rTg4510/01_figures_tables/Targeted_Transcriptome"),
+  
+  # miscellaneous
+  references = paste0(root_dir,"references/annotation")
 )
 
 
@@ -176,6 +179,21 @@ names(Targeted$Gene_class) = lapply(list.files(path = dirnames$targ_anno, patter
                                     function(x) word(x, c(1), sep = fixed("/")))
 Merged_gene_class_df <- all_summarise_gene_stats(Targeted$Gene_class, class.files$targ_filtered, Targeted$cpat, Targeted$noORF, Targeted$Genes)
 
+# AS events
+ES <- input_FICLE_splicing_results(dirnames$targ_anno,"Exonskipping_tab")
+A5A3 <- input_FICLE_splicing_results(dirnames$targ_anno,"A5A3_tab")
+IR <- input_FICLE_splicing_results(dirnames$targ_anno,"IntronRetentionCounts")
+IRGen <- input_FICLE_splicing_results(dirnames$targ_anno,"IntronRetention_tab")
+FSM <- lapply(TargetGene, function(x) class.files$targ_filtered[class.files$targ_filtered$associated_gene == x & class.files$targ_filtered$structural_category == "FSM",])
+names(FSM) <- TargetGene
+NovelExons <- input_FICLE_splicing_results(dirnames$targ_anno,"NE_counts_pertrans")
+
+# Bin1 AF
+Bin1IRFirstExon <- read.table(paste0(dirnames$targ_anno,"/Bin1/Bin1_IR_FirstExonOnly_sorted_coloured.bed12"))
+CluAF <- read.table(paste0(dirnames$targ_anno,"/Clu/Clu_NEIntOnly_sorted_coloured.bed12"))
+CluIRES <- read.table(paste0(dirnames$targ_anno,"/Clu/Clu_IR_ES_Both_sorted_coloured.bed12"))
+ApoeA5A3 <- read.csv(paste0(dirnames$targ_anno,"/Apoe/Stats/Apoe_A5A3_tab.csv"))
+ApoeExon <- read.csv(paste0(dirnames$targ_anno,"/Apoe/Stats/Apoe_Exonskipping_generaltab.csv"))
 
 ## ---------------------------
 # Isabel's supplementary table of differentially expressed genes in rTg4510 
@@ -188,8 +206,13 @@ rnaseq_results <- list(
 # gtf
 gtf <- list(
   glob_iso = rtracklayer::import(paste0(dirnames$glob_root,"/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed.filtered.gtf")),
-  targ_merged = rtracklayer::import(paste0(dirnames$targ_root,"/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf"))
+  targ_merged = rtracklayer::import(paste0(dirnames$targ_root,"/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf")),
+  ref_target = rtracklayer::import(paste0(dirnames$references,"/gencode.M22.annotation.20Targets.gtf"))
 )
+gtf <- lapply(gtf, function(x) as.data.frame(x))
+
+gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")] ,
+                         gtf$ref_target[,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
 
 ## ---------------------------
 # TAPPAS (Differential Analysis) 

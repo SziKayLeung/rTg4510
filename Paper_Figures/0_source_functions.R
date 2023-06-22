@@ -57,6 +57,7 @@ LOGEN_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
 source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/pthemes.R"))
 source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_venn.R"))
 source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_density.R"))
+source(paste0(LOGEN_ROOT, "transcriptome_stats/plot_basic_stats.R"))
 source(paste0(LOGEN_ROOT, "compare_datasets/base_comparison.R"))
 source(paste0(LOGEN_ROOT, "compare_datasets/whole_vs_targeted.R"))
 source(paste0(LOGEN_ROOT, "differential_analysis/plot_transcript_level.R"))
@@ -240,9 +241,19 @@ draw_heatmap_gene <- function(gene, cf, normCounts, type){
   
   # draw heatmap
   if(nrow(dat.t) > 1){
-    p = pheatmap(dat.t, annotation_col=coldata, annotation_row = rowdata, annotation_legend = FALSE,
-                 show_colnames = FALSE,show_rownames = FALSE, color = viridis(10),annotation_colors = annotation_colors,
-                 fontsize_col = 20)
+    p <- pheatmap(dat.t, 
+             annotation_col = coldata, 
+             annotation_row = rowdata, 
+             annotation_legend = FALSE,
+             show_colnames = FALSE, 
+             show_rownames = FALSE, 
+             color = viridis(10),
+             annotation_colors = annotation_colors,
+             fontsize_col = 20,
+             labels_row = FALSE, 
+             labels_col = FALSE,
+             legend = FALSE,
+             annotation_names_row = FALSE)
   }else{
     p = ggplot()
   }
