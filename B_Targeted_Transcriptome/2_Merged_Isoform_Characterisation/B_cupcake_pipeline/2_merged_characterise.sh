@@ -68,6 +68,8 @@ colour_by_abundance ${MERGED_NAME} \
   ${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}"_collapsed.filtered_counts_filtered.gtf" \
   ${CUPMERGE_DIR}/2_collapse/demux_fl_count.csv ${CUPMERGE_DIR}
 
+# run_transdecoder <name> <root_dir>
+run_transdecoder ${MERGED_NAME} ${CUPMERGE_DIR}
 
 ##-------------------------------------------------------------------------
 ## Characterisation with FICLE

@@ -221,14 +221,15 @@ subset_gene_reference(){
 
 # run_transdecoder <name> <root_dir>
 run_transdecoder(){
-  source deactivate
+
+  mkdir -p $2/4_characterise/Transdecoder
+  cd $2/4_characterise/Transdecoder
   
-  mkdir -p $2/4_characterise/Transdecoder; cd $2/4_characterise/Transdecoder
-  
+  source activate nanopore
   TransDecoder.LongOrfs -t $2/4_characterise/CPAT/$1"_bestORF.fasta" &> transdecoder_longorf.log
   
   source activate sqanti2_py3
-  hmmscan --cpu 8 --domtblout pfam.domtblout $PFAM_REF $1"_bestORF.fasta.transdecoder_dir"/longest_orfs.pep &> hmmscan.log
+  hmmsearch --cpu 8 --domtblout pfam.domtblout $PFAM_REF $1"_bestORF.fasta.transdecoder_dir"/longest_orfs.pep &> hmmsearch.log
   
   source activate nanopore
   TransDecoder.Predict -t $2/4_characterise/CPAT/$1"_bestORF.fasta" --retain_pfam_hits pfam.domtblout --no_refine_starts &> transdecoder_predict.log
