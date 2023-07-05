@@ -35,12 +35,12 @@ Gfap_p <- list(
   
   tracks1 = ggTranPlots(gtf$glob_iso, class.files$glob_iso,
                         isoList = c("PB.2973.16","PB.2973.15","PB.2973.35","PB.2973.23","PB.2973.33","PB.2973.27"),
-                        colours = c("#F8766D","#7CAE00","#00BFC4","gray","black",wes_palette("Zissou1")[4]),
-                        lines = c("#F8766D","#7CAE00","#00BFC4","gray","black",wes_palette("Zissou1")[4])) ,
+                        colours = c("#F8766D",wes_palette("Darjeeling2")[2],"#00BFC4","#7CAE00",wes_palette("GrandBudapest2")[2],wes_palette("Zissou1")[4]),
+                        lines = c("#F8766D",wes_palette("Darjeeling2")[2],"#00BFC4","gray",wes_palette("GrandBudapest2")[2],wes_palette("Zissou1")[4])) ,
   
-  # PB.2973.16 = red (#F8766D), PB.2973.15 = green (#7CAE00), PB.2973.35 = blue (#00BFC4)
+  # PB.2973.16 = red (#F8766D), PB.2973.15 = wes_palette("Darjeeling2")[2], PB.2973.35 = blue (#00BFC4)
   IsoTransExp  = plot_transexp_overtime("Gfap",GlobalDESeq$resTranAnno$lrt$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.2973.16")) + 
-    scale_colour_manual(values = c("#00BFC4","#F8766D","#7CAE00")) + theme(legend.position = "None") + 
+    scale_colour_manual(values = c("#00BFC4","#F8766D",wes_palette("Darjeeling2")[2])) + theme(legend.position = "None") + 
     labs(title = "", subtitle = "Iso-Seq Transcript Expression") +
     facet_grid(cols = vars(group), labeller = labeller(group = as_labeller(c("CONTROL" = "WT", "CASE" = "TG")))),
   
@@ -49,9 +49,9 @@ Gfap_p <- list(
   #  theme(legend.position = "None") + 
   #  labs(title = "", subtitle = "RNA-Seq Transcript Expression"),
   
-  # PB.2973.16 = red, PB.2973.23 = grey, PB.2973.33 = black, PB.2973.27 = yellow
+  # PB.2973.16 = red, PB.2973.23 = green (#7CAE00), PB.2973.33 = purple, PB.2973.27 = yellow
   RNATransExpRanked  = plot_transexp_overtime("Gfap",GlobalDESeq$RresTranAnno$lrt$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.2973.16")) +
-    scale_colour_manual(values = c("#F8766D","gray",wes_palette("Zissou1")[4],"black")) + 
+    scale_colour_manual(values = c("#F8766D","#7CAE00",wes_palette("Zissou1")[4],wes_palette("GrandBudapest2")[2])) + 
     theme(legend.position = "None") + scale_y_continuous(labels = ks) +
     labs(title = "", subtitle = "RNA-Seq Transcript Expression", y = "Normalised counts (K)") +
     facet_grid(cols = vars(group), labeller = labeller(group = as_labeller(c("CONTROL" = "WT", "CASE" = "TG"))))
@@ -258,12 +258,11 @@ Apoe_p$IF[[2]] <- Apoe_p$IF[[2]] + labs(title = "")
 
 ## ---------- Output Pdf -----------------
 
-pdf(paste0(output_dir,"/MainFigures1.pdf"), width = 10, height = 15)
+pdf(paste0(output_dir,"/MainFigures1.pdf"), width = 10, height = 12)
 plot_grid(
-plot_grid(NULL,labels=c("A")),
-plot_grid(plotlist = Gfap_p[1:2], labels = c("B","C")),
-plot_grid(Gfap_p$tracks1,labels=c("D")),
-plot_grid(Gfap_p$RNATransExpRanked,Gfap_p$IsoTransExp, labels = c("E","F")), ncol = 1
+plot_grid(plotlist = Gfap_p[1:2], labels = c("A","B")),
+plot_grid(Gfap_p$tracks1,labels=c("C")),
+plot_grid(Gfap_p$RNATransExpRanked,Gfap_p$IsoTransExp, labels = c("D","E")), ncol = 1
 )
 dev.off()
 
