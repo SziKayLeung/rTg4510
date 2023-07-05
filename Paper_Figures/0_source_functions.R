@@ -70,7 +70,7 @@ sapply(list.files(path = paste0(LOGEN_ROOT,"target_gene_annotation"), pattern="*
 label_colour <- function(genotype){
   if(genotype %in% c("WT","Control","CONTROL")){colour = wes_palette("Royal1")[1]}else{
     if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
-      if(genotype %in% c("TG","Case","CASE")){colour = wes_palette("Royal1")[2]}else{
+      if(genotype %in% c("TG","Case","CASE")){colour =wes_palette("IsleofDogs1")[4]}else{
         if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
           if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
             if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
