@@ -104,6 +104,7 @@ isoResTranEffects
 # run DESeq2
 ontResGene <- list(
   wald = run_DESeq2(test="Wald",input$gene_expression %>% select(-associated_gene),input$ontPhenotype,threshold=10,controlname="CONTROL",design="time_series",interaction="On"),
+  waldgenotype = run_DESeq2(test="Wald",input$gene_expression %>% select(-associated_gene),input$ontPhenotype,threshold=10,controlname="CONTROL",design="case_control",interaction="On"),
   lrt = run_DESeq2(test="LRT",input$gene_expression %>% select(-associated_gene),input$ontPhenotype,threshold=10,controlname="CONTROL",design="time_series",interaction="On")
 )
 
