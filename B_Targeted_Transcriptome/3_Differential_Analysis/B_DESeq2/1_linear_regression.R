@@ -73,7 +73,8 @@ rownames(input$gene_expression) <- input$gene_expression$associated_gene
 ontResTran <- list(
   wald = run_DESeq2(test="Wald",input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="On"),
   lrt = run_DESeq2(test="LRT",input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="On"),
-  wald8mos = run_DESeq2(input$ontExpression,input$ontmos8Phenotype ,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald")
+  waldgenotype = run_DESeq2(input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald"),
+  wald8mos = run_DESeq2(input$ontExpression,input$ontmos8Phenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald")
 )
 
 ontResTranAnno <- lapply(ontResTran, function(x) anno_DESeq2(x,input$classfiles,input$ontPhenotype,controlname="CONTROL",level="transcript",sig=0.1))
