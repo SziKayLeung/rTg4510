@@ -80,19 +80,19 @@ subset_gene_reference ${CUPMERGE_DIR}
 # FICLE: full characterisation
 # coloured by ONT and Iso-Seq
 for g in ${TGENES[@]}; do
-  
+
   echo $g
   mkdir -p ${CUPMERGE_DIR}/4_characterise/TargetGenes
   mkdir -p ${CUPMERGE_DIR}/4_characterise/TargetGenes/Log
   output_dir=${CUPMERGE_DIR}/4_characterise/TargetGenes
-
-  ficle.py --gene=$g \
-    --ref=${CUPMERGE_DIR}/4_characterise/TargetGenesRef/ \
-    --i_bed=${CUPMERGE_DIR}/4_characterise/bed12Files/${MERGED_NAME}_collapsed.filtered_counts_filtered_concat_counts_coloured.bed12 \
-    --i_gtf=${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed.filtered_counts_filtered.gtf \
-    --i_class=${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt \
-    --orf=${CUPMERGE_DIR}/4_characterise/CPAT/${MERGED_NAME}.ORF_prob.best.tsv   \
-    --o_dir=$output_dir &> ${CUPMERGE_DIR}/4_characterise/TargetGenes/Log/$g"_characterise.log"
+  
+  ficle.py -n=$g \
+  -r=${CUPMERGE_DIR}/4_characterise/TargetGenesRef/ \
+  -b=${CUPMERGE_DIR}/4_characterise/bed12Files/${MERGED_NAME}_collapsed.filtered_counts_filtered_concat_counts_coloured.bed12 \
+  -g=${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed.filtered_counts_filtered.gtf \
+  -c=${CUPMERGE_DIR}/3_sqanti3/${MERGED_NAME}_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt \
+  --cpat=${CUPMERGE_DIR}/4_characterise/CPAT/${MERGED_NAME}.ORF_prob.best.tsv   \
+  -o=$output_dir &> ${CUPMERGE_DIR}/4_characterise/TargetGenes/Log/$g"_characterise.log"
 
 done
 
