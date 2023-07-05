@@ -16,8 +16,8 @@
 ## ---------- Source function and config files -----------------
 
 SC_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Paper_Figures/"
-source(paste0(SC_ROOT, "rTg4510_config.R"))
 source(paste0(SC_ROOT, "0_source_functions.R"))
+source(paste0(SC_ROOT, "rTg4510_config.R"))
 #source(paste0(SC_ROOT,"bin/draw_heatmap_gene_level.R"))
 
 
@@ -65,7 +65,7 @@ TargetedMergedCouts <- list(
   WT = class.files$targ_filtered %>% select(contains(targetedWT)) %>% reshape2::melt() %>% mutate(dataset = word(variable,c(1),sep=fixed("_"))),
   TG = class.files$targ_filtered %>% select(contains(targetedTG)) %>% reshape2::melt() %>% mutate(dataset = word(variable,c(1),sep=fixed("_")))
 )
-lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset) %>% tally(value))
+lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset, variable) %>% tally(value) %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(n)))
 lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(value)))
 
 
@@ -131,8 +131,10 @@ setdiff(TargetedDESeq$ontResTranAnno$wald$anno_res$isoform,TargetedDESeq$ontResT
 addedWald8mosIso = setdiff(TargetedDESeq$ontResTranAnno$wald8mos$anno_res$isoform, TargetedDESeq$ontResTranAnno$wald$anno_res$isoform)
 cat("Further number of transcripts identified at 8 months:", length(addedWald8mosIso), "\n")
 cat("Annotated to:", unique(TargetedDESeq$ontResTranAnno$wald8mos$anno_res %>% filter(isoform %in% addedWald8mosIso) %>% .[,c("associated_gene")],"\n"))
+reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald,stats=TargetedDESeq$ontResTranAnno$wald8mos$stats_Wald, isoList=c("PB.22007.99"))
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$anno_res,stats=TargetedDESeq$ontResTranAnno$wald8mos$stats_Wald, 
             isoList=c("PB.8675.37810","PB.22007.224","PB.38419.87","PB.19309.7497","PB.40586.875"))
+
 
 # Iso-Seq
 reportStats(res=TargetedDESeq$isoResTranAnno$wald$anno_res, stats=TargetedDESeq$isoResTranAnno$wald$stats_Wald, isoList=c("PB.20818.54"))
