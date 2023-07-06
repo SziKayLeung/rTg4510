@@ -116,7 +116,14 @@ cat("Number of ES events across 20 target genes:", sum(Merged_gene_class_df["ES"
 cat("Number of trancripts with ES events:", sum(Merged_gene_class_df["Number.of.Transcripts.with.ES.Events",]), "\n")
 cat("Proportion of trancripts with ES events:", sum(Merged_gene_class_df["Number.of.Transcripts.with.ES.Events",])/totaln * 100, "\n")
 cat("Number of ES events across 20 target genes:", sum(Merged_gene_class_df["IR",]), "\n")
+cat("Number of IR events across 20 target genes:", sum(Merged_gene_class_df["IR",]), "\n")
+cat("Number of trancripts with IR events:", sum(Merged_gene_class_df["Number.of.Transcripts.with.IR.Events",]), "\n")
+cat("Proportion of trancripts with IR events:", sum(Merged_gene_class_df["Number.of.Transcripts.with.IR.Events",])/totaln * 100, "\n")
 
+IR_tab_exonoverlap <- input_FICLE_splicing_results(dirnames$targ_anno, "IntronRetentionExonOverlap")
+cat("Number of IR events overlapping 2 or more exons:", nrow(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps >= 2,]), "\n") 
+cat("Number of IR events overlapping 5 exons:", nrow(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps == 5,]), "\n") 
+cat("Proportion of IR events overlapping 2 or more exons:", nrow(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps >= 2,])/sum(Merged_gene_class_df["IR",]) * 100, "\n") 
 
 ## ---------- Differential isoform expression analyis - Targeted -----------------
 
@@ -230,13 +237,18 @@ AppESMax <- ES %>% filter(associated_gene == "App") %>% group_by(transcript_id) 
 cat("Number of App transcripts with more than 10 exons skipped:",length(AppESMax$transcript_id),"(",round(length(AppESMax$transcript_id)/nApp*100,2),"%)\n")
 cat("Number of App transcripts with exon skipping:",nAppES,"(",round(nAppES/nApp*100,2),"%)\n")
 for(i in c(7,8,14,15,17)){cat("Number of App transcripts with no exon",i,":", nrow(AppFICLE$Exonskipping_tab %>% filter(ES == paste0("Gencode_",i))),"\n")}
+AppIso = group_class.files.diff.targeted[group_class.files.diff.targeted$associated_gene == "App",]
+nrow(AppIso[AppIso$WTFL == 0,])
+nrow(AppIso[AppIso$TGFL == 0,])
 
 # Differential transcript expression statistics
 AppIso = c("PB.19309.7368","PB.19309.7374","PB.19309.7389")
 class.files$targ_all[class.files$targ_all$isoform %in% AppIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=AppIso)
 reportStats(res=TargetedDESeq$ontResTranAnno$wald$res_Wald, stats=TargetedDESeq$ontResTran$wald$stats_Wald, isoList=AppIso)
-reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("19309"))
+reportStats(res=TargetedDESeq$ontResTranAnno$waldgenotype$res_Wald, stats=TargetedDESeq$ontResTran$waldgenotype$stats_Wald, isoList=AppIso)
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$wald$stats_Wald, isoList=c("19309"))
+reportStats(res=TargetedDESeq$ontResGeneAnno$waldgenotype$res_Wald, stats=TargetedDESeq$ontResGeneAnno$waldgenotype$stats_Wald, isoList=c("19309"))
 
 # Differential transcript usage
 TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene == "App")
