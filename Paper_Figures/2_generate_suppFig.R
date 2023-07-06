@@ -158,9 +158,7 @@ class.files$targ_filtered %>% select(isoform, contains("ONT")) %>% mutate(annot_
 
 gA5A3 <- plot_summarised_AS_events(Merged_gene_class_df, dirnames$targ_anno, Targeted$ref_gencode)[[2]]
 gES <- plot_summarised_ES(Targeted$Gene_class, class.files$targ_filtered, dirnames$targ_anno, Targeted$ref_gencode, Targeted$ref_altcon)
-gIR <- plot_summarised_IR(class.files$targ_filtered, dirnames$targ_anno, Targeted$ont_abundance)
-gIR1 <- plot_grid(gIR_plots[[1]],gIR_plots[[2]],gIR_plots[[3]], num=3,nrow=1,ncol=3)
-gIR2 <- generate_cowplot(gIR_plots[[4]],num="4D",nrow=1,ncol=1)
+gIR <- plot_summarised_IR(class.files$targ_filtered, dirnames$targ_anno, TargetedDESeq$ontResTranAnno$wald$norm_counts)
 
 AppESMax <- ES %>% filter(associated_gene == "App") %>% group_by(transcript_id) %>% tally() %>% filter(n > 15)
 Bin1ESMax <- ES %>% filter(associated_gene == "Bin1") %>% group_by(transcript_id) %>% tally() %>% filter(n > 15)
@@ -176,13 +174,30 @@ Bin1ESTrack <- ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
                           lines = c(rep("#F8766D",5),rep("#7CAE00",5))) 
 
 
+TardbpIso <- data.frame(
+  Isoform = unlist(TardbpIso <- list(
+    Reference = unique(gtf$ref_target[gtf$ref_target$gene_name == "Tardbp" & !is.na(gtf$ref_target$transcript_id), "transcript_id"]),
+    IR = as.character(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps > 7,"transcript_id"])
+  )),
+  Category = rep(names(TardbpIso), lengths(TardbpIso))
+)
+TardbpIso$colour <- c(rep(NA,length(TardbpIso$Category[TardbpIso$Category != "DTE"])))
+TardbpIRTrack <- ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
+            isoList = c(as.character(TardbpIso$Isoform)),
+            selfDf = TardbpIso)
 
-TardbpIR <- IR %>% filter(associated_gene == "Tardbp") %>% group_by(transcript_id) %>% tally() %>% filter(n > 15)
+Cd33Iso <- data.frame(
+  Isoform = unlist(Cd33Iso <- list(
+    Reference = unique(gtf$ref_target[gtf$ref_target$gene_name == "Cd33" & !is.na(gtf$ref_target$transcript_id), "transcript_id"]),
+    IR = c("PB.41115.1383")
+  )),
+  Category = rep(names(Cd33Iso), lengths(Cd33Iso))
+)
+Cd33Iso$colour <- c(rep(NA,length(Cd33Iso$Category[Cd33Iso$Category != "DTE"])))
+Cd33IRTrack <- ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
+                             isoList = c(as.character(Cd33Iso$Isoform)),
+                             selfDf = Cd33Iso)
 
-ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
-            isoList = c(as.character(TardbpIR$transcript_id[1:10])),
-            colours = c(rep("#F8766D",5),rep("#7CAE00",5)),
-            lines = c(rep("#F8766D",5),rep("#7CAE00",5))) 
 
 ## ---------- Output -----------------
 
@@ -190,6 +205,7 @@ pdf(paste0(output_dir,"/SuppFigures.pdf"), width = 20, height = 10)
 plot_grid(pMapt$glob_iso[[2]],get_legend(pMapt$glob_iso[[1]]),pMapt$targ_iso[[2]],pMapt$targ_ont, labels = c("A","","B","C"))
 plot_grid(pGlobIsoVsRna$genotype,pGlobIsoVsRna$interaction, labels = c("A","B"))
 plot_grid(plotlist = pGlobWTvsTG , ncol = 2, nrow = 2, labels = c("A","B","C"))
+plot_grid(NULL,plot_grid(gIR[[1]],gIR[[2]],gIR[[3]],nrow=1,ncol=3, labels = c("B","C","D")),TardbpIRTrack,ncol=1,labels = c("A","","E"))
 plot_grid(plot_grid(pC4b$IsoGeneExp,pC4b$RNAGeneExp,nrow=1,labels=c("A","B")),
           pC4b$tracks1,
           plot_grid(pC4b$IsoTransExp,pC4b$RNATransExpRanked,labels=c("D","E")),
@@ -201,6 +217,10 @@ bot = plot_grid(pNovelOntTargetedDiff[[4]], pNovelOntTargetedTracks$Apoe, labels
 plot_grid(top,mid,bot,ncol=1,rel_heights = c(0.5,0.25,0.25))
 plot_grid(pIF$ontNorm$Fus[[1]],pIF$ontNorm$Bin1[[1]],pIF$ontNorm$Trpa1[[1]],pIF$ontNorm$Apoe[[1]],pIF$ontNorm$App[[1]], labels = c("A","B","C","D","E"))
 plot_grid(pIF$ontNorm$Bin1[[2]],pIF$ontNorm$Vgf[[2]],pIF$ontNorm$Clu[[2]],pIF$ontNorm$Apoe[[2]],pIF$ontNorm$Fus[[2]], labels = c("A","B","C","D","E"))
+dev.off()
+
+pdf(paste0(output_dir,"/SuppFigures.pdf"), width = 10, height = 15)
+plot_grid(Cd33IRTrack,plot_grid(gIR[[1]],gIR[[2]]+theme(legend.position = c(0.8,0.7)),gIR[[3]],nrow=1,ncol=3, labels = c("B","C","D")),TardbpIRTrack,ncol=1,labels = c("A","","E"), rel_heights = c(0.2,0.4,0.5))
 dev.off()
 
 pdf(paste0(dirnames$targ_output,"/IsoTargetedIFUpdated.pdf"), width = 14, height = 8)
