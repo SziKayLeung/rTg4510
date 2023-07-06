@@ -24,7 +24,7 @@ source(paste0(LOGEN_ROOT,"longread_QC/plot_cupcake_collapse_sensitivty.R"))
 output_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Mouse_Isoseq/"
 
 
-## ---------- Figure 1: Gfap ----------
+## ---------- Figure 2: Gfap ----------
 
 Gfap_p <- list(
   RNAGeneExp = plot_trans_exp_individual_overtime("2973",GlobalDESeq$RresGeneAnno$lrt$norm_counts,type="gene") + 
@@ -58,7 +58,7 @@ Gfap_p <- list(
 )
 
 
-## ---------- Figure 2: Targeted ----------
+## ---------- Figure 3: Targeted ----------
 
 Targeted_p <- list(
   comp = whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[1]],
@@ -73,7 +73,7 @@ Targeted_p <- list(
 )
 
 
-## ---------- Figure 3: Trem2 ----------
+## ---------- Figure 4: Trem2 ----------
 
 Trem2ES <- ES %>% filter(associated_gene == "Trem2") %>% filter(ES %in% c("Gencode_4","Gencode_5")) 
 Trem2A5A3 <- A5A3 %>% filter(associated_gene == "Trem2") %>% filter(gencode_exon %in% c("Gencode_2")) 
@@ -111,11 +111,11 @@ Trem2_p <- list(
                        selfDf = Trem2Iso, gene = "Trem2")
   
 )
-Trem2_p$IF[[1]] <- Trem2_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5))
+Trem2_p$IF[[1]] <- Trem2_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE) 
 Trem2_p$IF[[2]] <- Trem2_p$IF[[2]] + labs(title = "")
 
 
-## ---------- Figure 4: Bin1 ---------
+## ---------- Figure 5: Bin1 ---------
 
 Bin1ES <- ES %>% filter(associated_gene == "Bin1") 
 
@@ -123,8 +123,7 @@ Bin1Iso <- data.frame(
   Isoform = unlist(Bin1Iso <- list(
     Reference = unique(gtf$ref_target[gtf$ref_target$gene_name == "Bin1" & !is.na(gtf$ref_target$transcript_id), "transcript_id"]),
     ES = as.character(unique(Bin1ES$transcript_id)[6:10]),
-    IR = c("PB.22007.45261","PB.22007.46397","PB.22007.45271","PB.22007.924","PB.22007.803"),
-    AP = c(as.character(Bin1IRFirstExon$V4))[46:56],
+    AP = paste0("PB.22007.", c(50820, 50175, 50143, 50079, 49307, 48852, 48704, 48337, 47598)),
     DTE = c("PB.22007.101","PB.22007.224","PB.22007.99")
   )),
   Category = rep(names(Bin1Iso), lengths(Bin1Iso))
@@ -134,7 +133,6 @@ Bin1Iso$colour <- c(rep(NA,length(Bin1Iso$Category[Bin1Iso$Category != "DTE"])),
 Bin1_p <- list(
   dendro = plot_dendro_Tgene(dirnames$targ_anno, "Bin1"),
   ES = plot_ES_Tgene(dirnames$targ_anno,"Bin1",class.files$targ_filtered)[[1]],
-  IR = plot_IR_Tgene(dirnames$targ_anno,"Bin1",class.files$targ_filtered)[[2]] + theme(legend.position = c(0.25,0.9)),
   ONTGeneExp  = plot_trans_exp_individual_overtime("22007",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
     labs(title = "", subtitle = "ONT Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
   ONTTransExp = plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=2,isoSpecific=c("PB.22007.224"),
@@ -148,11 +146,11 @@ Bin1_p <- list(
                        isoList = c(as.character(Bin1Iso$Isoform)),
                        selfDf = Bin1Iso, gene = "Bin1")
 )
-Bin1_p$IF[[1]] <- Bin1_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5))
+Bin1_p$IF[[1]] <- Bin1_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE)   
 Bin1_p$IF[[2]] <- Bin1_p$IF[[2]] + labs(title = "")
 
 
-## ---------- Figure 5: Clu ---------
+## ---------- Figure 6: Clu ---------
 
 CluES <- ES %>% filter(associated_gene == "Clu") 
 
@@ -160,7 +158,7 @@ CluIso <- data.frame(
   Isoform = unlist(CluIso <- list(
     Reference = unique(gtf$ref_target[gtf$ref_target$gene_name == "Clu" & !is.na(gtf$ref_target$transcript_id), "transcript_id"]),
     ES = c("PB.14646.1019","PB.14646.4411","PB.14646.1094","PB.14646.4585","PB.14646.11450"),
-    AP = c("PB.14646.134",as.character(CluAF$V4[1:10])),
+    AP = paste0("PB.14646.",c("39554","39402","39345","38679","34808","38406","38351","34798","329","1380","134")),
     IR = c("PB.14646.4741","PB.14646.4624","PB.14646.1317","PB.14646.2515"),
     DTE = c("PB.14646.139","PB.14646.39341")
   )),
@@ -185,11 +183,11 @@ Clu_p <- list(
                        isoList = c(as.character(CluIso$Isoform)),
                        selfDf = CluIso, gene = "Clu")
 )
-Clu_p$IF[[1]] <- Clu_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5))
+Clu_p$IF[[1]] <- Clu_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE)   
 Clu_p$IF[[2]] <- Clu_p$IF[[2]] + labs(title = "")
 
 
-## ---------- Figure 6: App ---------
+## ---------- Figure 7: App ---------
 
 AppES <- ES %>% filter(associated_gene == "App") %>% filter(ES %in% paste0("Gencode_",c(7,8,14,15,16)))
 
@@ -219,11 +217,11 @@ App_p <- list(
                        isoList = c(as.character(AppIso$Isoform)),
                        selfDf = AppIso, gene="App")
 )
-App_p$IF[[1]] <- App_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5))
+App_p$IF[[1]] <- App_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE) 
 App_p$IF[[2]] <- App_p$IF[[2]] + labs(title = "")
 
 
-## ---------- Figure 7: Apoe ---------
+## ---------- Figure 8: Apoe ---------
 
 ApoeIso <- data.frame(
   Isoform = unlist(ApoeIso <- list(
@@ -253,12 +251,12 @@ Apoe_p <- list(
                        isoList = c(as.character(ApoeIso$Isoform)),
                        selfDf = ApoeIso, gene="Apoe")
 )
-Apoe_p$IF[[1]] <- Apoe_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5))
+Apoe_p$IF[[1]] <- Apoe_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE) 
 Apoe_p$IF[[2]] <- Apoe_p$IF[[2]] + labs(title = "")
 
 ## ---------- Output Pdf -----------------
 
-pdf(paste0(output_dir,"/MainFigures1.pdf"), width = 10, height = 12)
+pdf(paste0(output_dir,"/MainFigures2.pdf"), width = 10, height = 12)
 plot_grid(
 plot_grid(plotlist = Gfap_p[1:2], labels = c("A","B")),
 plot_grid(Gfap_p$tracks1,labels=c("C")),
@@ -266,13 +264,13 @@ plot_grid(Gfap_p$RNATransExpRanked,Gfap_p$IsoTransExp, labels = c("D","E")), nco
 )
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures2.pdf"), width = 15, height = 15)
+pdf(paste0(output_dir,"/MainFigures3.pdf"), width = 15, height = 15)
 plot_grid(plot_grid(Targeted_p$comp,Targeted_p$cumulative,Targeted_p$venn,nrow=1,labels=c("A","B","C"),rel_widths = c(0.4,0.3,0.3)),
           plot_grid(Targeted_p$distribution,Targeted_p$n,nrow=1,labels=c("D","E"),rel_widths = c(0.6,0.4)),
           plot_grid(Targeted_p$splicing,nrow=1,labels=c("F")),nrow=3, rel_heights = c(0.3,0.4,0.3))
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures3.pdf"), width = 18, height = 12)
+pdf(paste0(output_dir,"/MainFigures4.pdf"), width = 18, height = 12)
 plot_grid(plot_grid(
             plot_grid(Trem2_p$dendro,Trem2_p$pheat$gtable,nrow=1, rel_widths = c(0.5,0.5), labels = c("A","B")),
             plot_grid(Trem2_p$ONTTransExp,Trem2_p$ONTGeneExp,nrow=1, rel_widths = c(0.6,0.4), labels = c("D","E")),
@@ -282,17 +280,17 @@ plot_grid(plot_grid(
 )
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures4.pdf"), width = 18, height = 14)
+pdf(paste0(output_dir,"/MainFigures5.pdf"), width = 18, height = 14)
 plot_grid(plot_grid(
-  plot_grid(Bin1_p$dendro,plot_grid(Bin1_p$ES,Bin1_p$IR,ncol=1,labels = c("B","C")),nrow = 1,labels = c("A",""), rel_widths = c(0.4,0.6)),
-  plot_grid(Bin1_p$ONTTransExp, Bin1_p$ONTGeneExp,rel_widths = c(0.6,0.4),labels = c("E","F")),
-  plot_grid(Bin1_p$IF[[1]], Bin1_p$IF[[2]],rel_widths = c(0.6,0.4),labels = c("G","H")),
+  plot_grid(Bin1_p$dendro,Bin1_p$ES,ncol=1,labels = c("A","B")),
+  plot_grid(Bin1_p$ONTTransExp, Bin1_p$ONTGeneExp,rel_widths = c(0.6,0.4),labels = c("D","E")),
+  plot_grid(Bin1_p$IF[[1]], Bin1_p$IF[[2]],rel_widths = c(0.6,0.4),labels = c("F","G")),
   ncol = 1, rel_heights = c(0.45,0.275,0.275)), Bin1_p$tracks,
-  ncol = 2, rel_widths = c(0.5,0.5), labels = c("","D")
+  ncol = 2, rel_widths = c(0.5,0.5), labels = c("","C")
 )
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures5.pdf"), width = 18, height = 12)
+pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 18, height = 12)
 plot_grid(plot_grid(
     plot_grid(Clu_p$dendro,Clu_p$ES, nrow = 1, labels = c("A","B")),
     plot_grid(Clu_p$ONTTransExp,Clu_p$ONTGeneExp, nrow = 1, rel_widths = c(0.6,0.4), labels = c("D","E")),
@@ -300,7 +298,7 @@ plot_grid(plot_grid(
   ncol = 2, rel_widths = c(0.5,0.5), labels = c("","C"))
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 18, height = 12)
+pdf(paste0(output_dir,"/MainFigures7.pdf"), width = 18, height = 12)
 plot_grid(plot_grid(
     plot_grid(App_p$dendro,App_p$ES, nrow = 1, labels = c("A","B")),
     plot_grid(App_p$ONTTransExp,App_p$ONTGeneExp, nrow = 1, rel_widths = c(0.6,0.4), labels = c("D","E")),
@@ -308,7 +306,7 @@ plot_grid(plot_grid(
   App_p$tracks, rel_widths = c(0.5,0.4), ncol = 2, labels = c("","C"))
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures7.pdf"), width = 18, height = 12)
+pdf(paste0(output_dir,"/MainFigures8.pdf"), width = 18, height = 12)
 plot_grid(plot_grid(
   plot_grid(Apoe_p$dendro, Apoe_p$A5A3,nrow=1,labels=c("A","B")),
   plot_grid(Apoe_p$ONTTransExp,Apoe_p$ONTGeneExp,rel_widths = c(0.6,0.4),labels=c("D","E")),

@@ -100,6 +100,12 @@ group_class.files.diff$Dataset <- apply(group_class.files.diff, 1, function(x) i
 group_class.files.diff <- merge(group_class.files.diff,class.files$glob_iso[,c("isoform","associated_gene","exons","length")], by = "isoform", all = T)
 
 
+group_class.files.diff.targeted <- cbind(class.files$targ_filtered[,c("isoform","associated_gene")], 
+      data.frame(class.files$targ_filtered %>% select(starts_with("ONT") & contains(targetedWT)) %>% apply(., 1, sum)),
+      data.frame(class.files$targ_filtered %>% select(starts_with("ONT") & contains(targetedTG)) %>% apply(., 1, sum))) %>%
+  `colnames<-`(c("isoform","associated_gene","WTFL", "TGFL"))
+
+
 # Expression 
 rawExp <- list(
   targ_ont_all = class.files$targ_all %>% dplyr::select(associated_gene, contains("ONT")) %>% select(!contains("sum_FL"))
@@ -188,10 +194,6 @@ FSM <- lapply(TargetGene, function(x) class.files$targ_filtered[class.files$targ
 names(FSM) <- TargetGene
 NovelExons <- input_FICLE_splicing_results(dirnames$targ_anno,"NE_counts_pertrans")
 
-# Bin1 AF
-Bin1IRFirstExon <- read.table(paste0(dirnames$targ_anno,"/Bin1/Bin1_IR_FirstExonOnly_sorted_coloured.bed12"))
-CluAF <- read.table(paste0(dirnames$targ_anno,"/Clu/Clu_NEIntOnly_sorted_coloured.bed12"))
-CluIRES <- read.table(paste0(dirnames$targ_anno,"/Clu/Clu_IR_ES_Both_sorted_coloured.bed12"))
 ApoeA5A3 <- read.csv(paste0(dirnames$targ_anno,"/Apoe/Stats/Apoe_A5A3_tab.csv"))
 ApoeExon <- read.csv(paste0(dirnames$targ_anno,"/Apoe/Stats/Apoe_Exonskipping_generaltab.csv"))
 
