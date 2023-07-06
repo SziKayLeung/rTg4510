@@ -68,7 +68,9 @@ TargetedMergedCouts <- list(
 lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset, variable) %>% tally(value) %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(n)))
 lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(value)))
 
-
+TargetedMergedCoutsc <- lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset, variable) %>% tally(value) %>% group_by(dataset)) %>% bind_rows(.id = "group")
+wilcox.test(n~ group, data = TargetedMergedCoutsc[TargetedMergedCoutsc$dataset == "Iso.Seq",], exact = FALSE)
+wilcox.test(n~ group, data = TargetedMergedCoutsc[TargetedMergedCoutsc$dataset == "ONT",], exact = FALSE)
 
 cat("Number of matched samples in Whole vs Targeted Transcriptome:", length(wholesamples), "\n")
 wholevsTargeted <- whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[3]]
@@ -143,9 +145,24 @@ reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$anno_res,stats=TargetedDES
             isoList=c("PB.8675.37810","PB.22007.224","PB.38419.87","PB.19309.7497","PB.40586.875"))
 
 
-# Iso-Seq
-reportStats(res=TargetedDESeq$isoResTranAnno$wald$anno_res, stats=TargetedDESeq$isoResTranAnno$wald$stats_Wald, isoList=c("PB.20818.54"))
+# Replication with Iso-Seq
+# Calculate the adjusted threshold 
+num_tests = nrow(TargetedDESeq$ontResTranAnno$wald$anno_res)
+threshold <- 0.1 * num_tests
+TargetedDESeq$isoResTranAnno$wald$res$significant <- TargetedDESeq$isoResTranAnno$wald$res$pvalue <= threshold
+replicatedIso = intersect(TargetedDESeq$isoResTranAnno$wald$res[TargetedDESeq$isoResTranAnno$wald$res$significant == TRUE,"isoform"], 
+          TargetedDESeq$ontResTranAnno$wald$anno_res$isoform)
+setdiff(TargetedDESeq$ontResTranAnno$wald$anno_res$isoform,TargetedDESeq$isoResTranAnno$wald$res[TargetedDESeq$isoResTranAnno$wald$res$significant == TRUE,"isoform"])
 
+# effect size = group_CASE_vs_CONTROL 
+replicatedVals = rbind(TargetedDESeq$isoResTranAnno$wald$stats_Wald %>% rownames_to_column(var = "isoform") 
+                       %>% filter(isoform %in% replicatedIso) %>% .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "IsoSeq"),
+      TargetedDESeq$ontResTranAnno$wald$stats_Wald %>% rownames_to_column(var = "isoform") %>% 
+        filter(isoform %in% replicatedIso) %>% .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "ONT")) %>% 
+  spread(., dataset,group_CASE_vs_CONTROL) 
+#ggplot(replicatedVals, aes(x = ONT, y = IsoSeq)) + geom_point()
+cor.test(replicatedVals$IsoSeq, replicatedVals$ONT, method = "spearman")
+  
 
 ## ---------- Differential isoform usage analysis - Targeted -----------------
 
