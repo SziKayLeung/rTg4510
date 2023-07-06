@@ -63,6 +63,7 @@ source(paste0(LOGEN_ROOT, "compare_datasets/whole_vs_targeted.R"))
 source(paste0(LOGEN_ROOT, "differential_analysis/plot_transcript_level.R"))
 source(paste0(LOGEN_ROOT, "differential_analysis/plot_usage.R"))
 source(paste0(LOGEN_ROOT, "merge_characterise_dataset/run_ggtranscript.R"))
+sapply(list.files(path = paste0(LOGEN_ROOT,"longread_QC"), pattern="*.R", full = T), source,.GlobalEnv)
 sapply(list.files(path = paste0(LOGEN_ROOT,"target_gene_annotation"), pattern="*summarise*", full = T), source,.GlobalEnv)
 
 ## ----------Theme-----------------

@@ -62,6 +62,8 @@ pGlobIsoVsRna <- list(
                              "Gene LRT statistic (Iso-Seq)", "Gene LRT statistic (RNA-Seq)", "")
 )
 
+## ----- sensitivity -------
+ptargetall <- plot_cupcake_collapse_sensitivity(class.files$targ_all,"All 20 target genes")
 
 ## ----- global Iso-Seq data C4b: differential gene and expression analysis  -----
 
