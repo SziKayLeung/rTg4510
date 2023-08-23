@@ -48,6 +48,7 @@ suppressMessages(loadfonts())
 suppressMessages(library(ggtranscript))
 suppressMessages(library(ggplot2))
 suppressMessages(library(rtracklayer))
+suppressMessages(library(rtracklayer))
 
 
 ## ----------Functions-----------------
@@ -58,6 +59,7 @@ source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/pthemes.R"))
 source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_venn.R"))
 source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_density.R"))
 source(paste0(LOGEN_ROOT, "transcriptome_stats/plot_basic_stats.R"))
+source(paste0(LOGEN_ROOT,"longread_QC/plot_cupcake_collapse_sensitivty.R"))
 source(paste0(LOGEN_ROOT, "compare_datasets/base_comparison.R"))
 source(paste0(LOGEN_ROOT, "compare_datasets/whole_vs_targeted.R"))
 source(paste0(LOGEN_ROOT, "differential_analysis/plot_transcript_level.R"))
@@ -114,8 +116,8 @@ pSensitivity <- function(classf){
     scale_x_discrete(labels = NULL, breaks = NULL) + labs(x = "XX") +
     geom_label_repel(data          = subset(dat, cumrel < 0.48),
                      size          = 4,
-                     box.padding   = 0.5,
-                     point.padding = 0.5,
+                     box.padding   = 1,
+                     point.padding = 0.1,
                      force         = 100,
                      segment.size  = 0.2,
                      segment.color = "grey50",
@@ -261,3 +263,57 @@ draw_heatmap_gene <- function(gene, cf, normCounts, type){
   
   return(p)
 }
+
+
+# recapitulate RNA-Seq and Iso-Seq at the gene level (whole transcriptome dataset)
+recapitulate_gene_level <- function(){
+  
+  # effect size up and down in global DESeq2 output at gene level 
+  GlobalDESeq$RresGeneAnno$lrt$anno_res <- GlobalDESeq$RresGeneAnno$lrt$anno_res %>% mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
+  GlobalDESeq$resGeneAnno$lrt$res_LRT_rResGeneSig <- GlobalDESeq$resGeneAnno$lrt$res_LRT %>% 
+    filter(isoform %in% GlobalDESeq$RresGeneAnno$lrt$anno_res$isoform) %>% 
+    mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
+  
+  # merge gene results from rnaseq and isoseq 
+  # differentiate log2FC and direction betwen two datasets 
+  
+  mergedGeneRep <- merge(GlobalDESeq$RresGeneAnno$lrt$anno_res %>% 
+                           select(isoform, associated_gene, log2FoldChange, direction) %>% dplyr::rename("RresLog2FC" = "log2FoldChange", "RresDirection" = "direction"),
+                         GlobalDESeq$resGeneAnno$lrt$res_LRT_rResGeneSig %>% 
+                           select(isoform, log2FoldChange, direction) %>% dplyr::rename("resLog2FC" = "log2FoldChange", "resDirection" = "direction"), 
+                         by = "isoform"
+  )
+  
+  # create new column determining if direction is consistent 
+  mergedGeneRep <- mergedGeneRep %>% mutate(effectSize = ifelse(RresDirection == resDirection, TRUE, FALSE))
+  p <- ggplot(mergedGeneRep, aes(x = RresLog2FC, y = resLog2FC)) + geom_point() + mytheme + 
+    labs(x = "RNA-Seq dataset: gene Log2FC", y = "Iso-Seq dataset: gene Log2FC")
+  
+  # binomial p-value 
+  message("Binomial test of number of genes with consisitent effect size")
+  consistentNum = nrow(subset(mergedGeneRep, effectSize == TRUE))
+  totalNum = nrow(GlobalDESeq$RresGeneAnno$lrt$anno_res)
+  consistentNum/totalNum
+  res <- binom.test(consistentNum, totalNum, alternative = c("two.sided"))
+  print(res)
+  print(res$p.value)
+  
+  # correlation 
+  message("correlation test of gene Log2FC between RNA-Seq and Iso-Seq")
+  res <- cor.test(mergedGeneRep$RresLog2FC,mergedGeneRep$resLog2FC, method = "pearson")
+  print(res)
+  print(res$p.value)
+  
+  return(p)
+}
+
+twovenndiagrams <- function(set1, set2, name1, name2){
+  p <- venn.diagram(x = list(set1,set2), 
+                    label_alpha = 0, category.names = c(name1,name2),filename = NULL, output=TRUE, lwd = 0.2,lty = 'blank', 
+                    fill = c("#B3E2CD", "#FDCDAC"), main = "\n", cex = 1,fontface = "bold",fontfamily = "ArialMT",
+                    cat.cex = 1,  cat.default.pos = "outer",  cat.col = c("#60756c", "#ba7443"),
+                    cat.pos = c(-145, 200), cat.dist = c(-0.15,-0.03),  cat.fontfamily = "ArialMT",  #rotation = 1,   main = "\n\n\n\n"
+                    print.mode = "raw")
+  return(p)
+}
+
