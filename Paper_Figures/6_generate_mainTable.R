@@ -1,0 +1,11 @@
+
+### ------------- Table 1 -------------------
+mTable1 <- Merged_gene_class_df[c("Total.Number.of.Transcripts","Total.Number.of.Known.Transcripts","Total.Number.of.Novel.Transcripts","Total.Number.of.Coding.Transcripts",
+                       "Total.Number.of.Transcripts.with.canonical.splice.sites","Total.Number.of.Transcripts.with.non.canonical.splice.sites",
+                       "A5A3","ES","IR",
+                       "Number.of.Transcripts.with.A5A3.Events","Number.of.Transcripts.with.ES.Events","Number.of.Transcripts.with.IR.Events"),]
+Table1 <- data.table::transpose(mTable1)
+colnames(Table1) <- c("All","Known","Novel","Coding","Canonical","Non canonical","A5A3","ES","IR","A5A3T","EST","IRT")
+rownames(Table1) <- colnames(mTable1)
+Table1$NonCoding <-(Table1$All-Table1$Coding)
+Table1 <- Table1 %>% select(All,Known,Novel,Coding,NonCoding,Canonical,`Non canonical`,A5A3,ES,IR,A5A3T,EST,IRT)
