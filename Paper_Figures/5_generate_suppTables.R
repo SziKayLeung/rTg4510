@@ -53,6 +53,11 @@ TSupp5 <- dplyr::bind_rows(
   formulateStats(TargetedDESeq$ontResTranAnno$wald8mosUnique) %>% dplyr::mutate(Dataset = "ONT", Model = "Wald8mos")) %>%
   dplyr::select(Dataset, Model, everything())
 
+write.table(merge(TargetedDESeq$ontResTranAnno$wald$res_Wald, class.files$targ_all[,c("isoform","associated_gene","associated_transcript")], 
+                  by = "isoform", all.x = T), paste0(dirnames$targ_output,"/TargetedDESeq_ontResTranAnno_resWald.txt"), quote = F, row.names = F, sep = "\t")
+
+write.table(merge(TargetedDESeq$ontResTranAnno$lrt$res_LRT, class.files$targ_all[,c("isoform","associated_gene","associated_transcript")], 
+                  by = "isoform", all.x = T), paste0(dirnames$targ_output,"/TargetedDESeq_ontResTranAnno_resLRT.txt"), quote = F, row.names = F, sep = "\t")
 
 ### ------------- Supplementary Table 6 -------------------
 # DIU analyses output for targeted transcriptome data
