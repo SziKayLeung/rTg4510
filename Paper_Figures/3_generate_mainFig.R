@@ -19,8 +19,6 @@ LOGEN_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
 SC_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Paper_Figures/"
 source(paste0(SC_ROOT, "0_source_functions.R"))
 source(paste0(SC_ROOT, "rTg4510_config.R"))
-source(paste0(LOGEN_ROOT, "transcriptome_stats/plot_basic_stats.R"))
-source(paste0(LOGEN_ROOT,"longread_QC/plot_cupcake_collapse_sensitivty.R"))
 output_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Mouse_Isoseq/"
 
 
@@ -28,19 +26,27 @@ output_dir = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_fi
 
 Gfap_p <- list(
   RNAGeneExp = plot_trans_exp_individual_overtime("2973",GlobalDESeq$RresGeneAnno$lrt$norm_counts,type="gene") + 
-    labs(title = "", subtitle = "RNA-Seq Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
+    theme(legend.position = c(0.15,0.9)) +
+    theme(legend.title=element_blank()) + 
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG")) +
+    labs(title = "", subtitle = "RNA-Seq Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks),
   
   IsoGeneExp = plot_trans_exp_individual_overtime("2973",GlobalDESeq$resGeneAnno$lrt$norm_counts,type="gene") + 
+    theme(legend.position = c(0.15,0.9)) +
+    theme(legend.title=element_blank()) + 
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG")) +
     labs(title = "", subtitle = "Iso-Seq Gene Expression"),
   
   tracks1 = ggTranPlots(gtf$glob_iso, class.files$glob_iso,
                         isoList = c("PB.2973.16","PB.2973.15","PB.2973.35","PB.2973.23","PB.2973.33","PB.2973.27"),
                         colours = c("#F8766D",wes_palette("Darjeeling2")[2],"#00BFC4","#7CAE00",wes_palette("GrandBudapest2")[2],wes_palette("Zissou1")[4]),
-                        lines = c("#F8766D",wes_palette("Darjeeling2")[2],"#00BFC4","gray",wes_palette("GrandBudapest2")[2],wes_palette("Zissou1")[4])) ,
+                        lines = c("#F8766D",wes_palette("Darjeeling2")[2],"#00BFC4","gray",wes_palette("GrandBudapest2")[2],wes_palette("Zissou1")[4]),
+                        gene = "Gfap"),
   
   # PB.2973.16 = red (#F8766D), PB.2973.15 = wes_palette("Darjeeling2")[2], PB.2973.35 = blue (#00BFC4)
   IsoTransExp  = plot_transexp_overtime("Gfap",GlobalDESeq$resTranAnno$lrt$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.2973.16")) + 
-    scale_colour_manual(values = c("#00BFC4","#F8766D",wes_palette("Darjeeling2")[2])) + theme(legend.position = "None") + 
+    scale_colour_manual(values = c("#00BFC4","#F8766D",wes_palette("Darjeeling2")[2])) + theme(legend.title=element_blank()) + 
+    theme(legend.position = c(0.2,0.8)) +
     labs(title = "", subtitle = "Iso-Seq Transcript Expression") +
     facet_grid(cols = vars(group), labeller = labeller(group = as_labeller(c("CONTROL" = "WT", "CASE" = "TG")))),
   
@@ -52,25 +58,45 @@ Gfap_p <- list(
   # PB.2973.16 = red, PB.2973.23 = green (#7CAE00), PB.2973.33 = purple, PB.2973.27 = yellow
   RNATransExpRanked  = plot_transexp_overtime("Gfap",GlobalDESeq$RresTranAnno$lrt$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.2973.16")) +
     scale_colour_manual(values = c("#F8766D","#7CAE00",wes_palette("Zissou1")[4],wes_palette("GrandBudapest2")[2])) + 
-    theme(legend.position = "None") + scale_y_continuous(labels = ks) +
-    labs(title = "", subtitle = "RNA-Seq Transcript Expression", y = "Normalised counts (K)") +
+    theme(legend.position = c(0.2,0.75)) +
+    theme(legend.title=element_blank()) + scale_y_continuous(labels = ks) +
+    labs(title = "", subtitle = "RNA-Seq Transcript Expression", y = "Normalized counts (K)") +
     facet_grid(cols = vars(group), labeller = labeller(group = as_labeller(c("CONTROL" = "WT", "CASE" = "TG"))))
 )
 
 
 ## ---------- Figure 3: Targeted ----------
 
+
+ApoeIso <- data.frame(
+  Isoform = unlist(ApoeIso <- list(
+    Reference = unique(gtf$ref_target[gtf$ref_target$gene_name == "Apoe" & !is.na(gtf$ref_target$transcript_id), "transcript_id"]),
+    #Reference = c("ENSMUST00000167646.8","ENSMUST00000003066.15"),
+    A5A3 = as.character(unique(ApoeA5A3[ApoeA5A3$gencode_exon == "Gencode_8","transcript_id"])[3:23]))),
+  Category = rep(names(ApoeIso), lengths(ApoeIso))
+)
+ApoeIso$colour <- c(rep(NA,length(ApoeIso$Category[ApoeIso$Category != "DTE"])))
+Apoe_p = ggTranPlots(inputgtf=gtf$targ_merged, classfiles=class.files$targ_filtered,
+                   isoList = c(as.character(ApoeIso$Isoform)),
+                   selfDf = ApoeIso, gene="Apoe", inputPfam = Targeted$pfam, 
+                   rnaseqDir=dirnames$rna_aligned, rnaseqTransID="ENSMUST00000174064.8")
+
 Targeted_p <- list(
   comp = whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[1]],
-  venn = grobTree(vennONTvsIso(class.files$targ_filtered)),
+  venn = grobTree(vennONTvsIso(class.files$targ_all)),
   cumulative = pSensitivity(class.files$targ_all),
-  num = total_num_iso(class.files$targ_filtered,""),
+  num = total_num_iso(class.files$targ_filtered,"") +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "Gene"),
   splicing = plot_summarised_AS_events(Merged_gene_class_df, dirnames$targ_anno, Targeted$ref_gencode)[[1]],
   distribution = plotIFAll(Exp=Exp$targ_ont$normAll %>% select(-associated_gene),
                            classf=class.files$targ_all,
                            pheno=phenotype$targeted_rTg4510_ont,
-                           majorIso=row.names(TargetedDIU$ontDIUGeno$keptIso)) + theme(legend.position = "None")
+                           majorIso=row.names(TargetedDIU$ontDIUGeno$keptIso))[1],
+  apoe = plot_grid(Apoe_p[[1]] + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(), 
+                             plot.margin = unit(c(0.5, 0, 0, 0), "cm")),
+                   Apoe_p[[2]] + theme(plot.margin = unit(c(0.1, 0, 0, 0.22), "cm")),ncol=1, rel_heights = c(0.85,0.15))
 )
+
 
 
 ## ---------- Figure 4: Trem2 ----------
@@ -100,19 +126,20 @@ Trem2_p <- list(
   ONTTransExp = plot_transexp_overtime("Trem2",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=3,
                                        isoSpecific=c("PB.20818.54"),setorder=c("CONTROL","CASE")) + 
     scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00")) +
-    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks)+
-    theme(legend.position = "None"),
+    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks)+
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   ONTGeneExp = plot_trans_exp_individual_overtime("20818",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
-    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
+    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("Trem2",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
               cfiles=class.files$targ_all,design="time_series",rank=3,majorIso=NULL,isoSpecific=c("PB.20818.54")),
-  tracks = ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
+  tracks = ggTranPlots(inputgtf=gtf$targ_merged,classfiles=class.files$targ_filtered,
                        isoList = c(as.character(Trem2Iso$Isoform)),
-                       selfDf = Trem2Iso, gene = "Trem2")
+                       selfDf = Trem2Iso, gene = "Trem2", inputPfam=Targeted$pfam)
   
 )
-Trem2_p$IF[[1]] <- Trem2_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE) 
-Trem2_p$IF[[2]] <- Trem2_p$IF[[2]] + labs(title = "")
+Trem2_p$IF[[1]] <- Trem2_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE) Trem2_p$IF[[2]] <- Trem2_p$IF[[2]] + labs(title = "")
 
 
 ## ---------- Figure 5: Bin1 ---------
@@ -134,19 +161,21 @@ Bin1_p <- list(
   dendro = plot_dendro_Tgene(dirnames$targ_anno, "Bin1"),
   ES = plot_ES_Tgene(dirnames$targ_anno,"Bin1",class.files$targ_filtered)[[1]],
   ONTGeneExp  = plot_trans_exp_individual_overtime("22007",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
-    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
+    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   ONTTransExp = plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=2,isoSpecific=c("PB.22007.224"),
                                        setorder=c("CONTROL","CASE")) + 
-    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks) +
+    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
     scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00")) +
-    theme(legend.position = "None"),
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("Bin1",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
               cfiles=class.files$targ_all,design="time_series",majorIso=NULL,isoSpecific=c("PB.22007.224","PB.22007.99","PB.22007.176")),
-  tracks = ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
+  tracks = ggTranPlots(inputgtf=gtf$targ_merged, classfiles=class.files$targ_filtered,
                        isoList = c(as.character(Bin1Iso$Isoform)),
-                       selfDf = Bin1Iso, gene = "Bin1")
+                       selfDf = Bin1Iso, gene = "Bin1", inputPfam=Targeted$pfam)
 )
-Bin1_p$IF[[1]] <- Bin1_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE)   
+Bin1_p$IF[[1]] <- Bin1_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE)
 Bin1_p$IF[[2]] <- Bin1_p$IF[[2]] + labs(title = "")
 
 
@@ -172,16 +201,18 @@ Clu_p <- list(
   ES = plot_ES_Tgene(dirnames$targ_anno,"Clu",class.files$targ_filtered)[[1]],
   IR = plot_IR_Tgene(dirnames$targ_anno,"Clu",class.files$targ_filtered)[[2]],
   ONTTransExp = plot_transexp_overtime("Clu",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=1,isoSpecific=c("PB.14646.39341"),setorder=c("CONTROL","CASE"))+
-    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks)  +
+    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks)  +
     scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4")) +
-    theme(legend.position = "None"),
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   ONTGeneExp = plot_trans_exp_individual_overtime("14646",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
-    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
+    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("Clu",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
               cfiles=class.files$targ_all,design="time_series",rank=NULL,majorIso=NULL,isoSpecific=c("PB.14646.139","PB.14646.60837","PB.14646.39341")),
   tracks = ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
                        isoList = c(as.character(CluIso$Isoform)),
-                       selfDf = CluIso, gene = "Clu")
+                       selfDf = CluIso, gene = "Clu", inputPfam=Targeted$pfam)
 )
 Clu_p$IF[[1]] <- Clu_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE)   
 Clu_p$IF[[2]] <- Clu_p$IF[[2]] + labs(title = "")
@@ -206,11 +237,13 @@ App_p <- list(
   ES = plot_ES_Tgene(dirnames$targ_anno,"App",class.files$targ_filtered)[[1]],
   dendro = plot_dendro_Tgene(dirnames$targ_anno, "App"),
   ONTTransExp = plot_transexp_overtime("App",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=3,setorder=c("CONTROL","CASE")) +
-    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks) +
+    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
     scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00")) +
-    theme(legend.position = "None"),
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   ONTGeneExp = plot_trans_exp_individual_overtime("19309",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
-    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
+    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("App",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
               cfiles=class.files$targ_all,design="time_series",rank=3,majorIso=NULL),
   tracks = ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
@@ -240,11 +273,13 @@ Apoe_p <- list(
   dendro = plot_dendro_Tgene(dirnames$targ_anno, "Apoe"),
   A5A3 = plot_A5A3_Tgene(dirnames$targ_anno,"Apoe") + theme(legend.position = c(0.3,0.8)),
   ONTTransExp = plot_transexp_overtime("Apoe",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=3,setorder=c("CONTROL","CASE")) +
-    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks) +
+    labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
     scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00")) +
-    theme(legend.position = "None"),
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   ONTGeneExp = plot_trans_exp_individual_overtime("40586",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
-    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalised counts (K)") + scale_y_continuous(labels = ks),
+    labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
+    scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("Apoe",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
               cfiles=class.files$targ_all,design="time_series",rank=3,majorIso=NULL),
   tracks = ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
@@ -258,47 +293,51 @@ Apoe_p$IF[[2]] <- Apoe_p$IF[[2]] + labs(title = "")
 
 pdf(paste0(output_dir,"/MainFigures2.pdf"), width = 10, height = 12)
 plot_grid(
-plot_grid(plotlist = Gfap_p[1:2], labels = c("A","B")),
+plot_grid(plotlist = Gfap_p[2:1], labels = c("A","B")),
 plot_grid(Gfap_p$tracks1,labels=c("C")),
-plot_grid(Gfap_p$RNATransExpRanked,Gfap_p$IsoTransExp, labels = c("D","E")), ncol = 1
+plot_grid(Gfap_p$IsoTransExp, Gfap_p$RNATransExpRanked, labels = c("D","E")), ncol = 1
 )
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures3.pdf"), width = 15, height = 15)
+pdf(paste0(output_dir,"/MainFigures3.pdf"), width = 15, height = 20)
 plot_grid(plot_grid(Targeted_p$comp,Targeted_p$cumulative,Targeted_p$venn,nrow=1,labels=c("A","B","C"),rel_widths = c(0.4,0.3,0.3)),
-          plot_grid(Targeted_p$distribution,Targeted_p$n,nrow=1,labels=c("D","E"),rel_widths = c(0.6,0.4)),
-          plot_grid(Targeted_p$splicing,nrow=1,labels=c("F")),nrow=3, rel_heights = c(0.3,0.4,0.3))
+          plot_grid(Targeted_p$distribution[[1]],Targeted_p$n,nrow=1,labels=c("D","E"),rel_widths = c(0.6,0.4)),
+          plot_grid(Targeted_p$apoe, labels = c("F")),
+          plot_grid(Targeted_p$splicing,nrow=1,labels=c("G")),
+          nrow=4, rel_heights = c(0.2,0.25,0.4,0.15))
 dev.off()
 
 pdf(paste0(output_dir,"/MainFigures4.pdf"), width = 18, height = 12)
 plot_grid(plot_grid(
             plot_grid(Trem2_p$dendro,Trem2_p$pheat$gtable,nrow=1, rel_widths = c(0.5,0.5), labels = c("A","B")),
-            plot_grid(Trem2_p$ONTTransExp,Trem2_p$ONTGeneExp,nrow=1, rel_widths = c(0.6,0.4), labels = c("D","E")),
-            plot_grid(Trem2_p$IF[[1]],Trem2_p$IF[[2]],nrow=1, rel_widths = c(0.6,0.4),labels = c("F","G")), ncol = 1),
+            plot_grid(Trem2_p$ONTTransExp,Trem2_p$ONTGeneExp,nrow=1, rel_widths = c(0.55,0.45), labels = c("D","E")),
+            plot_grid(Trem2_p$IF[[1]],Trem2_p$IF[[2]],nrow=1, rel_widths = c(0.55,0.45),labels = c("F","G")), ncol = 1),
           Trem2_p$tracks,
-          ncol = 2, rel_widths = c(0.5,0.5), labels = c("","C")
+          ncol = 2, rel_widths = c(0.55,0.45), labels = c("","C")
 )
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures5.pdf"), width = 18, height = 14)
+pdf(paste0(output_dir,"/MainFigures5.pdf"), width = 18, height = 12)
 plot_grid(plot_grid(
-  plot_grid(Bin1_p$dendro,Bin1_p$ES,ncol=1,labels = c("A","B")),
-  plot_grid(Bin1_p$ONTTransExp, Bin1_p$ONTGeneExp,rel_widths = c(0.6,0.4),labels = c("D","E")),
-  plot_grid(Bin1_p$IF[[1]], Bin1_p$IF[[2]],rel_widths = c(0.6,0.4),labels = c("F","G")),
+  plot_grid(Clu_p$dendro, nrow = 1, labels = c("A")),
+  plot_grid(Clu_p$ONTTransExp,Clu_p$ONTGeneExp, nrow = 1, rel_widths = c(0.6,0.4), labels = c("C","D")),
+  plot_grid(Clu_p$IF[[1]],Clu_p$IF[[2]], nrow = 1, rel_widths = c(0.6,0.4), labels = c("E","F")), ncol = 1), Clu_p$tracks, 
+  ncol = 2, rel_widths = c(0.6,0.4), labels = c("","C"))
+dev.off()
+
+pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 23, height = 16)
+plot_grid(plot_grid(
+  plot_grid(Bin1_p$dendro,Bin1_p$ES,ncol=1,labels = c("A","B"),rel_heights = c(0.5,0.5)),
+  plot_grid(Bin1_p$ONTTransExp, Bin1_p$ONTGeneExp,rel_widths = c(0.55,0.45),labels = c("D","E")),
+  plot_grid(Bin1_p$IF[[1]], Bin1_p$IF[[2]],rel_widths = c(0.55,0.45),labels = c("F","G")),
   ncol = 1, rel_heights = c(0.45,0.275,0.275)), Bin1_p$tracks,
-  ncol = 2, rel_widths = c(0.5,0.5), labels = c("","C")
+  ncol = 2, rel_widths = c(0.6,0.4), labels = c("","C")
 )
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 18, height = 12)
-plot_grid(plot_grid(
-    plot_grid(Clu_p$dendro,Clu_p$ES, nrow = 1, labels = c("A","B")),
-    plot_grid(Clu_p$ONTTransExp,Clu_p$ONTGeneExp, nrow = 1, rel_widths = c(0.6,0.4), labels = c("D","E")),
-    plot_grid(Clu_p$IF[[1]],Clu_p$IF[[2]], nrow = 1, rel_widths = c(0.6,0.4), labels = c("F","G")), ncol = 1), Clu_p$tracks, 
-  ncol = 2, rel_widths = c(0.5,0.5), labels = c("","C"))
-dev.off()
 
-pdf(paste0(output_dir,"/MainFigures7.pdf"), width = 18, height = 12)
+
+pdf(paste0(output_dir,"/MainFigures7.pdf"), width = 20, height = 12)
 plot_grid(plot_grid(
     plot_grid(App_p$dendro,App_p$ES, nrow = 1, labels = c("A","B")),
     plot_grid(App_p$ONTTransExp,App_p$ONTGeneExp, nrow = 1, rel_widths = c(0.6,0.4), labels = c("D","E")),
