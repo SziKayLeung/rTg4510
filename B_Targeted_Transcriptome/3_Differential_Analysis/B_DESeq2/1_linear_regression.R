@@ -89,6 +89,7 @@ ontResTranEffects
 # run DESeq2
 isoResTran <- list(
   wald = run_DESeq2(test="Wald",input$isoExpression,input$isoPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="On"),
+  waldoff = run_DESeq2(test="Wald",input$isoExpression,input$isoPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="Off"),
   waldgenotype = run_DESeq2(input$isoExpression,input$isoPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald"),
   lrt = run_DESeq2(test="LRT",input$isoExpression,input$isoPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="On"),
   wald8mos = run_DESeq2(input$isoExpression,input$isomos8Phenotype,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald")
