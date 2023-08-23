@@ -52,7 +52,7 @@ input$ontPhenotype <- read.table(input_files$ontPhenotype, sep = "\t", header = 
 input$isoPhenotype <- read.table(input_files$isoPhenotype, sep = "\t", header = T) %>% mutate(sample = str_replace(sample, "FL.", "Iso.Seq_"))
 input$classfiles <- SQANTI_class_preparation(input_files$classfiles,"ns")
 input$expression <- read.csv(input_files$expression) %>% .[.$isoform != "0",] %>% filter(isoform %in% input$classfiles$isoform)
-
+input$matchedOntPhenotype <- input$ontPhenotype %>% filter(!sample %in% c("ONT_Q20","ONT_Q18"))
 
 # datawrangle for input to run_DESeq2()
 # keep only ONT counts or Iso-Seq counts
@@ -72,8 +72,9 @@ rownames(input$gene_expression) <- input$gene_expression$associated_gene
 # run DESeq2
 ontResTran <- list(
   wald = run_DESeq2(test="Wald",input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="On"),
+  waldoff = run_DESeq2(test="Wald",input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="Off"),
   lrt = run_DESeq2(test="LRT",input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="time_series",interaction="On"),
-  waldgenotype = run_DESeq2(input$ontExpression,input$ontPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald"),
+  waldgenotype = run_DESeq2(input$ontExpression,input$matchedOntPhenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald"),
   wald8mos = run_DESeq2(input$ontExpression,input$ontmos8Phenotype,threshold=10,exprowname="isoform",controlname="CONTROL",design="case_control",interaction="On",test="Wald")
 )
 
