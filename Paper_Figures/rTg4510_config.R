@@ -15,6 +15,9 @@ wholesamples <- c("K17","K18","K23","K24","L22","M21","O18","O23","Q20","Q21","S
 wholeTG <- c("K18","K24", "L22","O18","Q20","S18")
 wholeWT <- setdiff(wholesamples, wholeTG)
 
+whole2mos <- c("K17","M21","Q21","K18","O18","S18")
+whole8mos <- setdiff(wholesamples, whole2mos)
+
 targetedWT <- c("K19","K23","K21","K17","S19","M21","O23","P19","Q21","S23","Q17","Q23")
 targetedTG <- c("K18","K20","K24","L22","O18","O22","T20","Q20","S18","Q18","L18","T18")
 
@@ -38,6 +41,9 @@ dirnames <- list(
   #targ_anno = paste0(root_dir,"rTg4510/F_ONT_Targeted/thesis_dump/TALON/All/Merged/TargetGenes")
   targ_anno = paste0(root_dir,"rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_characterise/TargetGenes"),
   targ_output = paste0(root_dir, "/rTg4510/01_figures_tables/Targeted_Transcriptome"),
+  
+  # rnaseq 
+  rna_aligned = paste0(root_dir,"rTg4510/C_RNASeq/2_aligned/All"),
   
   # miscellaneous
   references = paste0(root_dir,"references/annotation")
@@ -178,8 +184,10 @@ Targeted <- list(
   ref_altcon = read.csv(paste0(dirnames$targ_root, "/4_characterise/TargetGenesRef/TargetGene_Reference_AltConExons.csv")),
   
   # ont abundance 
-  ont_abundance = class.files$targ_filtered %>% dplyr::select(isoform, contains("ONT")) %>% mutate(annot_transcript_id = isoform)
+  ont_abundance = class.files$targ_filtered %>% dplyr::select(isoform, contains("ONT")) %>% mutate(annot_transcript_id = isoform),
   
+  # pfam 
+  pfam = read.csv(paste0(dirnames$targ_iso_metadata,"/TargetDomains.csv"))
 )
 names(Targeted$Gene_class) = lapply(list.files(path = dirnames$targ_anno, pattern = "Final_Transcript_Classifications.csv", recursive = TRUE), 
                                     function(x) word(x, c(1), sep = fixed("/")))
@@ -215,6 +223,9 @@ gtf <- lapply(gtf, function(x) as.data.frame(x))
 
 gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")] ,
                          gtf$ref_target[,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
+
+gtf$targ_merged <- gtf$targ_merged %>% mutate(co = paste0(seqnames,":",start,"-",end))
+
 
 ## ---------------------------
 # TAPPAS (Differential Analysis) 
