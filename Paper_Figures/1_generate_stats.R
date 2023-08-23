@@ -25,18 +25,36 @@ source(paste0(SC_ROOT, "rTg4510_config.R"))
 
 # mean number of genes
 cat("Mean number of genes:", mean(sapply(sub_class.files, function(x) length(unique(x[["associated_gene"]])))),"\n")
+cat("StDev number of genes:", sd(sapply(sub_class.files, function(x) length(unique(x[["associated_gene"]])))),"\n")
 cat("Mean number of genes in WT samples:", mean(sapply(sub_class.files[wholeWT], function(x) length(unique(x[["associated_gene"]])))),"\n")
+cat("StDev number of genes in WT samples:", sd(sapply(sub_class.files[wholeWT], function(x) length(unique(x[["associated_gene"]])))),"\n")
 cat("Mean number of genes in TG samples:", mean(sapply(sub_class.files[wholeTG], function(x) length(unique(x[["associated_gene"]])))),"\n")
+cat("StDev number of genes in TG samples:", sd(sapply(sub_class.files[wholeTG], function(x) length(unique(x[["associated_gene"]])))),"\n")
+
+cat("Mean number of genes in 2 months samples:", mean(sapply(sub_class.files[whole2mos], function(x) length(unique(x[["associated_gene"]])))),"\n")
+cat("StDev number of genes in 2 months samples:", sd(sapply(sub_class.files[whole2mos], function(x) length(unique(x[["associated_gene"]])))),"\n")
+cat("Mean number of genes in 8 months samples:", mean(sapply(sub_class.files[whole8mos], function(x) length(unique(x[["associated_gene"]])))),"\n")
+cat("StDev number of genes in 8 months samples:", sd(sapply(sub_class.files[whole8mos], function(x) length(unique(x[["associated_gene"]])))),"\n")
 
 # mean number of isoforms
 cat("Mean number of isoforms:", mean(sapply(sub_class.files, function(x) nrow(x))),"\n")
+cat("StDev number of isoforms:", sd(sapply(sub_class.files, function(x) nrow(x))),"\n")
 cat("Mean number of isoforms in WT samples:", mean(sapply(sub_class.files[wholeWT], function(x) nrow(x))),"\n")
+cat("StDev number of isoforms in WT samples:", sd(sapply(sub_class.files[wholeWT], function(x) nrow(x))),"\n")
 cat("Mean number of isoforms in TG samples:", mean(sapply(sub_class.files[wholeTG], function(x) nrow(x))),"\n")
+cat("StDev number of isoforms in TG samples:", sd(sapply(sub_class.files[wholeTG], function(x) nrow(x))),"\n")
+
+cat("Mean number of isoforms in 2 months samples:", mean(sapply(sub_class.files[whole2mos], function(x) nrow(x))),"\n")
+cat("StDev number of isoforms in 2 months samples:", sd(sapply(sub_class.files[whole2mos], function(x) nrow(x))),"\n")
+cat("Mean number of isoforms in 8 months samples:", mean(sapply(sub_class.files[whole8mos], function(x) nrow(x))),"\n")
+cat("StDev number of isoforms in 8 months samples:", sd(sapply(sub_class.files[whole8mos], function(x) nrow(x))),"\n")
+
 
 # mean descriptives
 cat("Mean isoform length in all samples:", mean(class.files$glob_iso$length), "\n")
+cat("StDev isoform length in all samples:", sd(class.files$glob_iso$length), "\n")
 cat("Mean number of exons in all samples:", mean(class.files$glob_iso$exons), "\n")
-cat("Mean number of exons in all samples:", mean(class.files$glob_iso$exons), "\n")
+cat("StDev number of exons in all samples:", sd(class.files$glob_iso$exons), "\n")
 cat("Mean number of exons in all samples:", mean(as.data.frame(class.files$glob_iso %>% group_by(associated_gene) %>% tally())$n), "\n")
 
 # Global data 
@@ -54,10 +72,10 @@ for(i in c("PB.2973.16","PB.7022.9")){
   cat("***************** Transcript level\n")
   cat("RNA-Seq gene level statistics for", i, "\n")
   print(GlobalDESeq$RresTranAnno$lrt$anno_res %>% filter(isoform == i))
-  print(GlobalDESeq$RresTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(LRTPvalue, LRTStatistic))
+  print(GlobalDESeq$RresTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(groupCASE.time8, LRTPvalue, LRTStatistic))
   cat("Iso-Seq gene level statistics for", i, "\n")
   print(GlobalDESeq$resTranAnno$lrt$anno_res %>% filter(isoform == i))
-  print(GlobalDESeq$resTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(LRTPvalue, LRTStatistic))
+  print(GlobalDESeq$resTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(groupCASE.time8, LRTPvalue, LRTStatistic))
 }
 
 cat("Total number of reads in filterd dataset (ONT and Iso-Seq combined):", round(sum(class.files$targ_filtered$nreads)/1000000,2),"million \n")
@@ -77,16 +95,24 @@ wholevsTargeted <- whole_vs_targeted_plots(class.files$iso_match,paste0("FL.Whol
 cat("Number of isoforms detected by both whole and targeted, whole only and unique only\n:")
 wholevsTargetedTally <- wholevsTargeted %>% group_by(dataset) %>% tally()
 wholevsTargetedTally
-cat("Ratio of targeted to whole transcriptome of detecting transcripts associated to target genes:", as.numeric(wholevsTargetedTally[wholevsTargetedTally$dataset == "Targeted","n"]/wholevsTargetedTally[wholevsTargetedTally$dataset == "Whole","n"]))
+cat("Ratio of targeted to whole transcriptome of detecting transcripts associated to target genes:", 
+    as.numeric(sum(wholevsTargetedTally[wholevsTargetedTally$dataset != "Whole","n"])/
+                 sum(wholevsTargetedTally[wholevsTargetedTally$dataset != "Targeted","n"])))
 # wholevsTargeted %>% group_by(dataset) %>% tally(sumWhole)
 # wholevsTargeted %>% group_by(dataset) %>% tally(sumTargeted)
 
+recapitulate_gene_level()
+
 ## ---------- Merged Targeted Iso-Seq and ONT datasets -----------------
 
-class.files$targ_filtered %>% filter(dataset == "ONT") %>% nrow()
-class.files$targ_all %>% filter(dataset == "Both") %>% nrow()
-class.files$targ_all %>% filter(dataset == "Iso-Seq") %>% nrow()
-
+cat("Total number of transcripts before filtering:", nrow(class.files$targ_all),"\n")
+cat("Total number of unique ONT transcripts before filtering:", class.files$targ_all %>% filter(Dataset == "ONT") %>% nrow(),"\n")
+cat("% of unique ONT transcripts before filtering:", class.files$targ_all %>% filter(Dataset == "ONT") %>% nrow()/nrow(class.files$targ_all),"\n")
+cat("Total number of Iso-Seq transcripts before filtering:", class.files$targ_all %>% filter(Dataset != "ONT") %>% nrow(), "\n")
+cat("Total number of Iso-Seq transcripts also detected in ONT before filtering:", class.files$targ_all %>% filter(Dataset == "Both") %>% nrow(), "\n")
+cat("% of Iso-Seq transcripts detected in ONT", class.files$targ_all %>% filter(Dataset == "Both") %>% nrow()/class.files$targ_all %>% filter(Dataset != "ONT") %>% nrow())
+cat("% of ONT transcripts detected in Iso-Seq", class.files$targ_all %>% filter(Dataset == "Both") %>% nrow()/class.files$targ_all %>% filter(Dataset != "Iso-seq") %>% nrow())
+    
 nrow(class.files$targ_all)
 nrow(class.files$targ_all %>% filter(associated_transcript != "novel"))
 nrow(class.files$targ_all %>% filter(associated_transcript == "novel"))
@@ -95,19 +121,30 @@ nrow(class.files$targ_filtered)
 nrow(class.files$targ_filtered %>% filter(associated_transcript != "novel"))
 nrow(class.files$targ_filtered %>% filter(associated_transcript == "novel"))
 
-class.files$targ_filtered %>% filter(dataset == "ONT") %>% nrow()
-class.files$targ_filtered %>% filter(dataset == "Iso-Seq") %>% nrow()
+class.files$targ_filtered %>% filter(Dataset == "ONT") %>% nrow()
+class.files$targ_filtered %>% filter(Dataset == "Iso-Seq") %>% nrow()
+class.files$targ_filtered %>% filter(Dataset == "Both") %>% nrow()
 
 nrow(class.files$targ_all %>% filter(nreads < 10))
 
 # summary
 all_summarise_gene_stats(Targeted$Gene_class, class.files$targ_filtered, Targeted$cpat, Targeted$noORF, Targeted$Genes)
 
-# mean number of isoforms 
-mean(as.data.frame(class.files$targ_filtered %>% group_by(associated_gene) %>% tally())$n)
+# median number of isoforms 
+median(as.data.frame(class.files$targ_filtered %>% group_by(associated_gene) %>% tally())$n)
 class.files$targ_filtered %>% group_by(associated_gene) %>% tally() %>% arrange(n)
 class.files$targ_filtered %>% mutate(noveltrans = ifelse(associated_transcript == "novel","novel","known")) %>% 
   group_by(associated_gene, noveltrans) %>% tally() %>% arrange(n)
+
+# isoform fraction 
+statsIFAll <- plotIFAll(Exp=Exp$targ_ont$normAll %>% select(-associated_gene),
+          classf=class.files$targ_all,
+          pheno=phenotype$targeted_rTg4510_ont,
+          majorIso=row.names(TargetedDIU$ontDIUGeno$keptIso))[2][[1]]
+
+statsIFAllMajor <- statsIFAll %>% filter(structural_category != "minor") %>% group_by(associated_gene) %>% tally()
+mean(statsIFAllMajor$n)
+sd(statsIFAllMajor$n)
 
 # Targeted stats 
 totaln = sum(Merged_gene_class_df["Total.Number.of.Transcripts",])
@@ -126,6 +163,11 @@ IR_tab_exonoverlap <- input_FICLE_splicing_results(dirnames$targ_anno, "IntronRe
 cat("Number of IR events overlapping 2 or more exons:", nrow(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps >= 2,]), "\n") 
 cat("Number of IR events overlapping 5 exons:", nrow(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps == 5,]), "\n") 
 cat("Proportion of IR events overlapping 2 or more exons:", nrow(IR_tab_exonoverlap[IR_tab_exonoverlap$IRNumExonsOverlaps >= 2,])/sum(Merged_gene_class_df["IR",]) * 100, "\n") 
+
+
+# Apoe
+subset(Targeted$ref_gencode, associated_gene == "Apoe")["MaxGeneLength"]
+subset(Targeted$ref_gencode, associated_gene == "Apoe")["Maxexons"]
 
 ## ---------- Differential isoform expression analyis - Targeted -----------------
 
@@ -148,7 +190,7 @@ reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$anno_res,stats=TargetedDES
 # Replication with Iso-Seq
 # Calculate the adjusted threshold 
 num_tests = nrow(TargetedDESeq$ontResTranAnno$wald$anno_res)
-threshold <- 0.1 * num_tests
+threshold <- 0.05 / num_tests
 TargetedDESeq$isoResTranAnno$wald$res$significant <- TargetedDESeq$isoResTranAnno$wald$res$pvalue <= threshold
 replicatedIso = intersect(TargetedDESeq$isoResTranAnno$wald$res[TargetedDESeq$isoResTranAnno$wald$res$significant == TRUE,"isoform"], 
           TargetedDESeq$ontResTranAnno$wald$anno_res$isoform)
@@ -162,7 +204,9 @@ replicatedVals = rbind(TargetedDESeq$isoResTranAnno$wald$stats_Wald %>% rownames
   spread(., dataset,group_CASE_vs_CONTROL) 
 #ggplot(replicatedVals, aes(x = ONT, y = IsoSeq)) + geom_point()
 cor.test(replicatedVals$IsoSeq, replicatedVals$ONT, method = "spearman")
-  
+
+res <- binom.test(consistentNum, totalNum, alternative = c("two.sided"))
+res$p.value
 
 ## ---------- Differential isoform usage analysis - Targeted -----------------
 
@@ -213,6 +257,12 @@ cat("Number of transcripts with IR in CLAP domain:",nrow(unique(Bin1FICLE$Intron
 
 # dominant isoform = novel isoform
 #View(class.files$targ_all[class.files$targ_all$associated_gene == "Bin1",c("isoform","nreads","ONT_sum_FL","Iso.Seq_sum_FL")])
+#sum(class.files$targ_all[class.files$targ_all$associated_gene == "Bin1","ONT_sum_FL"])
+36593/sum(class.files$targ_all[class.files$targ_all$associated_gene == "Bin1","ONT_sum_FL"]) * 100
+16624/sum(class.files$targ_all[class.files$targ_all$associated_gene == "Bin1","ONT_sum_FL"]) * 100
+8739/sum(class.files$targ_all[class.files$targ_all$associated_gene == "Bin1","Iso.Seq_sum_FL"]) * 100
+4105/sum(class.files$targ_all[class.files$targ_all$associated_gene == "Bin1","Iso.Seq_sum_FL"]) * 100
+
 Bin1Isoforms = c("PB.22007.101","PB.22007.224","PB.22007.99","PB.22007.861","PB.22007.45098","PB.22007.176")
 class.files$targ_all[class.files$targ_all$isoform == "PB.22007.101",c("ONT_sum_FL","Iso.Seq_sum_FL")]
 class.files$targ_all[class.files$targ_all$isoform %in% Bin1Isoforms, c("structural_category","associated_gene","associated_transcript","subcategory")]
@@ -237,8 +287,9 @@ cat("Number of Clu transcripts with Gencode 1 as first exon:",nrow(CluFirstExon)
 
 # Differential transcript and gene expression statistics
 CluIso = c("PB.14646.139","PB.14646.60837","PB.14646.68849","PB.14646.39341")
-class.files$targ_all[class.files$targ_all$isoform %in% OtherIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
+class.files$targ_all[class.files$targ_all$isoform %in% CluIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=CluIso)
+reportStats(res=TargetedDESeq$ontResTranAnno$wald$res_Wald, stats=TargetedDESeq$ontResTran$wald$stats_Wald, isoList=CluIso)
 reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("14646"))
 
 
