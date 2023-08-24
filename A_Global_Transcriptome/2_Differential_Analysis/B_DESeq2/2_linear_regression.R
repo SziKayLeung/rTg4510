@@ -90,8 +90,9 @@ resGeneAnno <- lapply(resGene, function(x) anno_DESeq2(x,input$classfiles,input$
 
 # run DESeq2
 resTran <- list(
-  wald = run_DESeq2(test="Wald",input$expression,input$phenotype,threshold=10,exprowname="id",controlname="CONTROL",interaction="On"),
-  lrt = run_DESeq2(test="LRT",input$expression,input$phenotype,threshold=10,exprowname="id",controlname="CONTROL",interaction="On")
+  wald = run_DESeq2(test="Wald",input$expression,input$phenotype,threshold=10,exprowname="id",controlname="CONTROL",design="time_series",interaction="On"),
+  waldgenotype = run_DESeq2(test="Wald",input$expression,input$phenotype,threshold=10,exprowname="id",controlname="CONTROL",design="case_control"),
+  lrt = run_DESeq2(test="LRT",input$expression,input$phenotype,threshold=10,exprowname="id",controlname="CONTROL",design="time_series",interaction="On")
 )
 
 # annotate results and filter at 0.05
@@ -107,8 +108,9 @@ resTranEffects
 
 # results from running DESeq2
 RresTran <- list(
-  wald = run_DESeq2(test="Wald",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",interaction="On"),
-  lrt = run_DESeq2(test="LRT",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",interaction="On")
+  wald = run_DESeq2(test="Wald",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",design="time_series",interaction="On"),
+  waldgenotype = run_DESeq2(test="Wald",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",design="case_control",interaction="On"),
+  lrt = run_DESeq2(test="LRT",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",design="time_series",interaction="On")
 )
 
 # annotate results
