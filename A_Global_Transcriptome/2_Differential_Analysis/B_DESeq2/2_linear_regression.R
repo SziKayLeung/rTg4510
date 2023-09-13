@@ -109,7 +109,6 @@ resTranEffects
 # results from running DESeq2
 RresTran <- list(
   wald = run_DESeq2(test="Wald",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",design="time_series",interaction="On"),
-  waldgenotype = run_DESeq2(test="Wald",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",design="case_control",interaction="On"),
   lrt = run_DESeq2(test="LRT",input$rnaseq_expression,input$rnaseq_phenotype,threshold=10,exprowname="X",controlname="CONTROL",design="time_series",interaction="On")
 )
 
