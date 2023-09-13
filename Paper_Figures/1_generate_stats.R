@@ -61,21 +61,21 @@ cat("Mean number of exons in all samples:", mean(as.data.frame(class.files$glob_
 for(i in c("Gfap","C4b")){
   cat("***************** Gene level\n")
   cat("RNA-Seq gene level statistics for", i, "\n")
-  print(GlobalDESeq$RresGeneAnno$lrt$anno_res %>% filter(associated_gene == i))
-  print(GlobalDESeq$RresGeneAnno$lrt$stats_LRT %>% filter(associated_gene == i) %>% select(associated_gene, LRTStatistic))
+  print(GlobalDESeq$RresGeneAnno$wald$anno_res %>% filter(associated_gene == i))
+  print(GlobalDESeq$RresGeneAnno$wald$stats_Wald %>% filter(associated_gene == i) %>% select(associated_gene, WaldStatistic_groupCASE.time8))
   cat("Iso-Seq gene level statistics for", i, "\n")
-  print(GlobalDESeq$resGeneAnno$lrt$anno_res %>% filter(associated_gene == i))
-  print(GlobalDESeq$resGeneAnno$lrt$stats_LRT %>% filter(associated_gene == i) %>% select(associated_gene, LRTStatistic))
+  print(GlobalDESeq$resGeneAnno$wald$anno_res %>% filter(associated_gene == i))
+  print(GlobalDESeq$resGeneAnno$wald$stats_Wald %>% filter(associated_gene == i) %>% select(associated_gene, WaldStatistic_groupCASE.time8))
 }
 
 for(i in c("PB.2973.16","PB.7022.9")){
   cat("***************** Transcript level\n")
   cat("RNA-Seq gene level statistics for", i, "\n")
-  print(GlobalDESeq$RresTranAnno$lrt$anno_res %>% filter(isoform == i))
-  print(GlobalDESeq$RresTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(groupCASE.time8, LRTPvalue, LRTStatistic))
+  #print(GlobalDESeq$RresTranAnno$wald$anno_res %>% filter(isoform == i))
+  #print(GlobalDESeq$RresTranAnno$wald$stats_LRT %>% filter(rownames(.) == i) %>% select(groupCASE.time8, LRTPvalue, LRTStatistic))
   cat("Iso-Seq gene level statistics for", i, "\n")
-  print(GlobalDESeq$resTranAnno$lrt$anno_res %>% filter(isoform == i))
-  print(GlobalDESeq$resTranAnno$lrt$stats_LRT %>% filter(rownames(.) == i) %>% select(groupCASE.time8, LRTPvalue, LRTStatistic))
+  print(GlobalDESeq$resTranAnno$wald$anno_res %>% filter(isoform == i))
+  print(GlobalDESeq$resTranAnno$wald$stats_Wald %>% filter(rownames(.) == i) %>% select(WaldPvalue_groupCASE.time8))
 }
 
 cat("Total number of reads in filterd dataset (ONT and Iso-Seq combined):", round(sum(class.files$targ_filtered$nreads)/1000000,2),"million \n")
@@ -85,10 +85,13 @@ TargetedMergedCouts <- list(
 )
 lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset, variable) %>% tally(value) %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(n)))
 lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset) %>% dplyr::summarize(mean_value = mean(value)))
+lapply(TargetedMergedCouts, function(x) x %>% group_by(variable) %>% tally(value) %>% dplyr::summarize(mean_value = mean(n)))
 
 TargetedMergedCoutsc <- lapply(TargetedMergedCouts, function(x) x %>% group_by(dataset, variable) %>% tally(value) %>% group_by(dataset)) %>% bind_rows(.id = "group")
+TargetedMergedCoutsc %>% group_by(group) %>% dplyr::summarize(mean_value = mean(n))
 wilcox.test(n~ group, data = TargetedMergedCoutsc[TargetedMergedCoutsc$dataset == "Iso.Seq",], exact = FALSE)
 wilcox.test(n~ group, data = TargetedMergedCoutsc[TargetedMergedCoutsc$dataset == "ONT",], exact = FALSE)
+wilcox.test(n~ group, data = TargetedMergedCoutsc, exact = FALSE)
 
 cat("Number of matched samples in Whole vs Targeted Transcriptome:", length(wholesamples), "\n")
 wholevsTargeted <- whole_vs_targeted_plots(class.files$iso_match,paste0("FL.WholeIso", wholesamples), paste0("FL.TargetedIso", wholesamples), TargetGene)[[3]]
@@ -100,6 +103,13 @@ cat("Ratio of targeted to whole transcriptome of detecting transcripts associate
                  sum(wholevsTargetedTally[wholevsTargetedTally$dataset != "Targeted","n"])))
 # wholevsTargeted %>% group_by(dataset) %>% tally(sumWhole)
 # wholevsTargeted %>% group_by(dataset) %>% tally(sumTargeted)
+
+# fisher's exact test
+data <- matrix(c(815, 440, 15, 440), nrow = 2)
+rownames(data) <- c("Unique_Transcripts", "Not_Unique_Transcripts")
+colnames(data) <- c("Targeted_Sequencing", "Whole_Transcriptome_Sequencing")
+res <- fisher.test(data)
+res$p.value
 
 recapitulate_gene_level()
 
@@ -171,8 +181,9 @@ subset(Targeted$ref_gencode, associated_gene == "Apoe")["Maxexons"]
 
 ## ---------- Differential isoform expression analyis - Targeted -----------------
 
-# Differentially expressed across genotype
+# Differentially expressed across pathology
 reportStats(res=TargetedDESeq$ontResTranAnno$wald$anno_res,stats=TargetedDESeq$ontResTranAnno$wald$stats_Wald, isoList=c("PB.14646.139","PB.20818.54"))
+unique(TargetedDESeq$ontResTranAnno$wald$anno_res$associated_gene)
 
 # isoform detected in wald across age, and not at 8 months
 setdiff(TargetedDESeq$ontResTranAnno$wald$anno_res$isoform,TargetedDESeq$ontResTranAnno$wald8mos$anno_res$isoform)
@@ -185,6 +196,33 @@ cat("Annotated to:", unique(TargetedDESeq$ontResTranAnno$wald8mos$anno_res %>% f
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald,stats=TargetedDESeq$ontResTranAnno$wald8mos$stats_Wald, isoList=c("PB.22007.99"))
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$anno_res,stats=TargetedDESeq$ontResTranAnno$wald8mos$stats_Wald, 
             isoList=c("PB.8675.37810","PB.22007.224","PB.38419.87","PB.19309.7497","PB.40586.875"))
+
+# Differentially express across genotype 
+TargetedDESeq$ontResTranAnno$waldgenotype$anno_res <- TargetedDESeq$ontResTranAnno$waldgenotype$anno_res %>% filter(padj < 0.05)
+nrow(TargetedDESeq$ontResTranAnno$waldgenotype$anno_res)
+
+# Iso-Seq Trem2 results 
+# genotype
+reportStats(TargetedDESeq$isoResTranAnno$waldgenotype$anno_res,TargetedDESeq$isoResTranAnno$waldgenotype$stats_Wald,c("PB.20818.62","PB.20818.54"))
+# pathology
+reportStats(TargetedDESeq$isoResTranAnno$wald$anno_res,TargetedDESeq$isoResTranAnno$wald$stats_Wald,c("PB.20818.62","PB.20818.54"))
+TargetedDESeq$isoResTranAnno$wald$stats_Wald %>% filter(row.names(.) == "PB.20818.62") %>% select(groupCASE.time8)
+
+
+# remove transcripts already differentially expressed across genotype
+genotypeOnlyIso = setdiff(TargetedDESeq$ontResTranAnno$waldgenotype$anno_res$isoform,TargetedDESeq$ontResTranAnno$wald$anno_res$isoform)
+intersect(TargetedDESeq$ontResTranAnno$waldgenotype$anno_res$isoform,TargetedDESeq$ontResTranAnno$wald$anno_res$isoform)
+genotypeOnly = TargetedDESeq$ontResTranAnno$waldgenotype$anno_res %>% filter(isoform %in% genotypeOnlyIso)
+
+nrow(genotypeOnly)
+length(unique(genotypeOnly$associated_gene))
+sort(unique(genotypeOnly$associated_gene))
+
+TargetedMergedDESeq$waldGenotype %>% filter(isoform %in% genotypeOnlyIso) %>% group_by(ont_direction) %>% tally()
+TargetedMergedDESeq$waldGenotype %>% filter(isoform %in% genotypeOnlyIso) %>% group_by(associated_gene) %>% tally()
+TargetedMergedDESeq$waldGenotype %>% filter(isoform %in% genotypeOnlyIso) %>% group_by(structural_category) %>% tally()
+nrow(TargetedMergedDESeq$waldGenotype %>% filter(isoform %in% genotypeOnlyIso) %>% filter(!is.na(isoseq_direction)))
+
 
 
 # Replication with Iso-Seq
@@ -202,11 +240,40 @@ replicatedVals = rbind(TargetedDESeq$isoResTranAnno$wald$stats_Wald %>% rownames
       TargetedDESeq$ontResTranAnno$wald$stats_Wald %>% rownames_to_column(var = "isoform") %>% 
         filter(isoform %in% replicatedIso) %>% .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "ONT")) %>% 
   spread(., dataset,group_CASE_vs_CONTROL) 
-#ggplot(replicatedVals, aes(x = ONT, y = IsoSeq)) + geom_point()
+ggplot(replicatedVals, aes(x = ONT, y = IsoSeq)) + geom_point()
 cor.test(replicatedVals$IsoSeq, replicatedVals$ONT, method = "spearman")
+
+SigPathologyVals = rbind(TargetedDESeq$isoResTranAnno$wald$stats_Wald %>% rownames_to_column(var = "isoform") 
+                       %>% filter(isoform %in% TargetedDESeq$ontResTranAnno$wald$anno_res$isoform) %>% .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "IsoSeq"),
+                       TargetedDESeq$ontResTranAnno$wald$stats_Wald %>% rownames_to_column(var = "isoform") %>% 
+                         filter(isoform %in% TargetedDESeq$ontResTranAnno$wald$anno_res$isoform) %>%
+                         .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "ONT")) %>% 
+  spread(., dataset,group_CASE_vs_CONTROL) 
+ggplot(SigPathologyVals, aes(x = ONT, y = IsoSeq)) + geom_point()
+cor.test(SigPathologyVals$IsoSeq, SigPathologyVals$ONT, method = "spearman")
+
+SigGenotypeVals = rbind(TargetedDESeq$isoResTranAnno$waldgenotype$stats_Wald %>% rownames_to_column(var = "isoform") %>% 
+                          filter(isoform %in% TargetedDESeq$ontResTranAnno$waldgenotype$anno_res$isoform) %>% 
+                          .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "IsoSeq"),
+                         TargetedDESeq$ontResTranAnno$waldgenotype$stats_Wald %>% rownames_to_column(var = "isoform") %>% 
+                          filter(isoform %in% TargetedDESeq$ontResTranAnno$waldgenotype$anno_res$isoform) %>%
+                           .[,c("isoform","group_CASE_vs_CONTROL")] %>% mutate(dataset = "ONT")) %>% 
+  spread(., dataset,group_CASE_vs_CONTROL) 
+ggplot(SigGenotypeVals, aes(x = ONT, y = IsoSeq)) + geom_point()
+cor.test(SigGenotypeVals$IsoSeq, SigGenotypeVals$ONT, method = "spearman")
+
 
 res <- binom.test(consistentNum, totalNum, alternative = c("two.sided"))
 res$p.value
+
+# Bin1 224
+Bin1224_IF <- plotIF("Bin1",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
+                     cfiles=class.files$targ_all,design="time_series",majorIso=NULL,isoSpecific=c("PB.22007.224"),rank=0,stat=TRUE) %>% filter(isoform == "PB.22007.224")
+
+aggregate(perc ~ group, Bin1224_IF, mean)
+aggregate(perc ~ group + time, Bin1224_IF, mean)
+wilcox.test(perc ~ group, data = Bin1224_IF, exact = FALSE)
+wilcox.test(perc ~ time, data = Bin1224_IF[Bin1224_IF$group == "TG" & Bin1224_IF$Age %in% c(2,8),], exact = FALSE)
 
 ## ---------- Differential isoform usage analysis - Targeted -----------------
 
@@ -290,8 +357,8 @@ CluIso = c("PB.14646.139","PB.14646.60837","PB.14646.68849","PB.14646.39341")
 class.files$targ_all[class.files$targ_all$isoform %in% CluIso, c("structural_category","associated_gene","associated_transcript","subcategory")]
 reportStats(res=TargetedDESeq$ontResTranAnno$wald8mos$res_Wald, stats=TargetedDESeq$ontResTran$wald8mos$stats_Wald, isoList=CluIso)
 reportStats(res=TargetedDESeq$ontResTranAnno$wald$res_Wald, stats=TargetedDESeq$ontResTran$wald$stats_Wald, isoList=CluIso)
-reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$stats_Wald, isoList=c("14646"))
-
+reportStats(res=TargetedDESeq$ontResGeneAnno$wald$res_Wald, stats=TargetedDESeq$ontResGeneAnno$wald$stats_Wald, isoList=c("14646"))
+reportStats(res=TargetedDESeq$ontResGeneAnno$waldgenotype$res_Wald, stats=TargetedDESeq$ontResGeneAnno$waldgenotype$stats_Wald, isoList=c("14646"))
 
 ## ---------- App ----------
 # Read in FICLE files
