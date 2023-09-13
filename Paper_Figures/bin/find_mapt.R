@@ -7,6 +7,7 @@
 # Output:
   # p1: ratio of human and mouse transgene reads compared to all reads
 
+
 find_mapt_isoseq <- function(maptdir, phenotype){
   
   # input 
@@ -58,7 +59,7 @@ find_mapt_isoseq <- function(maptdir, phenotype){
   
   p1 <- bind_rows(humanMAPT$tallied,mouseMAPT$tallied) %>% 
     ggplot(., aes(x = Age_in_months, y = normalised, color = Genotype)) + geom_jitter(width = 0.09) + mytheme +
-    scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
+    scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) +
     labs(x = "Age (months)", y = "Ratio of \nMAPT reads to total reads") +
     mytheme + #scale_y_continuous(labels = function(x) format(x, scientific = TRUE))  +
     theme(legend.position = c("right"), axis.text.y = element_text(angle = 90)) + 
@@ -106,7 +107,7 @@ find_mapt_ont <- function(maptdir, phenotype){
   tallied <- tallied %>% filter(!is.na(Phenotype))
   
   p1 <- ggplot(tallied, aes(x = Age, y = normalised, color = Phenotype)) + geom_jitter(width = 0.09) + mytheme +
-    scale_color_manual(values = c(label_colour("TG"),label_colour("WT"))) +
+    scale_color_manual(values = c(label_colour("WT"),label_colour("TG"))) +
     labs(x = "Age (months)", y = "Ratio of \nMAPT reads to total reads") +
     mytheme + #scale_y_continuous(labels = function(x) format(x, scientific = TRUE))  +
     theme(legend.position = c("None"), axis.text.y = element_text(angle = 90)) + 
@@ -116,4 +117,3 @@ find_mapt_ont <- function(maptdir, phenotype){
   
   return(p1)
 }
-
