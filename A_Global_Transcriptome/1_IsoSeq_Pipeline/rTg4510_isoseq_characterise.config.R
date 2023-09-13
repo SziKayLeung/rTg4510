@@ -13,7 +13,8 @@ dirnames <- list(
   scripts = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/A_Global_Transcriptome/1_IsoSeq_Pipeline/",
   P2021 = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/A_IsoSeq_Whole/2_post_isoseq3/9_paper2021/",
   ref = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/references/",
-  as_events = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/Whole_Transcriptome_Paper/Output/Tables/AS_IR/"
+  as_events = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/Whole_Transcriptome_Paper/Output/Tables/AS_IR/",
+  mapt = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/A_IsoSeq_Whole/2_post_isoseq3/11_transgene"
 )
 
 
@@ -40,7 +41,7 @@ misc_input <- list(
   
   # Input Sequencing
   sequencing_output = read.csv(paste0(dirnames$meta, "Sequenced_mouse_output.csv")),
-  tg4510_samples = read.csv(paste0(dirnames$meta, "Tg4510_fullsample.csv"))[,c("Genotype","Sample.ID","RIN","ng.ul")],
+  tg4510_samples = read.csv(paste0(dirnames$meta, "Tg4510_fullsample.csv"))[,c("Genotype","Age_in_months", "Sample.ID","RIN","ng.ul")],
   
   # cluster csv file
   ccs_output = read.csv(paste0(spec_dirnames$ccs, "/WholeIsoSeqAll_CCS_output.csv"), header = T),
@@ -81,6 +82,9 @@ misc_input <- list(
 # Total.Bases..GB, Genotype, RIN 
 misc_input$sequenced = merge(misc_input$sequencing_output, misc_input$tg4510_samples, by.x = "Sample", by.y = "Sample.ID", all.x = TRUE) %>% 
   mutate(Genotype = factor(Genotype, levels=c("WT", "TG"))) %>% filter(Genotype != "NA")
+
+# samples sequenced in global profiling 
+misc_input$whole_tg4510_samples <- misc_input$tg4510_samples %>% filter(Sample.ID %in% c(control_samples, case_samples))
 
 # sample run 
 #sample_run <- read.csv(paste0(dirnames$scripts, "IsoSeq_Processing/Mouse/All_Tg4510_Demultiplex.csv"))

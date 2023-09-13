@@ -15,7 +15,6 @@ TargetGene <- c("Abca1","Sorl1","Mapt","Bin1","Tardbp","App","Abca7",
 wholesamples <- c("K17","K18","K23","K24","L22","M21","O18","O23","Q20","Q21","S18","S23")
 wholeTG <- c("K18","K24", "L22","O18","Q20","S18")
 wholeWT <- setdiff(wholesamples, wholeTG)
-
 whole2mos <- c("K17","M21","Q21","K18","O18","S18")
 whole8mos <- setdiff(wholesamples, whole2mos)
 
@@ -66,7 +65,6 @@ phenotype <- list(
   targ_iso = read.table(paste0(dirnames$targ_iso_metadata, "/TargetedMouse_PhenotypeTAPPAS.txt"), header = T) %>% mutate(variable = paste0(sample)),
   targ_ont = read.table(paste0(dirnames$targ_ont_metadata, "/ONT_phenotype.txt"), header = T) %>% mutate(variable = paste0(sample)),
   tg4510_samples = read.csv(paste0(dirnames$glob_metadata, "/Tg4510_fullsample.csv"))[,c("Genotype","Age_in_months", "Sample.ID","RIN","ng.ul")]
-  
 )
 phenotype$whole_rTg4510_iso <- phenotype$tg4510_samples %>% filter(Sample.ID %in% wholesamples) %>% mutate(Phenotype = Genotype)
 phenotype$targeted_rTg4510_iso <- phenotype$tg4510_samples %>% filter(Sample.ID %in% c(targetedTG, targetedWT)) %>% 
