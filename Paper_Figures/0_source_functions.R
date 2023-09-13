@@ -116,9 +116,11 @@ pSensitivity <- function(classf){
     scale_x_discrete(labels = NULL, breaks = NULL) + labs(x = "XX") +
     geom_label_repel(data          = subset(dat, cumrel < 0.48),
                      size          = 4,
-                     box.padding   = 1,
+                     box.padding   = 0.5,
                      point.padding = 0.1,
                      force         = 100,
+                     #nudge_y = 0.2,
+                     nudge_x = 0.1,
                      segment.size  = 0.2,
                      segment.color = "grey50",
                      direction     = "x") +
@@ -269,17 +271,17 @@ draw_heatmap_gene <- function(gene, cf, normCounts, type){
 recapitulate_gene_level <- function(){
   
   # effect size up and down in global DESeq2 output at gene level 
-  GlobalDESeq$RresGeneAnno$lrt$anno_res <- GlobalDESeq$RresGeneAnno$lrt$anno_res %>% mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
-  GlobalDESeq$resGeneAnno$lrt$res_LRT_rResGeneSig <- GlobalDESeq$resGeneAnno$lrt$res_LRT %>% 
+  GlobalDESeq$RresGeneAnno$wald$anno_res <- GlobalDESeq$RresGeneAnno$wald$anno_res %>% mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
+  GlobalDESeq$resGeneAnno$wald$res_wald_rResGeneSig <- GlobalDESeq$resGeneAnno$wald$res_Wald %>% 
     filter(isoform %in% GlobalDESeq$RresGeneAnno$lrt$anno_res$isoform) %>% 
     mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
   
   # merge gene results from rnaseq and isoseq 
   # differentiate log2FC and direction betwen two datasets 
   
-  mergedGeneRep <- merge(GlobalDESeq$RresGeneAnno$lrt$anno_res %>% 
+  mergedGeneRep <- merge(GlobalDESeq$RresGeneAnno$wald$anno_res %>% 
                            select(isoform, associated_gene, log2FoldChange, direction) %>% dplyr::rename("RresLog2FC" = "log2FoldChange", "RresDirection" = "direction"),
-                         GlobalDESeq$resGeneAnno$lrt$res_LRT_rResGeneSig %>% 
+                         GlobalDESeq$resGeneAnno$wald$res_wald_rResGeneSig %>% 
                            select(isoform, log2FoldChange, direction) %>% dplyr::rename("resLog2FC" = "log2FoldChange", "resDirection" = "direction"), 
                          by = "isoform"
   )
@@ -292,7 +294,7 @@ recapitulate_gene_level <- function(){
   # binomial p-value 
   message("Binomial test of number of genes with consisitent effect size")
   consistentNum = nrow(subset(mergedGeneRep, effectSize == TRUE))
-  totalNum = nrow(GlobalDESeq$RresGeneAnno$lrt$anno_res)
+  totalNum = nrow(GlobalDESeq$RresGeneAnno$wald$anno_res)
   consistentNum/totalNum
   res <- binom.test(consistentNum, totalNum, alternative = c("two.sided"))
   print(res)
