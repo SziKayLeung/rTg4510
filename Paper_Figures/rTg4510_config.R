@@ -1,5 +1,6 @@
 # Szi Kay Leung: sl693@exeter.ac.uk
 
+suppressMessages(library("data.table"))
 LOGEN <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
 source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
 source(paste0(LOGEN,"/target_gene_annotation/summarise_gene_stats.R"))
@@ -122,7 +123,7 @@ cat("Input DESEQ2 results\n")
 GlobalDESeq <- list(
   resTranAnno = readRDS(file = paste0(dirnames$glob_output, "/IsoSeq_DESeq2TranscriptLevel.RDS")),
   resGeneAnno = readRDS(file = paste0(dirnames$glob_output, "/IsoSeq_DESeq2GeneLevel.RDS")),
-  RresTranAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2TranscriptLevel.RDS")),
+  #RresTranAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2TranscriptLevel.RDS")),
   RresGeneAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2GeneLevel.RDS")),
   resGeneComparison = readRDS(file = paste0(dirnames$glob_output, "/Comparison_DESeq2GeneLevel.RDS"))
 ) 
@@ -136,6 +137,22 @@ TargetedDESeq <- list(
 ) 
 TargetedDESeq$ontResTranAnno$wald$anno_res <- TargetedDESeq$ontResTranAnno$wald$anno_res %>% filter(padj < 0.05)
 TargetedDESeq$ontResTranAnno$wald8mos$anno_res <- TargetedDESeq$ontResTranAnno$wald8mos$anno_res %>% filter(padj < 0.05)
+TargetedDESeq$ontResTranAnno$wald$norm_counts <- merge(TargetedDESeq$ontResTranAnno$wald$norm_counts, class.files$targ_filtered[,c("isoform","structural_category")], by = "isoform")
+
+
+TargetedMergedDESeq <- list(
+  waldGenotypeAgeInteraction = merge(TargetedDESeq$ontResTranAnno$wald$res_Wald, TargetedDESeq$isoResTranAnno$wald$res_Wald, by = "isoform", all.x = T, suffixes = c("_ont","_isoseq")),
+  waldGenotypeAge = merge(TargetedDESeq$ontResTranAnno$waldoff$res_Wald, TargetedDESeq$isoResTranAnno$wald$res_Wald, by = "isoform", all.x = T, suffixes = c("_ont","_isoseq")),
+  waldGenotype = merge(TargetedDESeq$ontResTranAnno$waldgenotype$res_Wald, TargetedDESeq$isoResTranAnno$waldgenotype$res_Wald, by = "isoform", all.x = T, suffixes = c("_ont","_isoseq")),
+  lrt = merge(TargetedDESeq$ontResTranAnno$lrt$res_LRT, TargetedDESeq$isoResTranAnno$lrt$res_LRT, by = "isoform", all.x = T, suffixes = c("_ont","_isoseq"))
+) 
+TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) merge(x, class.files$targ_all[,c("isoform","associated_gene","associated_transcript","structural_category")], by = "isoform", all.x = T ))
+TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) x %>% mutate(ont_direction = ifelse(log2FoldChange_ont < 0, "down","up")))
+TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) x %>% mutate(isoseq_direction = ifelse(log2FoldChange_isoseq < 0, "down","up")))
+TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) x %>% mutate(consistient_direction = ifelse(ont_direction == isoseq_direction, TRUE,FALSE)))
+TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) x %>% filter(!is.na(padj_ont)))
+TargetedMergedDESeqSig <- lapply(TargetedMergedDESeq, function(x) x %>% filter(padj_ont < 0.05))
+
 
 ## ---------- DIU results (EdgeR) -----------------
 TargetedDIU <- readRDS(file = paste0(dirnames$targ_output, "/resultsDIU.RDS"))
@@ -191,7 +208,7 @@ Targeted <- list(
 )
 names(Targeted$Gene_class) = lapply(list.files(path = dirnames$targ_anno, pattern = "Final_Transcript_Classifications.csv", recursive = TRUE), 
                                     function(x) word(x, c(1), sep = fixed("/")))
-Merged_gene_class_df <- all_summarise_gene_stats(Targeted$Gene_class, class.files$targ_filtered, Targeted$cpat, Targeted$noORF, Targeted$Genes)
+Merged_gene_class_df <- all_summarise_gene_stats(Gene_class=Targeted$Gene_class,class_files=class.files$targ_filtered, Targeted$cpat, Targeted$noORF, Targeted$Genes)
 
 # AS events
 ES <- input_FICLE_splicing_results(dirnames$targ_anno,"Exonskipping_tab")
