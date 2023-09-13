@@ -51,9 +51,9 @@ Gfap_p <- list(
     facet_grid(cols = vars(group), labeller = labeller(group = as_labeller(c("CONTROL" = "WT", "CASE" = "TG")))),
   
   # PB.2973.16 = red
-  #RNATransExp = plot_transexp_overtime("Gfap",GlobalDESeq$RresTranAnno$lrt$norm_counts,show="specific",isoSpecific=c("PB.2973.16")) + 
-  #  theme(legend.position = "None") + 
-  #  labs(title = "", subtitle = "RNA-Seq Transcript Expression"),
+  RNATransExp = plot_transexp_overtime("Gfap",GlobalDESeq$RresTranAnno$lrt$norm_counts,show="specific",isoSpecific=c("PB.2973.16")) + 
+    theme(legend.position = "None") + 
+    labs(title = "", subtitle = "RNA-Seq Transcript Expression"),
   
   # PB.2973.16 = red, PB.2973.23 = green (#7CAE00), PB.2973.33 = purple, PB.2973.27 = yellow
   RNATransExpRanked  = plot_transexp_overtime("Gfap",GlobalDESeq$RresTranAnno$lrt$norm_counts,show="toprank",rank=3,isoSpecific=c("PB.2973.16")) +
@@ -98,10 +98,93 @@ Targeted_p <- list(
 )
 
 
+## ---------- Figure 4: Differential expression ----------
+
+OntTargetedDiff <- list()
+for(num in 1:length(TargetedDESeq$ontResTranAnno$wald$anno_res$isoform)){
+  i = TargetedDESeq$ontResTranAnno$wald$anno_res$isoform[num]
+  g = class.files$targ_all[class.files$targ_all$isoform == i,"associated_gene"][[1]]
+  OntTargetedDiff[[num]] = plot_transexp_overtime(g,TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",
+                                                  rank=0,isoSpecific=i,setorder=c("CONTROL","CASE"),
+                                                  classfiles=class.files$targ_filtered) + labs(x = "", y = "")
+}
+
+
+RefIsoforms <- lapply(c("Clu","Fyn","Apoe","Trem2","Cd33","App"), function(x) unique(gtf$ref_target[gtf$ref_target$gene_name == x & !is.na(gtf$ref_target$transcript_id), "transcript_id"]))
+names(RefIsoforms ) <- c("Clu","Fyn","Apoe","Trem2","Cd33","App")
+
+OntTargetedTracks <- list(
+  Trem2 = ggTranPlots(inputgtf=gtf$targ_merged,classfiles=class.files$targ_filtered,
+                      isoList = c("PB.20818.54","PB.20818.62","PB.20818.55",RefIsoforms$Trem2[1:2]),
+                      colours = c(wes_palette("Cavalcanti1")[5],wes_palette("Royal1")[2],alpha(wes_palette("Royal1")[2],0.3),rep("#0C0C78",2)), 
+                      lines = c(wes_palette("Cavalcanti1")[5],wes_palette("Royal1")[2],alpha(wes_palette("Royal1")[2],0.3),rep("#0C0C78",2)),
+                      #lines = c(wes_palette("Rushmore1")[3],wes_palette("Royal2")[5],alpha(wes_palette("Rushmore1")[3],0.3),rep("#0C0C78",2)), 
+                      gene = "Trem2",simple=TRUE),
+  Clu = ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
+                    isoList = c("PB.14646.39341","PB.14646.139","PB.14646.39352","PB.14646.35283",RefIsoforms$Clu[1]),
+                    colours = c(wes_palette("Darjeeling2")[2],wes_palette("Zissou1")[1],
+                                wes_palette("Darjeeling1")[5],wes_palette("Darjeeling2")[4],rep("#0C0C78",2)), 
+                    lines = c(wes_palette("Rushmore1")[3],wes_palette("Zissou1")[1],
+                              wes_palette("Darjeeling1")[5],wes_palette("Darjeeling2")[4],rep("#0C0C78",2)), 
+                    gene = "Clu",simple=TRUE),
+  Fyn = ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
+                    isoList = c("PB.3948.4511",RefIsoforms$Fyn[2]),
+                    colours = c(wes_palette("Royal2")[5],rep("#0C0C78",2)), lines = c(wes_palette("Royal2")[5],rep("#0C0C78",2)), gene = "Fyn", simple=TRUE), 
+  Apoe = ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
+                     isoList = c("PB.40586.1023","PB.40586.875",RefIsoforms$Apoe[1]),
+                     colours = c(wes_palette("Royal1")[4],alpha(wes_palette("Royal1")[4],0.4),rep("#0C0C78",2)), 
+                     lines = c(wes_palette("Royal1")[4],alpha(wes_palette("Royal1")[4],0.4),rep("#0C0C78",2)), 
+                     gene = "Apoe", simple=TRUE),
+  Cd33 = ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
+                     isoList = c("PB.41115.1365",RefIsoforms$Cd33[1:2]),
+                     colours = c(wes_palette("GrandBudapest2")[1],rep("#0C0C78",2)), lines = c(wes_palette("GrandBudapest2")[1],rep("#0C0C78",2)), gene = "Cd33", simple=TRUE),
+  App = ggTranPlots(gtf$targ_merged,class.files$targ_filtered,
+                    isoList = c("PB.19309.7564",RefIsoforms$App[1]),
+                    colours = c(wes_palette("GrandBudapest2")[2],rep("#0C0C78",2)), lines = c(wes_palette("GrandBudapest2")[2],rep("#0C0C78",2)), gene = "App", simple=TRUE)
+)
+
+OntTargetedDiffColours <- data.frame(
+  iso = c(TargetedDESeq$ontResTranAnno$wald$anno_res$isoform),
+  col = c(wes_palette("Darjeeling2")[2],wes_palette("Zissou1")[1],wes_palette("Cavalcanti1")[5],wes_palette("Royal1")[2],wes_palette("Darjeeling1")[5],wes_palette("Royal2")[5],
+          wes_palette("Darjeeling2")[4],wes_palette("Royal1")[4],wes_palette("GrandBudapest2")[1],wes_palette("GrandBudapest2")[2],
+          alpha(wes_palette("Royal1")[4],0.4),alpha(wes_palette("Royal1")[2],0.3))
+  #  col = c(wes_palette("Darjeeling2")[2],wes_palette("Zissou1")[1],wes_palette("Rushmore1")[3],wes_palette("Royal2")[5],wes_palette("Darjeeling1")[5],wes_palette("Chevalier1")[3],
+  #wes_palette("Darjeeling2")[4],wes_palette("Royal1")[4],wes_palette("GrandBudapest2")[1],wes_palette("GrandBudapest2")[2],
+  #alpha(wes_palette("Royal1")[4],0.4),alpha(wes_palette("Rushmore1")[3],0.3))
+)
+
+for(i in 1:nrow(OntTargetedDiffColours)){
+  #OntTargetedDiff[[i]] = OntTargetedDiff[[i]] + theme(plot.title = element_text(colour = as.character(OntTargetedDiffColours$col[[i]])))
+  OntTargetedDiff[[i]] = OntTargetedDiff[[i]] + facet_grid(. ~  LRID_struc) + theme(strip.background = element_rect(fill=as.character(OntTargetedDiffColours$col[[i]]))) + 
+    labs(title = NULL, x=NULL, y=NULL,subtitle="")
+  if(i %in% c(1,2,3,4)){
+    OntTargetedDiff[[i]] = OntTargetedDiff[[i]] + theme(strip.text = element_text(size=15, colour="white"))
+  }else{
+    OntTargetedDiff[[i]] = OntTargetedDiff[[i]] + theme(strip.text = element_text(size=15, colour="black"))
+  }
+}
+
+tag_ggplot_seq <- function(p, id){
+  p1 <- p + labs(tag = as.character(id)) + theme(text = element_text(size = 12))
+  return(p1)
+}
+OntTargetedDiff <- lapply(seq_len(12), function(x) tag_ggplot_seq(OntTargetedDiff[[x]],x))
+
+Diffa <- arrangeGrob(grobs=lapply(OntTargetedDiff, function(p) p + guides(colour=FALSE)), ncol=2, 
+              bottom=textGrob("Age (months)", gp=gpar(fontsize=15)), 
+              left=textGrob("Normalized counts", gp=gpar(fontsize=15), rot=90),
+              labels = c("a"))
+
+Diffb <- plot_grid(plotlist = OntTargetedTracks,ncol=1,rel_heights = c(0.3,0.3,0.1,0.15,0.15,0.1))
+
+Diff <- plot_grid(Diffa,Diffb)
+plot_grid(Diff)
 
 ## ---------- Figure 4: Trem2 ----------
 
 Trem2ES <- ES %>% filter(associated_gene == "Trem2") %>% filter(ES %in% c("Gencode_4","Gencode_5")) 
+
+Trem2ES5 <- ES %>% filter(associated_gene == "Trem2") %>% filter(ES %in% c("Gencode_5")) 
 Trem2A5A3 <- A5A3 %>% filter(associated_gene == "Trem2") %>% filter(gencode_exon %in% c("Gencode_2")) 
 Trem2NE <- NovelExons %>% filter(associated_gene == "Trem2") %>% filter(novelexons %in% c("Beyond_First","Internal_NovelExon"))
 
@@ -144,18 +227,18 @@ Trem2_p$IF[[1]] <- Trem2_p$IF[[1]] + labs(title = "") + theme(axis.text.x = elem
 
 ## ---------- Figure 5: Bin1 ---------
 
-Bin1ES <- ES %>% filter(associated_gene == "Bin1") 
+Bin1ES <- ES %>% filter(associated_gene == "Bin1") %>% filter(ES %in% c("Gencode_13","Gencode_15","Gencode_14","Gencode_16")) 
 
 Bin1Iso <- data.frame(
   Isoform = unlist(Bin1Iso <- list(
     Reference = unique(gtf$ref_target[gtf$ref_target$gene_name == "Bin1" & !is.na(gtf$ref_target$transcript_id), "transcript_id"]),
-    ES = as.character(unique(Bin1ES$transcript_id)[6:10]),
+    ES = c("PB.22007.100","PB.22007.1005","PB.22007.423","PB.22007.10118","PB.22007.10147","PB.22007.42921"),
     AP = paste0("PB.22007.", c(50820, 50175, 50143, 50079, 49307, 48852, 48704, 48337, 47598)),
-    DTE = c("PB.22007.101","PB.22007.224","PB.22007.99")
+    DTE = c("PB.22007.224","PB.22007.99")
   )),
   Category = rep(names(Bin1Iso), lengths(Bin1Iso))
 )
-Bin1Iso$colour <- c(rep(NA,length(Bin1Iso$Category[Bin1Iso$Category != "DTE"])),wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00")
+Bin1Iso$colour <- c(rep(NA,length(Bin1Iso$Category[Bin1Iso$Category != "DTE"])),wes_palette("Darjeeling1")[3],"#00BFC4")
 
 Bin1_p <- list(
   dendro = plot_dendro_Tgene(dirnames$targ_anno, "Bin1"),
@@ -164,19 +247,18 @@ Bin1_p <- list(
     labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
     scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
     theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
-  ONTTransExp = plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=2,isoSpecific=c("PB.22007.224"),
+  ONTTransExp = plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",rank=NULL,
+                                       isoSpecific=c("PB.22007.224","PB.22007.99"),
                                        setorder=c("CONTROL","CASE")) + 
     labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
-    scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00")) +
+    scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4")) +
     theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("Bin1",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
-              cfiles=class.files$targ_all,design="time_series",majorIso=NULL,isoSpecific=c("PB.22007.224","PB.22007.99","PB.22007.176")),
+              cfiles=class.files$targ_all,design="time_series",majorIso=NULL,isoSpecific=c("PB.22007.224"),rank=0),
   tracks = ggTranPlots(inputgtf=gtf$targ_merged, classfiles=class.files$targ_filtered,
                        isoList = c(as.character(Bin1Iso$Isoform)),
                        selfDf = Bin1Iso, gene = "Bin1", inputPfam=Targeted$pfam)
 )
-Bin1_p$IF[[1]] <- Bin1_p$IF[[1]] + labs(title = "") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE)
-Bin1_p$IF[[2]] <- Bin1_p$IF[[2]] + labs(title = "")
 
 
 ## ---------- Figure 6: Clu ---------
@@ -189,27 +271,27 @@ CluIso <- data.frame(
     ES = c("PB.14646.1019","PB.14646.4411","PB.14646.1094","PB.14646.4585","PB.14646.11450"),
     AP = paste0("PB.14646.",c("39554","39402","39345","38679","34808","38406","38351","34798","329","1380","134")),
     IR = c("PB.14646.4741","PB.14646.4624","PB.14646.1317","PB.14646.2515"),
-    DTE = c("PB.14646.139","PB.14646.39341")
+    DTE = c("PB.14646.139","PB.14646.39341","PB.14646.39352","PB.14646.35283")
   )),
   Category = rep(names(CluIso), lengths(CluIso))
 )
-CluIso$colour <- c(rep(NA,length(CluIso$Category[CluIso$Category != "DTE"])),wes_palette("Darjeeling1")[3],"#00BFC4")
+CluIso$colour <- c(rep(NA,length(CluIso$Category[CluIso$Category != "DTE"])),wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00",wes_palette("IsleofDogs1")[1])
 
 
 Clu_p <- list(
   dendro = plot_dendro_Tgene(dirnames$targ_anno, "Clu"),
   ES = plot_ES_Tgene(dirnames$targ_anno,"Clu",class.files$targ_filtered)[[1]],
   IR = plot_IR_Tgene(dirnames$targ_anno,"Clu",class.files$targ_filtered)[[2]],
-  ONTTransExp = plot_transexp_overtime("Clu",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=1,isoSpecific=c("PB.14646.39341"),setorder=c("CONTROL","CASE"))+
+  ONTTransExp = plot_transexp_overtime("Clu",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=1,isoSpecific=c("PB.14646.139","PB.14646.39341","PB.14646.39352","PB.14646.35283"),setorder=c("CONTROL","CASE"))+
     labs(title = "", subtitle = "ONT Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks)  +
-    scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4")) +
+    scale_colour_manual(values = c(wes_palette("Darjeeling1")[3],"#00BFC4","#7CAE00",wes_palette("IsleofDogs1")[1])) +
     theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   ONTGeneExp = plot_trans_exp_individual_overtime("14646",TargetedDESeq$ontResGeneAnno$wald$norm_counts,type="gene") + 
     labs(title = "", subtitle = "ONT Gene Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks) +
     scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = "") +
     theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "top"),
   IF = plotIF("Clu",ExpInput=Exp$targ_ont$normAll,pheno=phenotype$targeted_rTg4510_ont,
-              cfiles=class.files$targ_all,design="time_series",rank=NULL,majorIso=NULL,isoSpecific=c("PB.14646.139","PB.14646.60837","PB.14646.39341")),
+              cfiles=class.files$targ_all,design="time_series",rank=0,majorIso=NULL,isoSpecific=c("PB.14646.139")),
   tracks = ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
                        isoList = c(as.character(CluIso$Isoform)),
                        selfDf = CluIso, gene = "Clu", inputPfam=Targeted$pfam)
@@ -301,10 +383,14 @@ dev.off()
 
 pdf(paste0(output_dir,"/MainFigures3.pdf"), width = 15, height = 20)
 plot_grid(plot_grid(Targeted_p$comp,Targeted_p$cumulative,Targeted_p$venn,nrow=1,labels=c("A","B","C"),rel_widths = c(0.4,0.3,0.3)),
-          plot_grid(Targeted_p$distribution[[1]],Targeted_p$n,nrow=1,labels=c("D","E"),rel_widths = c(0.6,0.4)),
+          plot_grid(Targeted_p$distribution[[1]],Targeted_p$n,nrow=1,labels=c("D","E"),rel_widths = c(0.55,0.45)),
           plot_grid(Targeted_p$apoe, labels = c("F")),
           plot_grid(Targeted_p$splicing,nrow=1,labels=c("G")),
-          nrow=4, rel_heights = c(0.2,0.25,0.4,0.15))
+          nrow=4, rel_heights = c(0.225,0.225,0.4,0.15))
+dev.off()
+
+pdf(paste0(output_dir,"/MainFigures3b.pdf"), width = 15, height = 18)
+plot_grid(Diffa,Diffb, labels = c("A","B"),label_size = 20)
 dev.off()
 
 pdf(paste0(output_dir,"/MainFigures4.pdf"), width = 18, height = 12)
@@ -322,20 +408,18 @@ plot_grid(plot_grid(
   plot_grid(Clu_p$dendro, nrow = 1, labels = c("A")),
   plot_grid(Clu_p$ONTTransExp,Clu_p$ONTGeneExp, nrow = 1, rel_widths = c(0.6,0.4), labels = c("C","D")),
   plot_grid(Clu_p$IF[[1]],Clu_p$IF[[2]], nrow = 1, rel_widths = c(0.6,0.4), labels = c("E","F")), ncol = 1), Clu_p$tracks, 
-  ncol = 2, rel_widths = c(0.6,0.4), labels = c("","C"))
+  ncol = 2, rel_widths = c(0.6,0.4), labels = c("","B"))
 dev.off()
 
-pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 23, height = 16)
+pdf(paste0(output_dir,"/MainFigures6.pdf"), width = 18, height = 14)
 plot_grid(plot_grid(
   plot_grid(Bin1_p$dendro,Bin1_p$ES,ncol=1,labels = c("A","B"),rel_heights = c(0.5,0.5)),
   plot_grid(Bin1_p$ONTTransExp, Bin1_p$ONTGeneExp,rel_widths = c(0.55,0.45),labels = c("D","E")),
   plot_grid(Bin1_p$IF[[1]], Bin1_p$IF[[2]],rel_widths = c(0.55,0.45),labels = c("F","G")),
   ncol = 1, rel_heights = c(0.45,0.275,0.275)), Bin1_p$tracks,
-  ncol = 2, rel_widths = c(0.6,0.4), labels = c("","C")
+  ncol = 2, rel_widths = c(0.5,0.5), labels = c("","C")
 )
 dev.off()
-
-
 
 pdf(paste0(output_dir,"/MainFigures7.pdf"), width = 20, height = 12)
 plot_grid(plot_grid(

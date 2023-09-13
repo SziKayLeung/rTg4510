@@ -61,6 +61,12 @@ pGlobIsoVsRna <- recapitulate_gene_level()
 ## ----- sensitivity -------
 ptargetall <- plot_cupcake_collapse_sensitivity(class.files$targ_all,"All 20 target genes")
 
+
+## ----- genotype differential expression ----
+
+top10Genotype <- TargetedMergedDESeq$waldGenotype %>% arrange(padj_ont) %>% .[1:10,"isoform"]
+ptop10Genotype <- lapply(top10Genotype, function(x) time_case_boxplot(TargetedDESeq$ontResTranAnno$wald$norm_counts,x))
+
 ## ----- global Iso-Seq data C4b: differential gene and expression analysis  -----
 
 pC4b <- list(
@@ -169,7 +175,21 @@ pIF <- list(
                                                       majorIso=row.names(TargetedDIU$isoDIUGeno$keptIso)))
 )
 for(i in 1:length(pIF)){names(pIF[[i]]) <- Targeted$Genes}
+for(i in 1:length(pIF)){pIF[[2]][[i]]}
 
+pIFClu <- plotIF("Clu",
+       ExpInput=Exp$targ_ont$normAll,
+       pheno=phenotype$targeted_rTg4510_ont,
+       cfiles=class.files$targ_all,
+       design="time_series", rank = 5,
+       majorIso=NULL)
+
+pIFBin1 <- plotIF("Bin1",
+       ExpInput=Exp$targ_ont$normAll,
+       pheno=phenotype$targeted_rTg4510_ont,
+       cfiles=class.files$targ_all,
+       design="time_series", rank = 5,
+       majorIso=NULL)
 
 
 ## ---------- Target Genes overview -----------------
@@ -223,6 +243,7 @@ Cd33IRTrack <- ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
 ## ---------- Output -----------------
 
 pdf(paste0(output_dir,"/SuppFigures.pdf"), width = 10, height = 12)
+plot_grid(pMapt$glob_iso[[2]],get_legend(pMapt$glob_iso[[1]]),pMapt$targ_iso[[2]],pMapt$targ_ont, labels = c("A","","B","C"))
 plot_grid(plotlist = pGlobWTvsTG, ncol = 2, labels = c("A","B"))
 plot_grid(plot_grid(pC4b$IsoGeneExp,pC4b$RNAGeneExp,nrow=1,labels=c("A","B")),
           pC4b$tracks1,
@@ -237,12 +258,25 @@ top = plot_grid(plot_grid(pNovelOntTargetedDiff[[3]], pNovelOntTargetedDiff[[1]]
 mid = plot_grid(pNovelOntTargetedDiff[[2]], pNovelOntTargetedTracks$Fyn, labels = c("C","D"))
 bot = plot_grid(pNovelOntTargetedDiff[[4]], pNovelOntTargetedTracks$Apoe, labels = c("E","F"))
 plot_grid(top,mid,bot,ncol=1,rel_heights = c(0.5,0.25,0.25))
+legend <- get_legend(ptop10Genotype[[1]] + theme(legend.position = "top"))
+ptop10Genotype <- lapply(ptop10Genotype, function(p) p + theme(legend.position = "none") + labs(x=NULL,y=NULL))
+ptop10Genotype <- plot_grid(plotlist = ptop10Genotype,legend = legend,labels=c("","A","B","C","D","E","F","G","H","I","J"))
+y.grob <- textGrob("Normalized counts", gp=gpar(fontsize=18), rot=90)
+x.grob <- textGrob("Genotype", gp=gpar(fontsize=18))
+grid.arrange(arrangeGrob(ptop10Genotype, left = y.grob, bottom = x.grob))
+plot_grid(pIF$ontNorm$Fus[[1]],pIF$ontNorm$Bin1[[1]],pIF$ontNorm$Trpa1[[1]],
+          pIF$ontNorm$Bin1[[2]] + theme(legend.position = "None"),
+          pIF$ontNorm$Vgf[[2]] + theme(legend.position = "None"),
+          pIF$ontNorm$Clu[[2]] + theme(legend.position = "None"), labels = c("A","B","C","D","E","F"))
+dev.off()
+
+pdf(paste0(output_dir,"/SuppFigures2.pdf"), width = 20, height = 12)
+plot_grid(pIFClu[[1]],pIFClu[[2]],pIFBin1[[1]],pIFBin1[[2]])
 dev.off()
 
 # redundant 
-#plot_grid(pMapt$glob_iso[[2]],get_legend(pMapt$glob_iso[[1]]),pMapt$targ_iso[[2]],pMapt$targ_ont, labels = c("A","","B","C"))
-#plot_grid(pIF$ontNorm$Fus[[1]],pIF$ontNorm$Bin1[[1]],pIF$ontNorm$Trpa1[[1]],pIF$ontNorm$Apoe[[1]],pIF$ontNorm$App[[1]], labels = c("A","B","C","D","E"))
-#plot_grid(pIF$ontNorm$Bin1[[2]],pIF$ontNorm$Vgf[[2]],pIF$ontNorm$Clu[[2]],pIF$ontNorm$Apoe[[2]],pIF$ontNorm$Fus[[2]], labels = c("A","B","C","D","E"))
+
+
 
 pdf(paste0(dirnames$targ_output,"/IsoTargetedIFUpdated.pdf"), width = 14, height = 8)
 for(i in Targeted$Genes){
