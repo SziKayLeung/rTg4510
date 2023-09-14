@@ -11,7 +11,8 @@ dirnames <- list(
   root = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/B_IsoSeq_Targeted/",
   meta = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/0_metadata/B_isoseq_targeted",
   whole_sq = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/A_IsoSeq_Whole/0_archive/DiffAnalysis_noRNASEQ/SQANTI3/",
-  subset_targeted_sq = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/B_IsoSeq_Targeted/10_characterise/subset/SQANTI3_noRNASEQ/"
+  subset_targeted_sq = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/B_IsoSeq_Targeted/10_characterise/subset/SQANTI3_noRNASEQ/",
+  mapt = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/B_IsoSeq_Targeted/10_characterise/transgene"
 )
 
 # Phenotypes
@@ -42,12 +43,15 @@ misc_input <- list(
   targetedpheno = read.csv(paste0(dirnames$meta, "/Targeted_Sample_Demographics.csv")),
   
   # list of samples
-  tg4510_samples = read.csv(paste0(dirnames$meta, "/Tg4510_fullsample.csv"))[,c("Genotype","Sample.ID","RIN","ng.ul")],
+  tg4510_samples = read.csv(paste0(dirnames$meta, "/Tg4510_fullsample.csv"))[,c("Genotype","Age_in_months", "Sample.ID","RIN","ng.ul")],
   
   # comparison from gffcompare 
   cuff_tmap = read.table(paste0(dirnames$subset_targeted_sq, "Whole_Targeted.SubsetAllMouseTargeted.collapsed_classification.filtered_lite.gtf.tmap"), header = T)
   
 )
+
+# samples sequenced in targeted profiling
+misc_input$targeted_tg4510_samples <- misc_input$tg4510_samples %>% filter(Sample.ID %in% c(control_samples, case_samples))
 
 
 ## ---------- SQANTI classification files -----------------
@@ -58,7 +62,7 @@ input.class.names.files <- list(
 )
 
 input.class.files <- lapply(input.class.names.files, function(x) SQANTI_class_preparation(x,"standard"))
-input.class.files <- lapply(input.class.files, function(x) SQANTI_remove3prime(x))
+input.class.files <- lapply(input.class.files, function(x) SQANTI_remove_3prime(x))
 input.class.files <- lapply(input.class.files, function(x) 
   x %>% mutate(TargetGene = ifelse(associated_gene %in% misc_input$TargetGene, "Target Genes","Not Target Genes")))
 
@@ -66,14 +70,3 @@ input.class.files <- lapply(input.class.files, function(x)
 ## ---------- Target Rate -----------------
 
 Probes_files <- read_target_probes(paste0(dirnames$root,"/6b_target_rate"), "fasta.sam.probe_hit.txt")
-
-
-## ---------- Transgene sequence -----------------
-
-# headers of the clustered read names that contain human MAPT sequences
-# Read in hMAPT.header from TG mice (counts of human-specific MAPT sequences)
-humanmapt_input_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/B_IsoSeq_Targeted/10_characterise/transgene"
-hMAPT_input <- read.table(paste0(humanmapt_input_dir,"/hMAPT_counts.txt")) %>% `colnames<-`(c("Sample", "Counts"))
-mMAPT_input <- read.table(paste0(humanmapt_input_dir,"/hMAPT_counts.txt")) %>% `colnames<-`(c("Sample", "Counts"))
-cluster_reads <- list.files(CLUSTER_input_dir, pattern = "cluster_report.csv", full.names = T)
-hMAPT_input_all <- read.table(paste0(humanmapt_input_dir,"/AllMouseTargeted_Ids.txt"))

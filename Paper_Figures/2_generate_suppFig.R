@@ -275,9 +275,6 @@ plot_grid(pIFClu[[1]],pIFClu[[2]],pIFBin1[[1]],pIFBin1[[2]])
 dev.off()
 
 # redundant 
-
-
-
 pdf(paste0(dirnames$targ_output,"/IsoTargetedIFUpdated.pdf"), width = 14, height = 8)
 for(i in Targeted$Genes){
   print(i)

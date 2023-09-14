@@ -28,7 +28,7 @@ dirnames <- list(
   meta = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/0_metadata/",
   iso = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/B_IsoSeq_Targeted/thesis_dump/DiffAnalysis_noRNASEQ/",
   ont = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/F_ONT_Targeted/thesis_dump/TALON/",
-  merged = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/Merged_Targeted/"
+  merged = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/G_Merged_Targeted/"
 )
 
 
@@ -47,7 +47,7 @@ misc_input <- list(
   iso = read.table(paste0(dirnames$meta,"B_isoseq_targeted/TargetedMouse_PhenotypeTAPPAS.txt"), header = T),
   
   ont = read.table(paste0(dirnames$meta,"F_ont_targeted/ONT_phenotype.txt"), header = T)
-
+  
 )
 
 
@@ -59,7 +59,7 @@ class.names.files <- list(
   iso = paste0(dirnames$iso, "SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
   ont = paste0(dirnames$ont, "All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.filtered_lite_classification.txt"),
   ont_unfil = paste0(dirnames$ont, "All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt"),
-  merged = paste0(dirnames$merged, "3_sqanti3/IsoSeqONT_final_genename_classification_noISM.txt")
+  merged = paste0(dirnames$merged, "A_talon_pipeline/3_sqanti3/IsoSeqONT_classification_noISM.txt")
 )
 
 input.class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard"))

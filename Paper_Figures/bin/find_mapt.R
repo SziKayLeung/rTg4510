@@ -2,10 +2,11 @@
 # while using clustered.fasta, plot shows the occurence of transgene in original raw reads 
 # since use the clustered_report.csv description detailing the number of raw reads clustered to each transcript
 # Input:
-# maptdir = str: directory path of files containing hmapt1_all_reads.csv, mmapt1_all_reads.csv, pre_cluster_read.csv
-# phenotype = df: phenotype data of samples <Sample.ID, Age_in_months, Genotype>
+  # maptdir = str: directory path of files containing hmapt1_all_reads.csv, mmapt1_all_reads.csv, pre_cluster_read.csv
+  # phenotype = df: phenotype data of samples <Sample.ID, Age_in_months, Genotype>
 # Output:
-# p1: ratio of human and mouse transgene reads compared to all reads
+  # p1: ratio of human and mouse transgene reads compared to all reads
+
 
 find_mapt_isoseq <- function(maptdir, phenotype){
   
