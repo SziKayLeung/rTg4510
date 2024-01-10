@@ -87,4 +87,5 @@ annoResTran <- list(
 
 ## ---------- Output -----------------
 write.table(class.files$targ_filtered, paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt"),sep="\t",quote = F)
+write.table(protein$t2p.collapse, paste0(dirnames$protein,"/all_iso_ont_orf_refined_collapsed.tsv"),sep="\t",quote = F)
 saveRDS(annoResTran, file = paste0(dirnames$targ_output, "/DESeq2ProteinLevel.RDS"))

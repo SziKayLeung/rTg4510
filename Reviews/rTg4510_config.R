@@ -35,7 +35,7 @@ dirnames <- list(
   targ_output = paste0(root_dir, "rTg4510/01_figures_tables/Targeted_Transcriptome"),
   
   # proteogeonomics
-  protein = paste0(root_dir, "rTg4510/G_Merged_Targeted/4_proteogenomics/6_refined_database"),
+  protein = paste0(root_dir, "rTg4510/G_Merged_Targeted/4_proteogenomics/"),
   
   # reference
   references = paste0(root_dir,"reference/annotation")
@@ -88,7 +88,8 @@ TargetedDESeq$ontResTranAnno$wald$norm_counts <- merge(TargetedDESeq$ontResTranA
 ## -------- Proteogenomics -------------------
 
 protein = list(
-  t2p.collapse = read.table(paste0(dirnames$protein,"/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T)
+  cpat = read.table(paste0(dirnames$protein,"5_calledOrfs/all_iso_ont_best_orf.tsv"), sep ="\t", header = T),
+  t2p.collapse = read.table(paste0(dirnames$protein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T)
 )
 
 
@@ -105,3 +106,10 @@ gtf$ptarg_merged <- gtf$ptarg_merged %>% mutate(transcript = word(transcript_id,
 gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")],
                          gtf$ptarg_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")],
                          gtf$ref_target[,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
+
+
+## -------- FICLE output -------------------
+#Maptprotein <- unique(class.files$ptarg_filtered[class.files$ptarg_filtered$associated_gene == "Mapt","corrected_acc"])
+MaptES <- read.csv("/lustre/projects/Research_Project-MRC148213/sl693/rTg4510_FICLE/Mapt/Stats/Mapt_general_exon_level.csv")
+Trem2ES <- read.csv("/lustre/projects/Research_Project-MRC148213/sl693/rTg4510_FICLE/FICLE/TargetGenes/Trem2/Stats/Trem2_Exonskipping_generaltab.csv") 
+Trem2NE <- read.csv("/lustre/projects/Research_Project-MRC148213/sl693/rTg4510_FICLE/FICLE/TargetGenes/Trem2/Stats/Trem2_NE.csv") 
