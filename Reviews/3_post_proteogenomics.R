@@ -30,15 +30,43 @@ generalggTranPlots <- function(isolist, inputgtf, classfiles, gene, cpat = NULL,
 # original transcript classification file with additional column of the number of collapsed transcripts by ORF 
 # col: corrected_acc = representative isoform after collapsing by ORF 
 class.files$ptarg_filtered <- SQANTI_class_preparation(paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt"),"nstandard")
-protein$t2p.collapse <- read.table(paste0(dirnames$protein,"/all_iso_ont_orf_refined_collapsed.tsv"))
+protein$t2p.collapse.refined <- read.table(paste0(dirnames$protein,"6_refined_database/all_iso_ont_orf_refined_collapsed.tsv"))
 annopResTran <- readRDS(paste0(dirnames$targ_output, "/DESeq2ProteinLevel.RDS"))
 
 dirnames$protein <- paste0(dirnames$targ_root,"/4_proteogenomics/7_classified_protein/")
 
-class.files$protein <- read.table(paste0(dirnames$protein,"all_iso_ont.sqanti_protein_classification.tsv", sep = "\t", header = T))
+class.files$protein <- read.table(paste0(dirnames$protein,"all_iso_ont.sqanti_protein_classification.tsv"), sep = "\t", header = T)
 nmd <- read.table(paste0(dirnames$protein, "all_iso_ont.classification_filtered.tsv"), sep = "\t", header = T)
 idx <- match(nmd$pb,class.files$ptarg_filtered$base_acc)
 nmd <- transform(nmd, corrected_acc = ifelse(!is.na(idx), as.character(class.files$ptarg_filtered$corrected_acc[idx]), NA))
+
+# basic summary stats
+message("Number of RNA Transcripts:", nrow(class.files$targ_filtered))
+message("Number of coding RNA isoforms:", length(unique(protein$t2p.collapse.refined$pb_acc)))
+message("Number of coding RNA isoforms:", length(unique(protein$t2p.collapse.refined$corrected_acc)))
+length(unique(class.files$ptarg_filtered$corrected_acc)) # -1 to not include "NA" 
+
+NumTranscriptIsoform <- merge(class.files$ptarg_filtered %>% group_by(associated_gene) %>% summarize(RNATranscript = n()),
+      class.files$ptarg_filtered %>% select(corrected_acc, associated_gene) %>% filter(!is.na(corrected_acc)) %>% 
+        distinct() %>% group_by(associated_gene) %>% summarize(RNAIsoform = n()), by = "associated_gene") 
+
+ggplot(NumTranscriptIsoform, aes(x = RNAIsoform, y = RNATranscript, label = associated_gene)) + geom_point() + geom_text_repel() +
+  geom_abline(intercept = 0, linetype = "dashed") + mytheme
+
+dat <- class.files$ptarg_filtered %>% filter(!is.na(corrected_acc)) %>% filter(!isoform %in% class.files$ptarg_filtered$corrected_acc) %>% 
+  group_by(structural_category, subcategory) %>% tally() 
+
+  ggplot(., aes(y = n, x = subcategory)) + geom_bar(stat = "identity") + facet_grid(rows = vars(structural_category), scales = "free") + coord_flip()
+
+dat <- class.files$ptarg_filtered %>% filter(!is.na(corrected_acc)) %>% filter(isoform %in% class.files$ptarg_filtered$corrected_acc) %>% 
+  group_by(structural_category, subcategory) %>% tally() 
+
+class.files$ptarg_filtered %>% group_by(corrected_acc) %>% tally() %>% group_by(n) %>% tally() 
+ggplot(aes(x = n, y = nn)) + geom_bar(stat = "identity")
+
+table(class.files$protein$pr_splice_cat)
+nrow(class.files$protein)
+3496/nrow(class.files$protein)
 
 
 ## ---------- WT vs TG -----------------
@@ -218,6 +246,51 @@ plot_trem2("PB.20818.382")
 plot_trem2("PB.20818.547")
 
 
+## ---------- cryptic exons -----------------
+
+InternalNovelExons <- lapply(FICLENE, function(x) x[x$classification == "Internal_NovelExon",])
+InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
+                                                                   protein$cpat[,c("pb_acc","coding_score","orf_calling_confidence")], 
+                                                                   by.x = "transcriptID", by.y = "pb_acc"))
+InternalNovelExons <- lapply(InternalNovelExons, function(x) x %>% mutate(coding = ifelse(coding_score < 0.44, "noncoding","coding")))
+InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
+                                                                   nmd[,c("pb","is_nmd","has_stop_codon")], 
+                                                                   by.x = "transcriptID", by.y = "pb",all.x=TRUE)) 
+plotCE <- function(gene){
+  representative <- as.data.frame(gtf$ref_target %>% filter(type == "transcript" & transcript_type == "protein_coding") %>% group_by(gene_name) %>% top_n(1, width))
+  allRep <- as.data.frame(gtf$ref_target)
+  # manual drop gene
+  print(gene)
+  df <- InternalNovelExons[[gene]]
+  if(gene == "Apoe"){
+    df <- df[df$transcriptID == "PB.40586.26305",]
+  }else if(gene == "Bin1"){
+    df <- df[df$transcriptID %in% paste0("PB.22007.",c("925","1554","1033","4967","1470","14222","1014")),]
+  }else if(gene == "Clu"){
+    df <-  df[df$transcriptID %in% paste0("PB.14646.",c("6992")),]
+  }else if(gene == "Snca"){
+    df <-  df[df$transcriptID %in% paste0("PB.38419.",c("3145")),]
+  }else if(gene == "Trem2"){
+    df <- df[df$transcript %in% paste0("PB.20818.", c("80","192","573","1074","493","362","1096")),]
+  }else{
+    return(NULL)
+  }
+  
+  p <- list(
+    #Reference = c("ENSMUST00000024791.14","ENSMUST00000113237.3"),
+    Reference =  unique(allRep[allRep$gene_name == gene, "transcript_id"]),
+    #Reference =  representative[ representative$gene_name == gene, "transcript_id"],
+    `not NMD` = as.character(unique(df %>% filter(coding == "coding" & is_nmd == "False") %>% .[,c("transcriptID")])),
+    `NMD` = as.character(unique(df %>% filter(coding == "coding" & is_nmd == "True") %>% .[,c("transcriptID")])),
+    `non-coding` = as.character(unique(df %>% filter(coding == "noncoding") %>% .[,c("transcriptID")]))
+  ) %>% generalggTranPlots(., gtf$targ_merged, class.files$targ_filtered, gene) 
+  
+  return(p)
+}
+
+pInternalNovelExons <- lapply(names(InternalNovelExons), function(x) plotCE(x))
+names(pInternalNovelExons) <- names(InternalNovelExons)
+
 ## ---------- output (pdf) -----------------
 
 pdf(paste0(dirnames$targ_output,"/MaptIsoforms.pdf"), width = 14, height = 17)
@@ -229,7 +302,15 @@ plot_grid(plot_grid(pMaptRTranscripts,pMaptRProtein, labels = c("i","ii")),
 dev.off()
 
 
+pdf("Trem2IsoformsIdentialOrf.pdf", width = 10, height = 10)
 plot_grid(pTrem2ProteinSameORF)
+dev.off()
+pdf("Trem2IsoformsUniqueOrf.pdf", width = 10, height = 20)
 plot_grid(pTremFinal,pTremFinalProtein, nrow=1)
+dev.off()
+pdf("Trem2IsoformsESOrf.pdf", width = 10, height = 10)
 plot_grid(pTrem2ESTranscripts, pTrem2ESProtein, nrow = 1) 
-plot_grid(pTrem2CE,pTrem2CEProtein,nrow=1)
+dev.off()
+pdf("Trem2IsoformsCEOrf.pdf", width = 10, height = 10)
+plot_grid(Trem2CE,Trem2CEProtein,nrow=1)
+dev.off()

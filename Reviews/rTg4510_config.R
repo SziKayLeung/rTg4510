@@ -1,7 +1,10 @@
 # Szi Kay Leung: sl693@exeter.ac.uk
 
 suppressMessages(library("data.table"))
+suppressMessages(library("stringr"))
 LOGEN <- "/lustre/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
+source(paste0(LOGEN, "/aesthetics_basics_plots/pthemes.R"))
+source(paste0(LOGEN, "/aesthetics_basics_plots/draw_density.R"))
 source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
 source(paste0(LOGEN,"/target_gene_annotation/summarise_gene_stats.R"))
 source(paste0(LOGEN,"/compare_datasets/dataset_identifer.R"))
@@ -9,7 +12,7 @@ source(paste0(LOGEN, "/differential_analysis/plot_transcript_level.R"))
 source(paste0(LOGEN, "/aesthetics_basics_plots/pthemes.R"))
 source(paste0(LOGEN, "/differential_analysis/run_DESeq2.R"))
 source(paste0(LOGEN, "/merge_characterise_dataset/run_ggtranscript.R"))
-source(paste0(LOGEN, "/aesthetics_basics_plots/pthemes.R"))
+
 
 
 wholesamples <- c("K17","K18","K23","K24","L22","M21","O18","O23","Q20","Q21","S18","S23")
@@ -110,6 +113,11 @@ gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","t
 
 ## -------- FICLE output -------------------
 #Maptprotein <- unique(class.files$ptarg_filtered[class.files$ptarg_filtered$associated_gene == "Mapt","corrected_acc"])
-MaptES <- read.csv("/lustre/projects/Research_Project-MRC148213/sl693/rTg4510_FICLE/Mapt/Stats/Mapt_general_exon_level.csv")
-Trem2ES <- read.csv("/lustre/projects/Research_Project-MRC148213/sl693/rTg4510_FICLE/FICLE/TargetGenes/Trem2/Stats/Trem2_Exonskipping_generaltab.csv") 
-Trem2NE <- read.csv("/lustre/projects/Research_Project-MRC148213/sl693/rTg4510_FICLE/FICLE/TargetGenes/Trem2/Stats/Trem2_NE.csv") 
+FICLE_dir <- "/lustre/projects/Research_Project-MRC148213/sl693/rTg4510/G_Merged_Targeted/4_characterise/TargetGenes"
+MaptES <- read.csv(paste0(FICLE_dir, "/Mapt/Stats/Mapt_general_exon_level.csv"))
+Trem2ES <- read.csv(paste0(FICLE_dir, "/Trem2/Stats/Trem2_general_exon_level.csv")) 
+
+# novel cryptic exons
+FICLENE <- list.files(path = FICLE_dir, pattern = "_NE_coordinates.csv", recursive = T, full.names = T)
+FICLENE <- lapply(FICLENE, function(x) read.csv(x))
+names(FICLENE) <- word(list.files(path = FICLE_dir, pattern = "_NE_coordinates.csv", recursive = T, full.names = F),c(1),sep=fixed("/"))
