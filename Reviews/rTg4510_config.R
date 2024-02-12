@@ -2,7 +2,7 @@
 
 suppressMessages(library("data.table"))
 suppressMessages(library("stringr"))
-LOGEN <- "/lustre/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
+LOGEN <- "/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LOGen"
 source(paste0(LOGEN, "/aesthetics_basics_plots/pthemes.R"))
 source(paste0(LOGEN, "/aesthetics_basics_plots/draw_density.R"))
 source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
@@ -29,7 +29,7 @@ TargetGene <- c("Abca1","Sorl1","Mapt","Bin1","Tardbp","App","Abca7",
 
 ## --------------------------- 
 # directory names
-root_dir <- "/lustre/projects/Research_Project-MRC148213/sl693/"
+root_dir <- "/lustre/projects/Research_Project-MRC148213/lsl693/"
 dirnames <- list(
   # global transcriptome (Iso-Seq, Iso-Seq + RNA-Seq)
   glob_root = paste0(root_dir, "rTg4510/A_IsoSeq_Whole"),
@@ -41,7 +41,7 @@ dirnames <- list(
   protein = paste0(root_dir, "rTg4510/G_Merged_Targeted/4_proteogenomics/"),
   
   # reference
-  references = paste0(root_dir,"reference/annotation")
+  references = paste0(root_dir,"references/annotation")
 )
 
 ## ------------- Phenotype files -------------------
@@ -113,7 +113,7 @@ gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","t
 
 ## -------- FICLE output -------------------
 #Maptprotein <- unique(class.files$ptarg_filtered[class.files$ptarg_filtered$associated_gene == "Mapt","corrected_acc"])
-FICLE_dir <- "/lustre/projects/Research_Project-MRC148213/sl693/rTg4510/G_Merged_Targeted/4_characterise/TargetGenes"
+FICLE_dir <- "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/G_Merged_Targeted/4_characterise/TargetGenes"
 MaptES <- read.csv(paste0(FICLE_dir, "/Mapt/Stats/Mapt_general_exon_level.csv"))
 Trem2ES <- read.csv(paste0(FICLE_dir, "/Trem2/Stats/Trem2_general_exon_level.csv")) 
 

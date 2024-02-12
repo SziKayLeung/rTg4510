@@ -10,7 +10,7 @@ suppressMessages(library("cowplot"))
 
 ## ---------- config file -----------------
 
-source("/lustre/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Reviews/rTg4510_config.R")
+source("/lustre/projects/Research_Project-MRC148213/lsl693/scripts/rTg4510/Reviews/rTg4510_config.R")
 
 generalggTranPlots <- function(isolist, inputgtf, classfiles, gene, cpat = NULL, species = NULL){
   IsoDf <- data.frame(
@@ -20,10 +20,15 @@ generalggTranPlots <- function(isolist, inputgtf, classfiles, gene, cpat = NULL,
   IsoDf$colour <- c(rep(NA,length(IsoDf$Category[IsoDf$Category != "DTE"])))
   p <- ggTranPlots(inputgtf=inputgtf,classfiles=classfiles,
                    isoList = c(as.character(IsoDf$Isoform)),
-                   selfDf = IsoDf, gene = gene, cpat = cpat, species = species)
+                   selfDf = IsoDf, gene = gene, inputCpat = cpat, cpatSpecies = species)
   return(p)
 }
 
+label_group <- function(genotype){
+  if(genotype %in% c("TG","Case","CASE")){group = "TG"}else{
+    if(genotype %in% c("WT","Control","CONTROL")){group = "WT"}}
+  return(group)
+}
 
 ## ---------- input from 2_proteogenomics.R -----------------
 
@@ -256,18 +261,27 @@ InternalNovelExons <- lapply(InternalNovelExons, function(x) x %>% mutate(coding
 InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
                                                                    nmd[,c("pb","is_nmd","has_stop_codon")], 
                                                                    by.x = "transcriptID", by.y = "pb",all.x=TRUE)) 
-plotCE <- function(gene){
+
+plotCE <- function(gene, type){
   representative <- as.data.frame(gtf$ref_target %>% filter(type == "transcript" & transcript_type == "protein_coding") %>% group_by(gene_name) %>% top_n(1, width))
   allRep <- as.data.frame(gtf$ref_target)
   # manual drop gene
   print(gene)
   df <- InternalNovelExons[[gene]]
   if(gene == "Apoe"){
-    df <- df[df$transcriptID == "PB.40586.26305",]
+    # PB.40586.2026 = reference match ("PB.40586.2026")
+    df <- df[df$transcriptID %in% c("PB.40586.26305"),]
+    ref <-data.frame("PB.40586.2026",NA,NA,NA,NA,NA,"coding","False","True")
+    colnames(ref) <- colnames(df)
+    df <- rbind(df, ref)
   }else if(gene == "Bin1"){
     df <- df[df$transcriptID %in% paste0("PB.22007.",c("925","1554","1033","4967","1470","14222","1014")),]
   }else if(gene == "Clu"){
     df <-  df[df$transcriptID %in% paste0("PB.14646.",c("6992")),]
+    # PB.40586.2026 = reference match ("PB.14646.139", "PB.14646.483")
+    ref <- data.frame("PB.14646.139",NA,NA,NA,NA,NA,"coding","False","True")
+    colnames(ref) <- colnames(df)
+    df <- rbind(df, ref)
   }else if(gene == "Snca"){
     df <-  df[df$transcriptID %in% paste0("PB.38419.",c("3145")),]
   }else if(gene == "Trem2"){
@@ -275,21 +289,61 @@ plotCE <- function(gene){
   }else{
     return(NULL)
   }
-  
-  p <- list(
+  transcriptList <- list(
     #Reference = c("ENSMUST00000024791.14","ENSMUST00000113237.3"),
     Reference =  unique(allRep[allRep$gene_name == gene, "transcript_id"]),
     #Reference =  representative[ representative$gene_name == gene, "transcript_id"],
     `not NMD` = as.character(unique(df %>% filter(coding == "coding" & is_nmd == "False") %>% .[,c("transcriptID")])),
     `NMD` = as.character(unique(df %>% filter(coding == "coding" & is_nmd == "True") %>% .[,c("transcriptID")])),
     `non-coding` = as.character(unique(df %>% filter(coding == "noncoding") %>% .[,c("transcriptID")]))
-  ) %>% generalggTranPlots(., gtf$targ_merged, class.files$targ_filtered, gene) 
+  )
+  proteinList <- list(
+    #Reference =  unique(allRep[allRep$gene_name == gene, "transcript_id"]),
+    `not NMD` =  unique(gtf$ptarg_merged %>% filter(transcript %in% transcriptList$`not NMD`) %>% .[["gene_id"]]),
+    `NMD` = unique(gtf$ptarg_merged %>% filter(transcript %in% transcriptList$`NMD`) %>% .[["gene_id"]]),
+    `non-coding` = unique(gtf$ptarg_merged %>% filter(transcript %in% transcriptList$`non-coding`) %>% .[["gene_id"]]))
   
+  if(type == "transcript"){
+    p <-  generalggTranPlots(transcriptList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  }else if(type == "protein"){
+    p <- generalggTranPlots(proteinList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  }else{
+    bothList <- c(transcriptList, proteinList)
+    p <- generalggTranPlots(bothList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  }
+
   return(p)
 }
 
-pInternalNovelExons <- lapply(names(InternalNovelExons), function(x) plotCE(x))
-names(pInternalNovelExons) <- names(InternalNovelExons)
+pInternalNovelExonsTranscript <- lapply(names(InternalNovelExons), function(x) plotCE(x,"transcript"))
+names(pInternalNovelExonsTranscript) <- names(InternalNovelExons)
+
+pInternalNovelExonsProtein <- lapply(names(InternalNovelExons), function(x) plotCE(x,"protein"))
+names(pInternalNovelExonsProtein) <- names(InternalNovelExons)
+
+pInternalNovelExonsProteinBoth <- lapply(names(InternalNovelExons), function(x) plotCE(x,"proteinTranscript"))
+names(pInternalNovelExonsProteinBoth) <- names(InternalNovelExons)
+
+pdf(paste0(dirnames$targ_output,"/CrypticExonsApoe.pdf"), width = 10, height = 8)
+pInternalNovelExonsProteinBoth$Apoe
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/CrypticExonsClu.pdf"), width = 10, height = 8)
+pInternalNovelExonsProteinBoth$Clu
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/CrypticExonsTrem2.pdf"), width = 10, height = 8)
+pInternalNovelExonsProteinBoth$Trem2
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/CrypticExonsBin1.pdf"), width = 10, height = 8)
+pInternalNovelExonsProteinBoth$Bin1
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/CrypticExonsSnca.pdf"), width = 10, height = 4)
+pInternalNovelExonsProteinBoth$Snca
+dev.off()
+
 
 ## ---------- output (pdf) -----------------
 
