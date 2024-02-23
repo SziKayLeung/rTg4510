@@ -405,3 +405,17 @@ table(rowSums(Apoe4Ex  == "No" | Apoe4Ex  == "FirstExon" | Apoe4Ex  == "IR"))
 
 # Differential transcript usage
 TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene == "Apoe")
+
+
+## ---------- Revision -----------------------------------------------------------------
+
+
+## ---------- Proteogenomics ----------
+message("Number of RNA Transcripts:", nrow(class.files$targ_filtered))
+message("Number of coding RNA isoforms:", length(unique(mouseProtein$t2p.collapse.refined$pb_acc)))
+message("Number of coding RNA isoforms:", length(unique(mouseProtein$t2p.collapse.refined$corrected_acc)))
+length(unique(class.files$ptarg_filtered$corrected_acc)) # -1 to not include "NA" 
+
+table(class.files$protein$pr_splice_cat)
+nrow(class.files$protein)
+3496/nrow(class.files$protein)

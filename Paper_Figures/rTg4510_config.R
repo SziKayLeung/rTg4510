@@ -1,7 +1,7 @@
 # Szi Kay Leung: sl693@exeter.ac.uk
 
 suppressMessages(library("data.table"))
-LOGEN <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
+LOGEN <- "/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LOGen/"
 source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
 source(paste0(LOGEN,"/target_gene_annotation/summarise_gene_stats.R"))
 source(paste0(LOGEN,"/compare_datasets/dataset_identifer.R"))
@@ -23,7 +23,7 @@ targetedTG <- c("K18","K20","K24","L22","O18","O22","T20","Q20","S18","Q18","L18
 
 ## --------------------------- 
 # directory names
-root_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/"
+root_dir <- "/lustre/projects/Research_Project-MRC148213/lsl693/"
 dirnames <- list(
   # global transcriptome (Iso-Seq, Iso-Seq + RNA-Seq)
   glob_metadata = paste0(root_dir, "rTg4510/0_metadata/A_isoseq_whole"),
@@ -46,7 +46,13 @@ dirnames <- list(
   rna_aligned = paste0(root_dir,"rTg4510/C_RNASeq/2_aligned/All"),
   
   # miscellaneous
-  references = paste0(root_dir,"references/annotation")
+  references = paste0(root_dir,"references/annotation"),
+  
+  # sorted nuclei data
+  SCN_root = paste0(root_dir, "rTg4510/H_Sorted_Nuclei/"),
+  
+  # proteogeonomics
+  mprotein = paste0(root_dir, "rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_proteogenomics/")
 )
 
 
@@ -81,9 +87,13 @@ class.names.files <- list(
   glob_iso = paste0(dirnames$glob_root, "/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed_RulesFilter_result_classification.txt"),
   targ_all = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts.txt"),
   targ_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt"),
-  iso_match = paste0(dirnames$targ_iso_root, "/7b_matched_only/8d_sqanti3/MatchedMouse_RulesFilter_result_classification.txt")#,
+  iso_match = paste0(dirnames$targ_iso_root, "/7b_matched_only/8d_sqanti3/MatchedMouse_RulesFilter_result_classification.txt"),
+  targ_sorted = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_targetgenes_counts.txt"),
+  targ_sorted_all = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_counts.txt"),
+  ptarg_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt")
+  
   #targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
-  #targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt")
+  #targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt"),
 ) 
 class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard"))
 
@@ -111,6 +121,21 @@ group_class.files.diff.targeted <- cbind(class.files$targ_filtered[,c("isoform",
   `colnames<-`(c("isoform","associated_gene","WTFL", "TGFL"))
 
 
+### sorted nuclei data
+class.files$targ_sorted <- class.files$targ_sorted %>% select(-`NeuN65 _mapped`)
+
+# differentiate NeuN vs DN specific isoforms
+class.files$targ_sorted$NeuNSum <- class.files$targ_sorted  %>% select(contains("NeuN")) %>% apply(., 1,sum)
+class.files$targ_sorted$DNSum <- class.files$targ_sorted  %>% select(contains("DN")) %>% apply(., 1,sum)
+class.files$targ_sorted$dataset <- apply(class.files$targ_sorted,1, function(x) identify_dataset_by_counts(x[["NeuNSum"]], x[["DNSum"]], "NeuN","DN"))
+
+# calculate TPM
+expression <- class.files$targ_sorted_all %>% select(contains("mapped"))
+TPM <- expression %>% mutate_if(is.numeric, funs(./sum(.))) 
+colnames(TPM) <- paste0("TPM_", colnames(TPM))
+class.files$targ_sorted_all <- cbind(class.files$targ_sorted_all, TPM)
+class.files$targ_sorted_all$totalReads <- class.files$targ_sorted_all %>% select(contains("mapped") & !contains("TPM")) %>% apply(., 1, sum)
+
 # Expression 
 rawExp <- list(
   targ_ont_all = class.files$targ_all %>% dplyr::select(associated_gene, contains("ONT")) %>% select(!contains("sum_FL"))
@@ -121,7 +146,7 @@ cat("Input DESEQ2 results\n")
 GlobalDESeq <- list(
   resTranAnno = readRDS(file = paste0(dirnames$glob_output, "/IsoSeq_DESeq2TranscriptLevel.RDS")),
   resGeneAnno = readRDS(file = paste0(dirnames$glob_output, "/IsoSeq_DESeq2GeneLevel.RDS")),
-  #RresTranAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2TranscriptLevel.RDS")),
+  RresTranAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2TranscriptLevel.RDS")),
   RresGeneAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2GeneLevel.RDS")),
   resGeneComparison = readRDS(file = paste0(dirnames$glob_output, "/Comparison_DESeq2GeneLevel.RDS"))
 ) 
@@ -176,6 +201,16 @@ Exp <- list(
       remove_rownames %>% tibble::column_to_rownames(var="isoform")
   )
 )
+
+Exp$targ_sorted_all <- class.files$targ_sorted_all %>% 
+  select(contains("TPM"), "isoform", "associated_gene", "associated_transcript") %>% 
+  reshape2::melt() %>% 
+  mutate(sample = word(variable, c(2),sep = fixed("_"))) %>% 
+  merge(RawCounts[,c("sample","genotype","age", "cell")], ., by = "sample") %>% 
+  mutate(value = value * 1000000) %>% 
+  filter(variable != "TPM_NeuN65 _mapped" )
+colnames(Exp$targ_sorted_all) <- c("sample","genotype","time","cell","isoform","associated_gene","associated_transcript","file","TPM")
+
 
 ## ---------- merged targeted results overview -----------------
 
@@ -232,14 +267,47 @@ rnaseq_results <- list(
 gtf <- list(
   glob_iso = rtracklayer::import(paste0(dirnames$glob_root,"/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed.filtered.gtf")),
   targ_merged = rtracklayer::import(paste0(dirnames$targ_root,"/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf")),
+  ptarg_merged = rtracklayer::import(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.gtf")),
   ref_target = rtracklayer::import(paste0(dirnames$references,"/gencode.M22.annotation.20Targets.gtf"))
 )
 gtf <- lapply(gtf, function(x) as.data.frame(x))
 
-gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")] ,
-                         gtf$ref_target[,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
+gtfCols <- c("seqnames","strand","start","end","type","transcript_id","gene_id")
+gtf$targ_merged <- rbind(gtf$targ_merged[,gtfCols],
+                         gtf$ptarg_merged[,gtfCols],
+                         gtf$ref_target[,gtfCols])
 
 gtf$targ_merged <- gtf$targ_merged %>% mutate(co = paste0(seqnames,":",start,"-",end))
+gtf$ptarg_merged <- gtf$ptarg_merged %>% mutate(transcript = word(transcript_id,c(1),sep=fixed("_")))
+
+refgtf <- list(
+  Gfap = as.data.frame(rtracklayer::import(paste0(dirnames$references,"/gencode.M22.annotation.Gfap.gtf")))
+)
+refgtf <- lapply(refgtf, function(x) x %>% select(seqnames,strand,start,end,type,transcript_name,gene_id) %>% dplyr::rename(., "transcript_id" = "transcript_name"))
+gtf$glob_iso <- rbind(gtf$glob_iso[,c("seqnames","strand","start","end","type","transcript_id","gene_id")], refgtf$Gfap)
+
+
+
+## -------------------------- SCN sorted data
+
+
+mouseProtein = list(
+  cpat = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.ORF_prob.best.tsv"), sep ="\t", header = T),
+  t2p.collapse = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T),
+  t2p.collapse.refined = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined_collapsed.tsv"))
+)
+
+humanProtein = list(
+  cpat = read.table(paste0(dirnames$protein,"5_calledOrfs/all_iso_ont_best_orf.tsv"), sep ="\t", header = T),
+  t2p.collapse = read.table(paste0(dirnames$protein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T)
+)
+
+annopResTran <- readRDS(paste0(dirnames$targ_output, "/DESeq2ProteinLevel.RDS"))
+
+class.files$protein <- read.table(paste0(dirnames$mprotein,"7_classified_protein/all_iso_ont.sqanti_protein_classification.tsv"), sep = "\t", header = T)
+nmd <- read.table(paste0(dirnames$mprotein, "7_classified_protein/all_iso_ont.classification_filtered.tsv"), sep = "\t", header = T)
+idx <- match(nmd$pb,class.files$ptarg_filtered$base_acc)
+nmd <- transform(nmd, corrected_acc = ifelse(!is.na(idx), as.character(class.files$ptarg_filtered$corrected_acc[idx]), NA))
 
 
 ## ---------------------------

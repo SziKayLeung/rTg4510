@@ -239,6 +239,17 @@ Cd33IRTrack <- ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
                              isoList = c(as.character(Cd33Iso$Isoform)),
                              selfDf = Cd33Iso, gene = "Cd33")
 
+## ---------- Revision -----------------------------------------------------------------
+
+
+## ---------- Proteogenomics ----------
+
+pGeneralProtein <- plot_protein_general(class.files$ptarg_filtered)
+pTrem2SameORF <- visualise_ORFs(refgtf=gtf$ref_target, tgtf=gtf$targ_merged,pgtf=gtf$ptarg_merged,
+               tclassfiles=class.files$targ_filtered, pclassfiles=class.files$ptarg_filtered,gene="Trem2", transcript="PB.20818.54", cpat=mouseProtein$cpat, species="mouse")
+
+pTrem2UniqueORF <- visualise_ORFs(refgtf=gtf$ref_target, tgtf=gtf$targ_merged,pgtf=gtf$ptarg_merged,
+               tclassfiles=class.files$targ_filtered, pclassfiles=class.files$ptarg_filtered,gene="Trem2",cpat=mouseProtein$cpat, species="mouse")
 
 ## ---------- Output -----------------
 
@@ -294,4 +305,11 @@ for(i in Targeted$Genes){
   print(i)
   print(plot_grid(pIF$ontNorm[[i]][[2]],pIF$isoNorm[[i]][[2]],nrow = 1))
 }
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/SuppProteomics.pdf"), width = 22, height = 13)
+A <- plot_grid(pGeneralProtein[[1]], pGeneralProtein[[2]], pTrem2SameORF, ncol = 1, labels = c("A","B","C"), scale = 0.95, 
+          rel_heights = c(0.3,0.45,0.35))
+B <- plot_grid(pTrem2UniqueORF, labels = c("D"), scale = 0.95)
+plot_grid(A,B, rel_widths = c(0.35,0.65))
 dev.off()
