@@ -21,28 +21,27 @@ source("/lustre/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Review
 ## ---------- process data from pipeline -----------------
 
 ## data-wrangle orf_refined.tsv 
-  # remove low quality ORF
   # filter to target genes
   # generate column of the number of transcripts collapsed by delimiting the pb_accs column
   # output: a table of the pb_accs, base_acc (the representative collapsed isoform selected by G.Shenkyman pipeline) and numtxCollapsed
-protein$t2p.collapse <- protein$t2p.collapse %>% filter(!orf_calling_confidence == "Low Quality ORF") %>% 
+mouseProtein$t2p.collapse <- mouseProtein$t2p.collapse %>% 
   filter(gene%in%TargetGene) %>% 
   mutate(numtxCollapsed = count.fields(textConnection(as.character(pb_accs)), sep = "|"))
-char <- strsplit(as.character(protein$t2p.collapse $pb_accs), '|', fixed = T)
-t2p.collapse.dissected <- data.frame(pb_accs=unlist(char), base_acc=rep(protein$t2p.collapse$base_acc, sapply(char, FUN=length)))
-protein$t2p.collapse <- merge(t2p.collapse.dissected,protein$t2p.collapse[,c("base_acc","numtxCollapsed")])
+char <- strsplit(as.character(mouseProtein$t2p.collapse $pb_accs), '|', fixed = T)
+t2p.collapse.dissected <- data.frame(pb_accs=unlist(char), base_acc=rep(mouseProtein$t2p.collapse$base_acc, sapply(char, FUN=length)))
+mouseProtein$t2p.collapse <- merge(t2p.collapse.dissected,mouseProtein$t2p.collapse[,c("base_acc","numtxCollapsed")])
 
 ## re-determine representative colalsped isoform: using ONT abundance (sum across all samples) rather than arbitrary (G.Shenkyman pipeline)
  # take the ONT_sum read counts from the classification file
  # max = grouping by the base_acc (i.e. the previously selected isoform), select the rows with the maximum ONT FL reads
  # create an index to remap and create a "corrected_acc" column with the corresponding isoform that has the highest number of ONT FL reads
-protein$t2p.collapse <- merge(protein$t2p.collapse,class.files$targ_filtered[,c("isoform","ONT_sum_FL")],by.x = "pb_accs", by.y = "isoform", all.x = TRUE)
-max = protein$t2p.collapse %>% group_by(base_acc) %>% filter(ONT_sum_FL == max(ONT_sum_FL))
-idx <- match(protein$t2p.collapse$base_acc, max$base_acc)
-protein$t2p.collapse = transform(protein$t2p.collapse, corrected_acc = ifelse(!is.na(idx), as.character(max$pb_accs[idx]), base_acc))
+mouseProtein$t2p.collapse <- merge(mouseProtein$t2p.collapse,class.files$targ_filtered[,c("isoform","ONT_sum_FL")],by.x = "pb_accs", by.y = "isoform", all.x = TRUE)
+max = mouseProtein$t2p.collapse %>% group_by(base_acc) %>% filter(ONT_sum_FL == max(ONT_sum_FL))
+idx <- match(mouseProtein$t2p.collapse$base_acc, max$base_acc)
+mouseProtein$t2p.collapse = transform(mouseProtein$t2p.collapse, corrected_acc = ifelse(!is.na(idx), as.character(max$pb_accs[idx]), base_acc))
 
 ## include in the original classification file the collapsed PB.ID 
-class.files$targ_filtered <- merge(class.files$targ_filtered, protein$t2p.collapse[,c("pb_accs","numtxCollapsed","base_acc","corrected_acc")], by.x = "isoform", by.y = "pb_accs", all.x = TRUE)
+class.files$targ_filtered <- merge(class.files$targ_filtered, mouseProtein$t2p.collapse[,c("pb_accs","numtxCollapsed","base_acc","corrected_acc")], by.x = "isoform", by.y = "pb_accs", all.x = TRUE)
 
 ## Statistics
 message("Total number of RNA transcripts: ", nrow(class.files$targ_filtered))
@@ -87,5 +86,5 @@ annoResTran <- list(
 
 ## ---------- Output -----------------
 write.table(class.files$targ_filtered, paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt"),sep="\t",quote = F)
-write.table(protein$t2p.collapse, paste0(dirnames$protein,"/all_iso_ont_orf_refined_collapsed.tsv"),sep="\t",quote = F)
+write.table(mouseProtein$t2p.collapse, paste0(dirnames$mprotein,"/all_iso_ont_orf_refined_collapsed.tsv"),sep="\t",quote = F)
 saveRDS(annoResTran, file = paste0(dirnames$targ_output, "/DESeq2ProteinLevel.RDS"))

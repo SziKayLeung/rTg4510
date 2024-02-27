@@ -244,7 +244,7 @@ Cd33IRTrack <- ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
 
 ## ---------- Proteogenomics ----------
 
-pGeneralProtein <- plot_protein_general(class.files$ptarg_filtered)
+pGeneralProtein <- plot_protein_general(class.files$ptarg_filtered, class.files$protein_filtered_final)
 pTrem2SameORF <- visualise_ORFs(refgtf=gtf$ref_target, tgtf=gtf$targ_merged,pgtf=gtf$ptarg_merged,
                tclassfiles=class.files$targ_filtered, pclassfiles=class.files$ptarg_filtered,gene="Trem2", transcript="PB.20818.54", cpat=mouseProtein$cpat, species="mouse")
 

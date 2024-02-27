@@ -52,7 +52,9 @@ dirnames <- list(
   SCN_root = paste0(root_dir, "rTg4510/H_Sorted_Nuclei/"),
   
   # proteogeonomics
-  mprotein = paste0(root_dir, "rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_proteogenomics/")
+  mprotein = paste0(root_dir, "rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_proteogenomics/"),
+  
+  utils =  paste0(root_dir, "scripts/rTg4510/0_utils/")
 )
 
 
@@ -80,6 +82,8 @@ phenotype$targeted_rTg4510_ont <- read.csv(paste0(dirnames$targ_ont_metadata, "/
 phenotype$targeted_rTg4510_ont <- phenotype$targeted_rTg4510_ont %>% mutate(group = Phenotype, time = Age) %>% mutate(group = factor(group, levels = c("WT","TG")))
 phenotype$targeted_rTg4510_ont <- phenotype$targeted_rTg4510_ont %>% mutate(sample = paste0("ONT_",sample),col = paste0(sample,"_",Phenotype)) 
 
+ensemblID <- read.csv(paste0(dirnames$utils,"ensemblGeneName.csv"))
+
 
 ## --------------------------- 
 # Final classification file
@@ -90,12 +94,15 @@ class.names.files <- list(
   iso_match = paste0(dirnames$targ_iso_root, "/7b_matched_only/8d_sqanti3/MatchedMouse_RulesFilter_result_classification.txt"),
   targ_sorted = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_targetgenes_counts.txt"),
   targ_sorted_all = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_counts.txt"),
-  ptarg_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt")
+  ptarg_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt"),
   
   #targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
   #targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt"),
 ) 
 class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard"))
+class.files$protein_filtered <- read.table(paste0(dirnames$mprotein, "/7_classified_protein/all_iso_ont.sqanti_protein_classification.tsv"), sep = "\t", as.is = T, header = T)
+# file below generated from 1_generate_stats.R
+class.files$protein_filtered_final <- read.table(paste0(dirnames$mprotein, "/7_classified_protein/all_iso_ont.sqanti_protein_classification_finalised.tsv"))
 
 # for downstream subsetting of the global transcriptome by WT and TG mice sample
 sub_class.files <- lapply(wholesamples, function(x) subset_class_by_sample(class.files$glob_iso,x))
@@ -177,8 +184,16 @@ TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) x %>% filter(!is.
 TargetedMergedDESeqSig <- lapply(TargetedMergedDESeq, function(x) x %>% filter(padj_ont < 0.05))
 
 
-## ---------- DIU results (EdgeR) -----------------
-TargetedDIU <- readRDS(file = paste0(dirnames$targ_output, "/resultsDIU.RDS"))
+## ---------- sorted nuclei data -----------------
+
+NeuNrawCounts <- read.table("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/2_cutadapt_merge/NeuN/read_numbers.txt")
+DNrawCounts <- read.table("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/2_cutadapt_merge/DN/read_numbers.txt")
+libraryPrep <- read.csv("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/0_metadata/libraryPrepMolarity.csv")
+phenotype$sorted <- read.csv("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/0_metadata/SCNPhenotype.csv")
+libraryPrep <- merge(phenotype$sorted, libraryPrep, by = "tissue")
+RawCounts <- rbind(NeuNrawCounts %>% mutate(cell = "NeuN"), DNrawCounts %>% mutate(cell = "DN")) %>% mutate(barcode = word(V1,c(1),sep=fixed("_")))
+RawCounts <- merge(RawCounts, libraryPrep, by = "barcode") %>% dplyr::rename("totalReads" = "V2")
+
 
 ## ---------- Expression -----------------
 Exp <- list(
@@ -288,11 +303,13 @@ gtf$glob_iso <- rbind(gtf$glob_iso[,c("seqnames","strand","start","end","type","
 
 
 
-## -------------------------- SCN sorted data
+## -------------------------- protein ----------
 
 
 mouseProtein = list(
   cpat = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.ORF_prob.best.tsv"), sep ="\t", header = T),
+  mapped = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_orfs_mapped.tsv"), sep ="\t", header = T),
+  noORF = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.no_ORF.txt"), sep ="\t", header = F),
   t2p.collapse = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T),
   t2p.collapse.refined = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined_collapsed.tsv"))
 )

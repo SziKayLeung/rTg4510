@@ -411,6 +411,7 @@ TargetedDIU$ontDIUGeno$resultDIU %>% filter(Gene == "Apoe")
 
 
 ## ---------- Proteogenomics ----------
+
 message("Number of RNA Transcripts:", nrow(class.files$targ_filtered))
 message("Number of coding RNA isoforms:", length(unique(mouseProtein$t2p.collapse.refined$pb_acc)))
 message("Number of coding RNA isoforms:", length(unique(mouseProtein$t2p.collapse.refined$corrected_acc)))
@@ -419,3 +420,46 @@ length(unique(class.files$ptarg_filtered$corrected_acc)) # -1 to not include "NA
 table(class.files$protein$pr_splice_cat)
 nrow(class.files$protein)
 3496/nrow(class.files$protein)
+
+length(unique(mouseProtein$cpat$seq_ID))
+
+setdiff(class.files$targ_filtered$isoform, c(as.character(mouseProtein$noORF$V1),as.character(mouseProtein$cpat$seq_ID)))
+setdiff(c(as.character(mouseProtein$noORF$V1),as.character(mouseProtein$cpat$seq_ID)),class.files$targ_filtered$isoform)
+
+message("Number of transcripts: ", length(class.files$targ_filtered$isoform))
+message("Number of transcripts with noORF: ", length(as.character(mouseProtein$noORF$V1)))
+message("Number of transcripts with ORF: ", length(as.character(mouseProtein$cpat$seq_ID)))
+Rank1 <- mouseProtein$mapped[mouseProtein$mapped$orf_rank == "1",]
+message("Number of transcripts with ORF ranked 1 and has stop codons: ", length(unique(Rank1[Rank1$has_stop_codon == "True","transcript_id"])))
+message("Number of transcripts with ORF ranked 1 and has stop codons, and coding potential > 0: ", length(unique(mouseProtein$t2p.collapse.refined$pb_accs)))
+
+RefinedORF <- mouseProtein$cpat[mouseProtein$cpat$seq_ID %in% mouseProtein$t2p.collapse.refined$pb_accs,]
+message("Number of transcripts with ORF ranked 1 and has stop codons, and coding potential > 0.44: ", nrow(RefinedORF[RefinedORF$Coding_prob > 0.44,]))
+
+RefinedORFCoding <- RefinedORF[RefinedORF$Coding_prob > 0.44,]
+message("Number of transcripts with ORF ranked 1 and has stop codons, and coding potential > 0.44, collapsed: ",
+        length(unique(mouseProtein$t2p.collapse.refined[mouseProtein$t2p.collapse.refined$pb_accs %in% RefinedORFCoding$seq_ID,"corrected_acc"])))
+
+GSselectedcollapsedID <- mouseProtein$t2p.collapse.refined[mouseProtein$t2p.collapse.refined$pb_accs %in% RefinedORFCoding$seq_ID,"base_acc"]
+class.files$protein_filtered_final <- class.files$protein_filtered[class.files$protein_filtered$pb %in% GSselectedcollapsedID,]
+message("Number of protein products after filtering: ", nrow(class.files$protein_filtered_final))
+
+class.files$protein_filtered_final <- class.files$protein_filtered_final %>% mutate(ensemblID = word(tx_gene, c(1), sep = fixed("."))) %>% left_join(., ensemblID, by = "ensemblID") %>% dplyr::rename("associated_gene" = "gene_name")
+class.files$protein_filtered_final <- merge(class.files$protein_filtered_final, distinct(mouseProtein$t2p.collapse.refined[,c("base_acc","corrected_acc")]), by.x = "pb", by.y = "base_acc")
+write.table(class.files$protein_filtered_final, paste0(dirnames$mprotein, "/7_classified_protein/all_iso_ont.sqanti_protein_classification_finalised.tsv"), sep = "\t", quote=F)
+
+nrow(class.files$protein_filtered_final[class.files$protein_filtered_final$pr_splice_cat == "novel_not_in_catalog",])/nrow(class.files$protein_filtered_final)
+nrow(class.files$protein_filtered_final[class.files$protein_filtered_final$pr_splice_cat == "novel_in_catalog",])/nrow(class.files$protein_filtered_final)
+
+# Trem
+Trem2NovelIsoforms <- class.files$targ_filtered[class.files$targ_filtered$associated_gene == "Trem2" & class.files$targ_filtered$associated_transcript == "novel","isoform"]
+message("Number of total protein:", nrow(class.files$protein_filtered_final[class.files$protein_filtered_final$associated_gene == "Trem2",]))
+Trem2NovelProteinIsoforms <- class.files$protein_filtered_final[class.files$protein_filtered_final$corrected_acc %in% Trem2NovelIsoforms ,]
+message("Number of novel protein isoforms:", nrow(Trem2NovelProteinIsoforms))
+
+colapsedID <- length(setdiff(mouseProtein$t2p.collapse.refined$pb_accs, mouseProtein$t2p.collapse.refined$corrected_acc))
+
+## ---------- sorted nuclei ----------
+dat <- Exp$targ_sorted_all[Exp$targ_sorted_all$isoform == "PB.39126.482",c("cell","TPM", "genotype", "time")]
+res <- lm(TPM ~ cell + genotype + time, data = dat)
+summary(res)

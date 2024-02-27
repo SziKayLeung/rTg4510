@@ -30,7 +30,7 @@ lBDRNormCountsTranscripts <- tidyr::spread(lBDRNormCountsTranscripts, sample, no
 ## ---------- IF across BDR genes -----------------
 
 merged <- tabulateIF(BDRONTclass, "B2")
-ggplot(merged, aes(x = associated_gene, y = as.numeric(perc), fill = forcats::fct_rev(structural_category))) +
+BDRIF <- ggplot(merged, aes(x = associated_gene, y = as.numeric(perc), fill = forcats::fct_rev(structural_category))) +
   geom_bar(stat = "identity", color = "black", size = 0.2) +
   #scale_color_manual(values = rep(NA, length(unique(minorgrouped$gene)))) + 
   labs(x = "Gene", y = "Isoform fraction (%)") +
@@ -98,6 +98,61 @@ BDR_plot(norm_counts=lBDRNormCountsTranscripts, iso="PB.50706.8", IF = TRUE)
 
 
 ## Final 
-hAPOE = BDRONTclass[BDRONTclass$associated_gene == "APOE","isoform"]
+novelAPOE <- BDRONTclass[BDRONTclass$associated_gene == "APOE" & BDRONTclass$structural_category %in% c("NIC","NNC"),"isoform"]
+APOEIso <- data.frame(
+  Isoform = unlist(APOEIso <- list(
+    Reference = c("ENST00000446996.5","ENST00000252486.9", "ENST00000434152.5", "ENST00000425718.1"),
+    `FSM ISM` = BDRONTclass[BDRONTclass$associated_gene == "APOE" & BDRONTclass$structural_category %in% c("FSM","ISM"),"isoform"],
+    `NIC NNC` = novelAPOE[novelAPOE != "PB.45429.68"]
+  )),
+  Category = rep(names(APOEIso), lengths(APOEIso))
+)
+APOEIso$colour <- c(rep(NA,length(APOEIso$Category)))
+
+
 APOE_p = ggTranPlots(inputgtf=gtf$humanMerged, classfiles=BDRONTclass,
-                     isoList = hAPOE[hAPOE != "PB.45429.68"], gene = "APOE")
+                     isoList = c(as.character(APOEIso$Isoform)), selfDf = APOEIso, gene = "APOE")
+
+
+CLUIso <- data.frame(
+  Isoform = unlist(CLUIso <- list(
+    Reference = c("ENST00000316403.15","ENST00000405140.7","ENST00000522238.1","ENST00000523500.5"),
+    `NE` = paste0("PB.92671.",c("689","1693","3228","3474","1988","1778","1860","3549","4725")),
+    `AF` = paste0("PB.92671.",c("2479","4691","1875","26717"))
+  )),
+  Category = rep(names(CLUIso), lengths(CLUIso))
+)
+CLUIso$colour <- c(rep(NA,length(CLUIso$Category)))
+CLU_p <- ggTranPlots(inputgtf=gtf$humanMerged, classfiles=BDRONTclass,
+            isoList = c(as.character(CLUIso$Isoform)), selfDf = CLUIso, gene = "CLU") 
+
+Trem2countsA <- BDR_plot(norm_counts=BDRNormCountsTranscripts, iso ="PB.81888.25", sampleExclude = "BBN00229416.1") + 
+  scale_fill_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None") +
+  labs(title = "", subtitle = "ONT Transcript Expression")
+
+Trem2countsB  <- BDR_plot(norm_counts=BDRNormCountsTranscripts, iso = NULL, gene ="PB.81888", sampleExclude = "BBN00229416.1") + 
+  scale_fill_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None") +
+  labs(title = "", subtitle = "ONT Gene Expression")
+
+BDRTrem2Iso <- data.frame(
+  Isoform = unlist(BDRTrem2Iso <- list(
+    `Mouse` = c("ENSMUST00000024791.14", "PB.20818.54"),
+    `Human` = c("ENST00000373113.8", "PB.81888.25")
+  )),
+  Category = rep(names(BDRTrem2Iso), lengths(BDRTrem2Iso))
+)
+Trem2A <- ggTranPlots(inputgtf= gtf$targ_merged, classfiles=class.files$targ_filtered,
+            isoList = c(as.character(BDRTrem2Iso$Isoform)), selfDf = BDRTrem2Iso, gene = "Trem2", squish=FALSE) 
+TREM2B <- ggTranPlots(inputgtf= gtf$humanMerged, classfiles=BDRONTclass,isoList,
+            isoList = c(as.character(BDRTrem2Iso$Isoform)), selfDf = BDRTrem2Iso, gene = "TREM2", squish=FALSE) 
+
+pdf(paste0(output_dir,"/MainFiguresBDR.pdf"), width = 15, height = 13)
+left <- plot_grid(BDRIF + mytheme + theme(legend.position = "top"),
+                    plot_grid(plot_grid(Trem2A,TREM2B, ncol = 1, labels = c("D",NULL)),
+                              plot_grid(Trem2countsA,Trem2countsB, nrow=1, labels = c("E","F")), nrow = 2, rel_heights = c(0.4,0.6)), ncol = 1, labels = c("A"))
+right <- plot_grid(APOE_p, CLU_p, labels = c("B","C"), ncol = 1, rel_heights = c(0.6,0.4))
+plot_grid(left, right, nrow = 1)
+dev.off()
+
+
+

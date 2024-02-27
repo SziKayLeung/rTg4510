@@ -36,12 +36,14 @@ dirnames <- list(
   targ_root = paste0(root_dir, "rTg4510/G_Merged_Targeted"),
   glob_output = paste0(root_dir, "rTg4510/01_figures_tables/Whole_Transcriptome"),
   targ_output = paste0(root_dir, "rTg4510/01_figures_tables/Targeted_Transcriptome"),
+  SCN_root = paste0(root_dir, "rTg4510/H_Sorted_Nuclei/"),
   
   # proteogeonomics
   protein = paste0(root_dir, "rTg4510/G_Merged_Targeted/4_proteogenomics/"),
   
   # reference
   references = paste0(root_dir,"references/annotation")
+  
 )
 
 ## ------------- Phenotype files -------------------
@@ -53,15 +55,36 @@ phenotype  <- list(
 
 
 ## --------------------------- 
+# merge counts for targ_sorted
+#targ_sorted <- SQANTI_class_preparation(paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification.txt"),"nstandard")
+#demux_targ_sorted <- fread(paste0(dirnames$SCN_root, "/5_cupcake/6_collapse/demux_fl_count.csv"), data.table = F)
+#targ_sorted <- merge(targ_sorted, demux_targ_sorted, by.x = "isoform", by.y = "id", all.x = T)
+#write.table(targ_sorted, paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_counts.txt"), row.names = F, sep = "\t", quote = F)
+#targ_sorted <- targ_sorted %>% filter(associated_gene %in% TargetGene)
+#write.table(targ_sorted, paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_targetgenes_counts.txt"), row.names = F, sep = "\t", quote = F)
+
 # Final classification file
 class.names.files <- list(
   glob_iso = paste0(dirnames$glob_root, "/2_sqanti3/WholeIsoSeq.collapsed_RulesFilter_result_classification.txt"),
   targ_offtargets = paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.txt"),
   targ_all = paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts.txt"),
-  targ_filtered = paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt")
+  targ_filtered = paste0(dirnames$targ_root, "/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt"),
+  targ_sorted = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_targetgenes_counts.txt"),
+  targ_sorted_all = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_counts.txt")
 ) 
 class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard"))
+class.files$targ_sorted <- class.files$targ_sorted %>% select(-`NeuN65 _mapped`)
 
+# differentiate NeuN vs DN specific isoforms
+class.files$targ_sorted$NeuNSum <- class.files$targ_sorted  %>% select(contains("NeuN")) %>% apply(., 1,sum)
+class.files$targ_sorted$DNSum <- class.files$targ_sorted  %>% select(contains("DN")) %>% apply(., 1,sum)
+class.files$targ_sorted$dataset <- apply(class.files$targ_sorted,1, function(x) identify_dataset_by_counts(x[["NeuNSum"]], x[["DNSum"]], "NeuN","DN"))
+
+# calculate TPM
+expression <- class.files$targ_sorted_all %>% select(contains("mapped"))
+TPM <- expression %>% mutate_if(is.numeric, funs(./sum(.))) 
+colnames(TPM) <- paste0("TPM_", colnames(TPM))
+class.files$targ_sorted_all <- cbind(class.files$targ_sorted_all, TPM)
 
 ## ---------------------------
 
@@ -109,6 +132,12 @@ gtf$ptarg_merged <- gtf$ptarg_merged %>% mutate(transcript = word(transcript_id,
 gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")],
                          gtf$ptarg_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")],
                          gtf$ref_target[,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
+
+refgtf <- list(
+  Gfap = as.data.frame(rtracklayer::import(paste0(dirnames$references,"/gencode.M22.annotation.Gfap.gtf")))
+)
+refgtf <- lapply(refgtf, function(x) x %>% select(seqnames,strand,start,end,type,transcript_name,gene_id) %>% dplyr::rename(., "transcript_id" = "transcript_name"))
+gtf$glob_iso <- rbind(gtf$glob_iso[,c("seqnames","strand","start","end","type","transcript_id","gene_id")], refgtf$Gfap)
 
 
 ## -------- FICLE output -------------------
