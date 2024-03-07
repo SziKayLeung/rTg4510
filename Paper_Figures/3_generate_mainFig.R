@@ -64,9 +64,15 @@ Gfap_p <- list(
     labs(title = "", subtitle = "RNA-Seq Transcript Expression", y = "Normalized counts (K)") +
     facet_grid(cols = vars(group)),
   
-  Sorted = plot_boxplot_SCN(Exp$targ_sorted_all,"PB.39126.482") + theme(legend.title=element_blank()) + labs(title = "", subtitle = "Gfap-201 ONT Transcript Expression") + theme(legend.position = c(0.15,0.8))
+  Sorted = plot_boxplot_SCN(Exp$targ_sorted_all,"PB.39126.482") + theme(legend.title=element_blank()) + labs(title = "", subtitle = "Gfap-201 (LR.Gfap.16) Transcript Expression") + theme(legend.position = c(0.15,0.8))
 )
-
+Gfap_p$tracks1 <- Gfap_p$tracks1 + theme(legend.position = "None", 
+                       axis.line.x = element_line(colour = "grey80"),
+                       panel.background = element_rect(fill = "white", colour = "grey50"),
+                       panel.border = element_rect(fill = NA, color = "grey50", linetype = "dotted"),
+                       axis.text.y= element_text(size=12),
+                       strip.text.y = element_text(size = 12, color = "black"),
+                       strip.background = element_rect(fill = "white", colour = "grey50"))
 
 ## ---------- Figure 3: Targeted ----------
 
@@ -198,6 +204,9 @@ tag_ggplot_seq <- function(p, id){
   return(p1)
 }
 OntTargetedDiff <- lapply(seq_len(14), function(x) tag_ggplot_seq(OntTargetedDiff[[x]],x))
+OntTargetedDiff[[13]] <- OntTargetedDiff[[13]] + labs(tag = as.character(1)) + theme(text = element_text(size = 12))
+OntTargetedDiff[[14]] <- OntTargetedDiff[[14]] + labs(tag = as.character(2)) + theme(text = element_text(size = 12))
+
 
 Diffa <- arrangeGrob(grobs=lapply(OntTargetedDiff, function(p) p + guides(colour=FALSE)), ncol=2, 
               bottom=textGrob("Age (months)", gp=gpar(fontsize=15)), 
@@ -259,6 +268,9 @@ Trem2_p <- list(
 Trem2_p$IF[[1]] <- Trem2_p$IF[[1]] + labs(title = "", y = "IF (%)") + theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) + guides(fill = FALSE) 
 Trem2_p$IF[[2]] <- Trem2_p$IF[[2]] + labs(title = "", y = "IF (%)") + guides(colour = FALSE) 
 
+# stats
+plot_boxplot_SCN(Exp$targ_sorted_all,iso=c("PB.95419.5"), ageDiv = FALSE)
+plot_boxplot_SCN(Exp$targ_sorted_all,iso=c("PB.95419.7"), ageDiv = FALSE)
 
 ## ---------- Figure 5: Bin1 ---------
 
@@ -433,8 +445,8 @@ dev.off()
 
 pdf(paste0(output_dir,"/MainFigures4.pdf"), width = 18, height = 16)
 plot_grid(plot_grid(
-            plot_grid(Trem2_p$dendro,Trem2_p$sorted,nrow=1, rel_widths = c(0.5,0.5), labels = c("A","B"),  scale = 0.95),
-            plot_grid(Trem2_p$pheat$gtable,NULL,nrow=1, rel_widths = c(0.5,0.5), labels = c("D","E")),
+            plot_grid(Trem2_p$dendro,Trem2_p$pheat$gtable,nrow=1, rel_widths = c(0.5,0.5), labels = c("A","B"),  scale = 0.95),
+            plot_grid(Trem2_p$sorted, NULL,nrow=1, rel_widths = c(0.5,0.5), labels = c("D","E")),
             plot_grid(Trem2_p$ONTTransExp,Trem2_p$ONTGeneExp,nrow=1, rel_widths = c(0.55,0.45), labels = c("F","G")),
             plot_grid(Trem2_p$IF[[1]],Trem2_p$IF[[2]],nrow=1, rel_widths = c(0.55,0.45),labels = c("H","I")), ncol = 1, 
             rel_heights = c(0.25,0.3,0.25,0.25)),

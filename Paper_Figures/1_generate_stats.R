@@ -441,12 +441,23 @@ message("Number of transcripts with ORF ranked 1 and has stop codons, and coding
         length(unique(mouseProtein$t2p.collapse.refined[mouseProtein$t2p.collapse.refined$pb_accs %in% RefinedORFCoding$seq_ID,"corrected_acc"])))
 
 GSselectedcollapsedID <- mouseProtein$t2p.collapse.refined[mouseProtein$t2p.collapse.refined$pb_accs %in% RefinedORFCoding$seq_ID,"base_acc"]
+CorrectedcollapsedID <- mouseProtein$t2p.collapse.refined[mouseProtein$t2p.collapse.refined$pb_accs %in% RefinedORFCoding$seq_ID,"corrected_acc"]
+
+# note one transcript was filtered from SQANTI protein so off by 1 when calculating difference
+message("Number of transcripts with ORF...collapsed: ", length(unique(setdiff(RefinedORFCoding$seq_ID, CorrectedcollapsedID))))
+ORFCorrectedCollapsedID <- unique(setdiff(RefinedORFCoding$seq_ID, CorrectedcollapsedID))
+class.files$targ_filtered %>% filter(isoform %in% ORFCorrectedCollapsedID) %>% group_by(structural_category) %>% tally()
+
 class.files$protein_filtered_final <- class.files$protein_filtered[class.files$protein_filtered$pb %in% GSselectedcollapsedID,]
 message("Number of protein products after filtering: ", nrow(class.files$protein_filtered_final))
+
 
 class.files$protein_filtered_final <- class.files$protein_filtered_final %>% mutate(ensemblID = word(tx_gene, c(1), sep = fixed("."))) %>% left_join(., ensemblID, by = "ensemblID") %>% dplyr::rename("associated_gene" = "gene_name")
 class.files$protein_filtered_final <- merge(class.files$protein_filtered_final, distinct(mouseProtein$t2p.collapse.refined[,c("base_acc","corrected_acc")]), by.x = "pb", by.y = "base_acc")
 write.table(class.files$protein_filtered_final, paste0(dirnames$mprotein, "/7_classified_protein/all_iso_ont.sqanti_protein_classification_finalised.tsv"), sep = "\t", quote=F)
+
+NNCCollapsedAll <- class.files$ptarg_filtered %>% dplyr::filter(!isoform %in% class.files$protein_filtered_final$corrected_acc) %>% filter(structural_category == "NNC")
+message("Number of NNC transcripts with ORF ranked 1, coding potential > 0.44, and collapsed: ",nrow(RefinedORFCoding %>% filter(seq_ID %in% NNCCollapsedAll$isoform)))
 
 nrow(class.files$protein_filtered_final[class.files$protein_filtered_final$pr_splice_cat == "novel_not_in_catalog",])/nrow(class.files$protein_filtered_final)
 nrow(class.files$protein_filtered_final[class.files$protein_filtered_final$pr_splice_cat == "novel_in_catalog",])/nrow(class.files$protein_filtered_final)
@@ -463,3 +474,21 @@ colapsedID <- length(setdiff(mouseProtein$t2p.collapse.refined$pb_accs, mousePro
 dat <- Exp$targ_sorted_all[Exp$targ_sorted_all$isoform == "PB.39126.482",c("cell","TPM", "genotype", "time")]
 res <- lm(TPM ~ cell + genotype + time, data = dat)
 summary(res)
+
+
+## ---------- rebuttal ----------
+
+# correlation of AS events to other features
+cor.test(totalNEvents$n, totalNEvents$MaxGeneLength)
+cor.test(totalNEvents$n, totalNEvents$Maxexons)
+cor.test(totalNEvents$n, totalNEvents$MeanRNASeqCounts)
+cor.test(totalNEvents$n, totalNEvents$MaxTransLength)
+
+
+# number of raw reads
+summary(lm(Number.of.Reads ~ Age..months. + Genotype + Age..months. * Genotype, rawReadsWhole))
+summary(lm(Number.of.Iso.Seq.Reads ~ Age..months. + Genotype + Age..months. * Genotype, rawReadsTargeted))
+ontRawReads <- rawReadsTargeted[rawReadsTargeted$Number.of.ONT.Reads != "-",] %>% mutate(Number.of.ONT.Reads = as.numeric(as.character(Number.of.ONT.Reads)))
+summary(lm(Number.of.ONT.Reads ~ Age..months. + Genotype + Age..months. * Genotype, ontRawReads))
+
+        
