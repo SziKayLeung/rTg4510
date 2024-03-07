@@ -75,7 +75,8 @@ label_colour <- function(genotype){
           if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
             if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
               if(genotype == "known"){colour = wes_palette("Darjeeling1")[5]}else{
-              }}}}}}}
+                if(genotype %in% c("AD")){colour = wes_palette("Royal1")[2]}else{
+              }}}}}}}}
   return(colour)
 }
 
@@ -206,7 +207,7 @@ draw_heatmap_gene <- function(gene, cf, normCounts, type){
   # Subset the normalised expression count to gene, and datawrangle for plot
   dat = normCounts[normCounts$associated_gene == gene,c("isoform","normalised_counts","sample")] %>%
     mutate(log2normalised = log2(normalised_counts)) %>% 
-    select(isoform, log2normalised, sample) %>%
+    dplyr::select(isoform, log2normalised, sample) %>%
     spread(., isoform, log2normalised) %>% tibble::column_to_rownames(var = "sample") 
   
   # remove isoforms that have been removed by tappAS due to very low count 
@@ -340,15 +341,30 @@ tabulateIF <- function(classf, countcol){
 }
 
 
-plot_boxplot_SCN <- function(normCounts, iso, ageDiv = TRUE){
+plot_boxplot_SCN <- function(normCounts, iso, ageDiv = TRUE, genotypeDiv = TRUE){
   
-  dat <- normCounts %>% filter(isoform %in% iso) %>% mutate(genotype = factor(genotype, levels = c("WT","TG"))) 
+  dat <- normCounts %>% dplyr::filter(isoform %in% iso) %>% dplyr::mutate(genotype = factor(genotype, levels = c("WT","TG")), cell = factor(ifelse(cell == "DN", "NeuN-", "NeuN+"), levels = c("NeuN+","NeuN-"))) 
+  
+  dat <<- dat
   
   p <- ggplot(dat, aes(x = cell, y  = TPM, colour = genotype)) + 
     geom_boxplot(outlier.shape = NA) +
     geom_point(aes(group = genotype), size = 3, position = position_jitterdodge()) + 
     labs(x = "Nuclei population", y = "TPM") + mytheme +
     scale_colour_manual(values = c(label_colour("WT"),label_colour("TG")), labels = c("WT","TG"), name = NULL) 
+  
+  print(summary(lm(TPM ~ cell + genotype + cell * genotype, data = dat)))
+  
+  plog2FC <- mean(log2(dat[dat$genotype  == "TG", "TPM"] + 1e-10)) -
+    mean(log2(dat[dat$genotype  == "WT", "TPM"] + 1e-10))
+  
+  clog2FC <- mean(log2(dat[dat$cell  == "NeuN-", "TPM"] + 1e-10)) -
+    mean(log2(dat[dat$cell == "NeuN+", "TPM"] + 1e-10))
+  
+  message("log2FC for TG vs WT: ", plog2FC)
+  message("log2FC for NeuN- vs NeuN+: ", clog2FC)
+  
+  print(summary(lm(TPM ~ cell + genotype, data = dat)))
   
   if(length(iso) >= 2){
     
@@ -363,6 +379,14 @@ plot_boxplot_SCN <- function(normCounts, iso, ageDiv = TRUE){
         geom_point(aes(group = genotype), size = 3, position = position_jitterdodge()) + 
         facet_grid(~time, labeller = labeller(time = as_labeller(c("2m" = "2 months", "8m" = "8 months")))) +
         theme(strip.background = element_blank(), panel.spacing = unit(2, "lines"))
+    }
+    
+    if(!isTRUE(ageDiv) & !isTRUE(genotypeDiv)){
+      p <- ggplot(dat, aes(x = cell, y  = TPM)) + 
+        geom_boxplot(outlier.shape = NA) +
+        geom_point(size = 3) + 
+        labs(x = "Nuclei population", y = "TPM") + mytheme 
+      
     }
   }
   
@@ -395,15 +419,15 @@ BDR_plot <- function(norm_counts, iso = NULL, gene = NULL, sampleExclude = NULL,
   dat <- dat %>%
     mutate(sample = str_remove(sample, "B2.")) %>% 
     left_join(., phenotype, by = "sample") %>%
-    mutate(BraakTangle_numeric = as.factor(BraakTangle_numeric))  
+    mutate(BraakTangle_numeric = as.factor(BraakTangle_numeric))%>%
+    filter(BraakTangle_numeric %in% c(0,1,2,5,6))  %>%
+    mutate(phenotype = ifelse(BraakTangle_numeric %in% c(0,1,2),"Control","AD")) %>%
+    mutate(phenotype = factor(phenotype, levels = c("Control","AD")))
   
   if(isFALSE(Braak)){
-    dat <- dat %>%  filter(BraakTangle_numeric %in% c(0,1,2,5,6))  %>%
-      mutate(phenotype = ifelse(BraakTangle_numeric %in% c(0,1,2),"Control","AD")) %>%
-      mutate(phenotype = factor(phenotype, levels = c("Control","AD")))
-    p <- ggplot(dat, aes(x = phenotype, y = normalised_counts)) + geom_boxplot() + theme_classic() 
+    p <- ggplot(dat, aes(x = phenotype, y = normalised_counts, fill = phenotype)) + geom_boxplot() + mytheme
   }else{
-    p <- ggplot(dat, aes(x = BraakTangle_numeric, y = normalised_counts)) + geom_boxplot() + theme_classic() 
+    p <- ggplot(dat, aes(x = BraakTangle_numeric, y = normalised_counts, fill = phenotype)) + geom_boxplot() + mytheme
   }
   
   if(!is.null(IF) & isFALSE(Braak)){
@@ -425,49 +449,63 @@ BDR_plot <- function(norm_counts, iso = NULL, gene = NULL, sampleExclude = NULL,
       mean(log2(sdat[sdat$phenotype == "Control", "normalised_counts"] + 1e-10)) 
     
     print(res)
-    print(log2FC)
+    message("Log2FC:", log2FC)
   }
   
   return(p)
 }
 
 # pclassfile with columns: <corrected_acc> from refined proteogenomics pipeline
-plot_protein_general <- function(pclassfile){
+plot_protein_general <- function(tclassfile, pclassfile, correctedCollapsedID = NULL){
   
-  RNATranscript <- pclassfile %>% group_by(associated_gene) %>% dplyr::summarize(RNATranscript = n())
+  # count the number of transcripts in the transcript classification file
+  RNATranscript <- tclassfile %>% group_by(associated_gene) %>% dplyr::summarize(RNATranscript = n())
+  
+  # count the number of transcripts in the protein classification file
   RNAIsoform <- pclassfile %>% dplyr::select(corrected_acc, associated_gene) %>% dplyr::filter(!is.na(corrected_acc)) %>% distinct() %>% 
     group_by(associated_gene) %>% dplyr::summarize(RNAIsoform = n())
   NumTranscriptIsoform <- merge(RNATranscript, RNAIsoform, by = "associated_gene") 
   
-  UniqueORF <- pclassfile %>% filter(!is.na(corrected_acc)) %>% 
-    filter(!isoform %in% pclassfile$corrected_acc) %>% 
-    group_by(structural_category, subcategory) %>% tally() 
+  if(is.null(correctedCollapsedID)){
+    UniqueORF <- tclassfile %>% filter(!is.na(corrected_acc)) %>% 
+      filter(!isoform %in% pclassfile$corrected_acc) %>% 
+      group_by(structural_category, subcategory) %>% tally() 
+  }else{
+    print("Using corrected CollapsedID")
+    UniqueORF <- tclassfile %>%  
+      filter(isoform %in% correctedCollapsedID) %>% 
+      group_by(structural_category, subcategory) %>% tally() 
+  }
   
   p1 <- ggplot(NumTranscriptIsoform, aes(x = RNAIsoform, y = RNATranscript, label = associated_gene)) + 
     geom_point() + geom_text_repel() +
     geom_abline(intercept = 0, linetype = "dashed") + mytheme + 
-    labs(x = "Number of RNA isoforms with unique CDS", y = "Number of RNA transcripts")
+    labs(x = "Number of protein isoforms", y = "Number of RNA transcripts")
   
+  cortest <- cor.test(NumTranscriptIsoform$RNAIsoform, NumTranscriptIsoform$RNATranscript)
+  print(cortest)
   
   p2 <- ggplot(UniqueORF, aes(y = n, x = subcategory)) + geom_bar(stat = "identity") + 
     facet_grid(rows = vars(structural_category), scales = "free", space = "free") + 
     coord_flip() + 
-    labs(y = "Number of RNA Isoforms with unique CDS", x = "Subcategory") + 
+    labs(y = "Number of redundant RNA transcripts", x = "Subcategory") + 
     mytheme + theme(strip.background = element_blank())
   
   return(list(p1,p2))
 }
 
 
-generalggTranPlots <- function(isolist, inputgtf, classfiles, gene, cpat = NULL, species = NULL){
+generalggTranPlots <- function(isolist, inputgtf, classfiles, gene, cpat = NULL, species = NULL, squish = FALSE, pfam = NULL){
   IsoDf <- data.frame(
     Isoform = unlist(IsoDf <- isolist),
     Category = rep(names(IsoDf), lengths(IsoDf))
   )
   IsoDf$colour <- c(rep(NA,length(IsoDf$Category[IsoDf$Category != "DTE"])))
+  IsoDf <<- IsoDf
   p <- ggTranPlots(inputgtf=inputgtf,classfiles=classfiles,
                    isoList = c(as.character(IsoDf$Isoform)),
-                   selfDf = IsoDf, gene = gene, inputCpat = cpat, cpatSpecies = species)
+                   selfDf = IsoDf, gene = gene, inputCpat = cpat, cpatSpecies = species, squish = squish, inputPfam = pfam) +
+    labs(y = "")
   return(p)
 }
 
@@ -479,11 +517,11 @@ visualise_ORFs <- function(refgtf,tgtf, pgtf, tclassfiles, pclassfiles, gene, tr
   refIDs <- unique(refgtf[refgtf$gene_name == gene & !is.na(refgtf$transcript_id), "transcript_id"])
   if(!is.null(transcript)){
     
-    pID <- pclassfiles %>% filter(corrected_acc == transcript) %>% .[["isoform"]]
+    pID <- pclassfiles %>% dplyr::filter(corrected_acc %in% transcript) %>% .[["isoform"]]
     datIDs <- list(
       Reference = refIDs,
-      `RNA Transcript` = pclassfiles %>% filter(corrected_acc == transcript) %>% .[["isoform"]],
-      `RNA Isoform` = unique(pgtf %>% dplyr::filter(transcript %in% pID) %>% .[["gene_id"]])
+      `RNA Transcript` = pclassfiles %>% dplyr::filter(corrected_acc == transcript) %>% .[["isoform"]],
+      `Protein Isoform` = unique(pgtf %>% dplyr::filter(transcript %in% pID) %>% .[["gene_id"]])
     )
       
       p <- generalggTranPlots(datIDs, tgtf, tclassfiles, gene, cpat, species) 
@@ -493,10 +531,10 @@ visualise_ORFs <- function(refgtf,tgtf, pgtf, tclassfiles, pclassfiles, gene, tr
     
     tORFID <- unique(pgtf %>% dplyr::filter(transcript %in% tID) %>% .[["gene_id"]])
     transcriptIDs <- list(Reference = refIDs, `RNA Transcript` = tID) 
-    proteinIDs <- list(Reference = refIDs,`RNA Isoform` = tORFID) 
+    proteinIDs <- list(Reference = refIDs,`Protein Isoform` = tORFID) 
     
     pT <- generalggTranPlots(transcriptIDs, tgtf, tclassfiles, gene)
-    pP <- generalggTranPlots(proteinIDs, tgtf, tclassfiles, gene, cpat, species)
+    pP <- generalggTranPlots(proteinIDs, pgtf, pclassfiles, gene, cpat, species)
     
     p <- plot_grid(pT, pP, labels = c("i","ii"))
     
@@ -504,3 +542,73 @@ visualise_ORFs <- function(refgtf,tgtf, pgtf, tclassfiles, pclassfiles, gene, tr
   
   return(p)
 }
+
+visualise_ORFs_NMD <- function(transcripts, gene){
+  transcriptList <- list(
+    Reference =  RefIsoforms[[gene]][1:2],
+    `NMD` = as.character(transcripts)
+  )
+  proteinList <- list(
+    `NMD Protein` = unique(gtf$ptarg_merged %>% filter(transcript %in% as.character(transcripts)) %>% .[["gene_id"]])
+  )
+  
+  bothList <- c(transcriptList, proteinList)
+  print(bothList)
+  p <- generalggTranPlots(bothList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  return(p)
+}
+
+plot_expression_summed <- function(TList, TName = NULL, AgeDiv = FALSE){
+  
+  if(length(TList) > 0){
+    gene <- class.files$targ_filtered[class.files$targ_filtered$isoform %in% TList, "associated_gene"]
+    message("************************ Gene:", (unique(gene)))
+    
+    dat <- subset(Exp$targ_ont$normAll, row.names(Exp$targ_ont$normAll) %in% TList) %>% dplyr::select(-associated_gene) %>%
+      apply(.,2,sum) %>% 
+      reshape2::melt(value.name = "sumReads") %>% 
+      tibble::rownames_to_column(., var = "sample") %>% 
+      mutate(sample = word(sample, c(2), sep = fixed("_"))) %>% 
+      left_join(., phenotype$targ_ont, by = "sample") %>%
+      mutate(group = factor(ifelse(group == "CASE","TG","WT"), levels = c("WT","TG")))
+    
+    dat <<- dat
+    
+    
+    if(isFALSE(AgeDiv)){
+      p <- ggplot(dat, aes(x = group, y = sumReads)) + geom_boxplot(outlier.shape = NA) + 
+        geom_point(position=position_jitterdodge(jitter.width=2, dodge.width = 0), aes(colour = factor(time)), size = 3) + 
+        mytheme + labs(x = "", y = "Normalized counts", subtitle = TName) + 
+        scale_colour_manual(values = c("grey","azure4","black","red"), name = "Age (months)") +
+        theme(legend.position = "top") 
+    }else{
+      p <- ggplot(dat, aes(x = group, y = sumReads, colour = as.factor(time))) + geom_boxplot() +
+        geom_point(position=position_jitterdodge(), aes(colour = factor(time)), size = 3) +
+        mytheme + labs(x = "", y = "Normalized counts", subtitle = TName) + 
+        scale_colour_manual(values = c("grey","azure4","black","red"), name = "Age (months)") +
+        theme(legend.position = "top") 
+    }
+    
+    message("linear regression:")
+    res <- lm(sumReads ~ group + time, data = dat)
+    print(summary(res))
+    
+    ##transform our data into log2 base.
+    # add 1 to deal with 0
+    dat$sumReads <- dat$sumReads + 1
+    dat <- dat %>% mutate(log2Reads = log2(sumReads))
+    control <- mean(dat[dat$group == "WT","log2Reads"])
+    TG <- mean(dat[dat$group == "TG","log2Reads"])
+    foldchange <- TG - control
+    message("log2FC of TG relative to control")
+    print(foldchange)
+    
+    return(p)
+    
+  }else{
+    message("********************* No Transcripts")
+  }
+  
+  
+}
+
