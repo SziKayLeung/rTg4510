@@ -7,6 +7,7 @@
 ## --------------------------------
 
 suppressMessages(library("cowplot"))
+suppressMessages(library("ggh4x"))
 
 ## ---------- config file -----------------
 
@@ -95,7 +96,7 @@ class.files$targ_filtered_TGUnique <- class.files$targ_filtered[class.files$targ
 # FICLE Gencode_3, Gencode_4 = origianl exon 2, 3; Gencode_11,_12,_14,15 = original exons 9 - 12
 # Yes = Exon skipped; No = Exon present and not skipped
 MaptRTranscripts <- list(
-  Ref = list(isoform = c("ENSMUST00000106992.9","ENSMUST00000100347.10")),
+  Ref = list(isoform = c("ENSMUST00000100347.10")),
   Mapt0N3R = MaptES %>% filter(Gencode_3 == "Yes" & Gencode_4 == "Yes" & Gencode_11 == "No" & Gencode_12 == "Yes" & Gencode_14 == "No" & Gencode_15 == "No"),
   Mapt0N4R = MaptES %>% filter(Gencode_3 == "Yes" & Gencode_4 == "Yes" & Gencode_11 == "No" & Gencode_12 == "No" & Gencode_14 == "No" & Gencode_15 == "No"),
   Mapt1N3R = MaptES %>% filter(Gencode_3 == "No" & Gencode_4 == "Yes" & Gencode_11 == "No" & Gencode_12 == "Yes" & Gencode_14 == "No" & Gencode_15 == "No"),
@@ -106,35 +107,35 @@ MaptRTranscripts <- list(
 MaptRTranscripts <- lapply(MaptRTranscripts, function(x) as.character(x[["isoform"]]))
 names(MaptRTranscripts) <- str_remove(names(MaptRTranscripts),"Mapt")
 # create a dataframe for downstream subsetting <MaptType><isoform>
-MaptRTranscriptsdf <- do.call(rbind, MaptRTranscripts) %>% reshape2::melt() %>% select(Var1, value) %>% `colnames<-`(c("MaptType", "isoform")) %>%
+MaptRTranscriptsdf <- do.call(rbind, MaptRTranscripts) %>% reshape2::melt() %>% dplyr::select(Var1, value) %>% `colnames<-`(c("MaptType", "isoform")) %>%
   mutate(R = ifelse(grepl("3R", MaptType), "3R","4R")) 
 
 # ggtranscript of Mapt transcripts with highlights of N and R regions
-pMaptRTranscripts <- generalggTranPlots(MaptRTranscripts, gtf$targ_merged, class.files$targ_filtered, "Mapt") + 
-  annotate("rect", xmin = c(104286000, 104309000), xmax = c(104291000, 104325000), ymin = -Inf, ymax = Inf, alpha = .1, fill = c("green"))
+pMaptRTranscripts <- generalggTranPlots(MaptRTranscripts, gtf$targ_merged, class.files$targ_filtered, "Mapt", squish = TRUE, pfam = Targeted$pfam) + 
+  annotate("rect", xmin = c(1600, 3750), xmax = c(1980, 5850), ymin = -Inf, ymax = Inf, alpha = .1, fill = c("green"))
 
 # ggtranscript of Mapt transcripts with respective ORF
 MaptRProtein  <- lapply(MaptRTranscripts, function(x) unique(gtf$ptarg_merged %>% filter(transcript %in% x,) %>% .[["gene_id"]]))
-MaptRProtein$Ref <-  c("ENSMUST00000106992.9","ENSMUST00000100347.10")
-pMaptRProtein <- generalggTranPlots(MaptRProtein, gtf$targ_merged, class.files$targ_filtered, "Mapt", cpat = protein$cpat, species = "mouse") +
-  annotate("rect", xmin = c(104286000, 104309000), xmax = c(104291000, 104325000), ymin = -Inf, ymax = Inf, alpha = .1, fill = c("green"))
+MaptRProtein$Ref <-  c("ENSMUST00000100347.10")
+pMaptRProtein <- generalggTranPlots(MaptRProtein, gtf$targ_merged, class.files$targ_filtered, "Mapt", cpat = mouseProtein$cpat, species = "mouse", squish = TRUE, pfam = Targeted$pfam) + annotate("rect", xmin = c(1600, 3750), xmax = c(1980, 5850), ymin = -Inf, ymax = Inf, alpha = .1, fill = c("green"))
 
 # expression of Mapt transcripts (ONT normalised counts)
 pMaptRTrascriptExp <- TargetedDESeq$ontResTranAnno$wald$norm_counts_all %>% 
   merge(., MaptRTranscriptsdf, by = "isoform", all.y = TRUE) %>% 
   filter(MaptType != "Reference") %>%
+  filter(!is.na(group)) %>%
   mutate(group = factor(ifelse(group == "CONTROL","WT","TG"), levels = c("WT","TG"))) %>%
   mutate(age = as.factor(time)) %>%  
   mutate(MaptType = str_remove(MaptType,"Mapt")) %>%
   group_by(isoform, group, age, MaptType, R) %>% 
-  summarise(meanCounts = mean(normalised_counts)) %>% 
+  dplyr::summarise(meanCounts = mean(normalised_counts)) %>% 
   ungroup() %>% 
   ggplot(., aes(x = group, y = log10(meanCounts), colour = age)) + geom_boxplot() + 
   geom_point(aes(fill = age), size = 1, shape = 21, position = position_jitterdodge())  + 
   facet_nested(~R + MaptType, nest_line = element_line(linetype = 2)) +
   theme(strip.background = element_blank(),
         ggh4x.facet.nestline = element_line(colour = "grey")) + mytheme +
-  labs(x = "Genotype") + theme(legend.position = "top") + 
+  labs(x = "Genotype", y = "Normalized counts") + theme(legend.position = "top") + 
   scale_colour_manual(values = c("black","#CFCFCF","#777777","red"), name = "Age (months)") +
   scale_fill_manual(values = c("black","#CFCFCF","#777777","red"), name = "Age (months)") 
 
@@ -145,7 +146,7 @@ meanMaptExp <- function(normcounts, isoList){
     mutate(normalised_counts = normalised_counts + 1) %>%
     # take the average of all the normalised counts of a subset of isoforms for each sample
     group_by(sample) %>% 
-    summarise(meanCounts = mean(normalised_counts))
+    dplyr::summarise(meanCounts = mean(normalised_counts))
   return(dat)
 }
 
@@ -155,14 +156,16 @@ dat <- merge(meanMaptExp(TargetedDESeq$ontResTranAnno$wald$norm_counts_all,MaptR
   mutate(Ratio = meanCounts.x/meanCounts.y) %>% mutate(sampleID = word(sample,c(2),sep=fixed("_"))) %>% 
   merge(., phenotype$targ_ont, by.x = "sampleID", by.y = "sample") %>%
   mutate(group = factor(ifelse(group == "CONTROL","WT","TG"), levels = c("WT","TG")))
+
+summary(lm(Ratio ~ group + time, dat))
 # plot of ratio across age and genotype
 pMaptRTrascriptRatio1 <- ggplot(dat, aes(x = as.factor(time), y = Ratio, colour = group)) + geom_point() + mytheme +
-  labs(x = "Age (months)", y = "Ratio") + theme(legend.position = "right") +
+  labs(x = "Age (months)", y = "Ratio (4R:3R)") + theme(legend.position = "right") +
   scale_colour_manual(values = c(label_colour("WT"),"red"), name = "Genotype") + 
   stat_summary(data=dat, aes(x=as.factor(time), y=Ratio, group=group), fun ="mean", geom="line", linetype = "dotted") 
 # plot of ratio across genotype 
 pMaptRTrascriptRatio2 <- ggplot(dat, aes(x = group, y = Ratio)) + geom_boxplot() + mytheme +
-  labs(x = "Genotype", y = "Ratio") +
+  labs(x = "Genotype", y = "Ratio (4R:3R)") +
   geom_point()  
 
 
@@ -255,9 +258,9 @@ plot_trem2("PB.20818.547")
 
 InternalNovelExons <- lapply(FICLENE, function(x) x[x$classification == "Internal_NovelExon",])
 InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
-                                                                   protein$cpat[,c("pb_acc","coding_score","orf_calling_confidence")], 
-                                                                   by.x = "transcriptID", by.y = "pb_acc"))
-InternalNovelExons <- lapply(InternalNovelExons, function(x) x %>% mutate(coding = ifelse(coding_score < 0.44, "noncoding","coding")))
+                                                                   mouseProtein$cpat[,c("seq_ID","Coding_prob")], 
+                                                                   by.x = "transcriptID", by.y = "seq_ID"))
+InternalNovelExons <- lapply(InternalNovelExons, function(x) x %>% mutate(coding = ifelse(Coding_prob < 0.44, "noncoding","coding")))
 InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
                                                                    nmd[,c("pb","is_nmd","has_stop_codon")], 
                                                                    by.x = "transcriptID", by.y = "pb",all.x=TRUE)) 
@@ -271,7 +274,7 @@ plotCE <- function(gene, type){
   if(gene == "Apoe"){
     # PB.40586.2026 = reference match ("PB.40586.2026")
     df <- df[df$transcriptID %in% c("PB.40586.26305"),]
-    ref <-data.frame("PB.40586.2026",NA,NA,NA,NA,NA,"coding","False","True")
+    ref <-data.frame("PB.40586.2026",NA,NA,NA,NA,"coding","False","True")
     colnames(ref) <- colnames(df)
     df <- rbind(df, ref)
   }else if(gene == "Bin1"){
@@ -279,7 +282,7 @@ plotCE <- function(gene, type){
   }else if(gene == "Clu"){
     df <-  df[df$transcriptID %in% paste0("PB.14646.",c("6992")),]
     # PB.40586.2026 = reference match ("PB.14646.139", "PB.14646.483")
-    ref <- data.frame("PB.14646.139",NA,NA,NA,NA,NA,"coding","False","True")
+    ref <- data.frame("PB.14646.139",NA,NA,NA,NA,"coding","False","True")
     colnames(ref) <- colnames(df)
     df <- rbind(df, ref)
   }else if(gene == "Snca"){

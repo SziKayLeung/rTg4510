@@ -24,7 +24,7 @@ gtf$humanMerged <- rbind(bdrGtf [,c("seqnames","strand","start","end","type","tr
                          refGtf [,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
 
 BDRNormCountsTranscripts <- BDRONT$B2WaldBraak$norm_counts %>% filter(grepl("B2", sample))
-lBDRNormCountsTranscripts <- BDRONT$B2WaldBraak$norm_counts_all %>% filter(grepl("B2", sample)) %>% select(sample,isoform,normalised_counts)
+lBDRNormCountsTranscripts <- BDRONT$B2WaldBraak$norm_counts_all %>% dplyr::filter(grepl("B2", sample)) %>% dplyr::select(sample,isoform,normalised_counts)
 lBDRNormCountsTranscripts <- tidyr::spread(lBDRNormCountsTranscripts, sample, normalised_counts)
 
 ## ---------- IF across BDR genes -----------------
@@ -50,6 +50,15 @@ pBdrTrem2 <- list(
 )
 plot_grid(plotlist = pBdrTrem2, labels = c("A","B","C","D"))
 
+phenotype <- read.csv("/lustre/recovered/Research_Project-MRC148213/sl693/AD_BDR/0_metadata/B_ONT/Selected_ONTTargeted_BDR.csv", header = T)
+Trem2TranscriptBDR <- BDRONT$B2WaldBraak$norm_counts %>% filter(isoform == "PB.81888.25") %>% filter(grepl("B2", sample)) %>% 
+  mutate(sample = str_remove(sample, "B2.")) %>% 
+  left_join(., phenotype, by = "sample") %>%
+  filter(BraakTangle_numeric %in% c(0,1,2,5,6)) %>% 
+  mutate(phenotype = ifelse(BraakTangle_numeric %in% c(0,1,2),"Control","AD")) %>%
+  mutate(phenotype = factor(phenotype, levels = c("Control","AD"))) 
+t.test(normalised_counts ~ phenotype, data = Trem2TranscriptBDR %>% filter(sample != "BBN00229416.1"))
+summary(lm(normalised_counts ~ phenotype, data = Trem2TranscriptBDR %>% filter(sample != "BBN00229416.1")))
 
 ## ---------- Clu -----------------
 
@@ -72,19 +81,40 @@ pBDRCluTracks <- list(
 )
 plot_grid(plotlist = pBDRCluTracks, nrow = 2, rel_heights = c(0.8,0.2), labels = c("A","B"))
 
+plot_grid(plot_grid(pBDRClu$trans1, pBDRClu$trans2),
+          plot_transexp_overtime("Clu",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",rank=NULL,
+                                 isoSpecific=c("PB.14646.139"),
+                                 setorder=c("CONTROL","CASE")), nrow = 2, labels = c("A","B"))
 
+
+CluTranscriptBDR <- BDRONT$B2WaldBraak$norm_counts %>% filter(isoform == "PB.92671.402") %>% filter(grepl("B2", sample)) %>% 
+  mutate(sample = str_remove(sample, "B2.")) %>% 
+  left_join(., phenotype, by = "sample") %>%
+  filter(BraakTangle_numeric %in% c(0,1,2,5,6)) %>% 
+  mutate(phenotype = ifelse(BraakTangle_numeric %in% c(0,1,2),"Control","AD")) %>%
+  mutate(phenotype = factor(phenotype, levels = c("Control","AD"))) 
+t.test(normalised_counts ~ phenotype, data = CluTranscriptBDR %>% filter(sample != "BBN00229416.1"))
+summary(lm(normalised_counts ~ as.factor(BraakTangle_numeric), data = CluTranscriptBDR %>% filter(sample != "BBN00229416.1")))
 
 ## Bin1
 pBDRBin1 <- list(
-  trans1 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.13") + labs(title = "PB.50706.13"),
-  trans2 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.13", Braak = TRUE) + labs(title = "PB.50706.13"),
-  trans3 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.8") + labs(title = "PB.50706.8"),
-  trans4 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.8", Braak = TRUE) + labs(title = "PB.50706.8"),
+  trans1 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.13") + labs(title = "LR.BIN1.13"),
+  trans2 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.13", Braak = TRUE) + labs(title = "LR.BIN1.13"),
+  trans3 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.8") + labs(title = "LR.BIN1.8"),
+  trans4 = BDR_plot(norm_counts=BDRNormCountsTranscripts, iso="PB.50706.8", Braak = TRUE) + labs(title = "LR.BIN1.8"),
   gene = BDR_plot(norm_counts=BDRNormCountsTranscripts, gene="PB.50706"),
   IF1 = BDR_plot(norm_counts=lBDRNormCountsTranscripts, iso="PB.50706.8", IF = TRUE, Braak = TRUE),
   IF2 = BDR_plot(norm_counts=lBDRNormCountsTranscripts, iso="PB.50706.8", IF = TRUE, Braak = FALSE),
   track = ggTranPlots(gtf$humanMerged,BDRONTclass,isoList = c("ENST00000316724.10","ENST00000409400.1","PB.50706.8", "PB.50706.13"),simple=TRUE, colour = c("black","black",rep("red",12)))
 )
+Bin1TranscriptBDR <- BDRONT$B2WaldBraak$norm_counts %>% filter(isoform == "PB.50706.13") %>% filter(grepl("B2", sample)) %>% 
+  mutate(sample = str_remove(sample, "B2.")) %>% 
+  left_join(., phenotype, by = "sample") %>%
+  filter(BraakTangle_numeric %in% c(0,1,2,5,6)) %>% 
+  mutate(phenotype = ifelse(BraakTangle_numeric %in% c(0,1,2),"Control","AD")) %>%
+  mutate(phenotype = factor(phenotype, levels = c("Control","AD"))) 
+t.test(normalised_counts ~ phenotype, data = Bin1TranscriptBDR  %>% filter(sample != "BBN00229416.1"))
+summary(lm(normalised_counts ~ as.factor(BraakTangle_numeric), data = Bin1TranscriptBDR  %>% filter(sample != "BBN00229416.1")))
 
 pdf("Bin1.pdf", width = 10, height = 20)
 plot_grid(plot_grid(pBDRBin1$trans1, pBDRBin1$trans2, rel_widths = c(0.4,0.6), labels = c("i","ii")),
@@ -94,7 +124,19 @@ plot_grid(plot_grid(pBDRBin1$trans1, pBDRBin1$trans2, rel_widths = c(0.4,0.6), l
           pBDRBin1$track, labels = c("A","B","C","D"), scale = 0.9,ncol=1)
 dev.off()
 
-BDR_plot(norm_counts=lBDRNormCountsTranscripts, iso="PB.50706.8", IF = TRUE)
+plot_grid(plot_grid(pBDRBin1$trans1, pBDRBin1$trans2, rel_widths = c(0.4,0.6), labels = c("i","ii")),
+          plot_grid(pBDRBin1$trans3, pBDRBin1$trans4, rel_widths = c(0.4,0.6), labels = c("i","ii")))
+
+
+plot_grid(plot_grid(pBDRBin1$trans1, pBDRBin1$trans2),
+          plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",rank=NULL,
+                       isoSpecific=c("PB.22007.224"),
+                       setorder=c("CONTROL","CASE")), nrow = 2, labels = c("A","B"))
+
+plot_grid(plot_grid(pBDRBin1$trans3, pBDRBin1$trans4),
+          plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",rank=NULL,
+                                 isoSpecific=c("PB.22007.99"),
+                                 setorder=c("CONTROL","CASE")), nrow = 2, labels = c("A","B"))
 
 
 ## Final 
@@ -155,4 +197,49 @@ plot_grid(left, right, nrow = 1)
 dev.off()
 
 
+## ---- Clu Finalised -----  
+BDRCluIso <- data.frame(
+  Isoform = unlist(BDRCluIso <- list(
+    `Mouse` = c("ENSMUST00000022616.13", "PB.14646.139"),
+    `Human` = c("ENST00000316403.15", "PB.92671.402")
+  )),
+  Category = rep(names(BDRCluIso), lengths(BDRCluIso))
+)
 
+CluA <- ggTranPlots(inputgtf= gtf$targ_merged, classfiles=class.files$targ_filtered,
+            isoList = c(as.character(BDRCluIso$Isoform)), selfDf = BDRCluIso, gene = "Clu", squish=FALSE) 
+CluB <- ggTranPlots(inputgtf= gtf$humanMerged, classfiles=BDRONTclass,isoList,
+                    isoList = c(as.character(BDRCluIso$Isoform)), selfDf = BDRCluIso, gene = "Clu", squish=FALSE) 
+CluTranscriptB <- pBDRClu$trans2 + scale_fill_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None")
+CluTranscriptA <- plot_transexp_overtime("Clu",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="toprank",rank=1,isoSpecific=c("PB.14646.139"),setorder=c("CONTROL","CASE")) + scale_colour_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None") + labs(title = NULL)
+
+pdf("suppFigureBDRClu.pdf", width = 20, height = 10)
+plot_grid(CluA,CluTranscriptA,CluB,CluTranscriptB, ncol = 2, labels = c("A","B","C","D"))
+dev.off()
+
+## ----- Bin1 Finalised ----- 
+BDRBin1Iso <- data.frame(
+  Isoform = unlist(BDRBin1Iso <- list(
+    `Mouse` = c("ENSMUST00000234496.1","ENSMUST00000025239.8", "PB.22007.224","PB.22007.99"),
+    `Human` = c("ENST00000316724.10", "ENST00000409400.1","PB.50706.13","PB.50706.8")
+  )),
+  Category = rep(names(BDRBin1Iso), lengths(BDRBin1Iso))
+)
+
+Bin1A <- ggTranPlots(inputgtf= gtf$targ_merged, classfiles=class.files$targ_filtered,
+                     isoList = c(as.character(BDRBin1Iso$Isoform)), selfDf = BDRBin1Iso, gene = "Bin1", squish=TRUE) 
+Bin1B <- ggTranPlots(inputgtf= gtf$humanMerged, classfiles=BDRONTclass,isoList,
+                    isoList = c(as.character(BDRBin1Iso$Isoform)), selfDf = BDRBin1Iso, gene = "Bin1", squish=TRUE) 
+Bin1TranscriptB <- pBDRBin1$trans2 + scale_fill_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None")
+Bin1TranscriptA <- plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",isoSpecific=c("PB.22007.99"),setorder=c("CONTROL","CASE")) + scale_colour_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None") 
+Bin1TranscriptC <- pBDRBin1$trans4 + scale_fill_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None")
+Bin1TranscriptD <- plot_transexp_overtime("Bin1",TargetedDESeq$ontResTranAnno$wald$norm_counts,show="specific",isoSpecific=c("PB.22007.224"),setorder=c("CONTROL","CASE")) + scale_colour_manual(values = c(label_colour("WT"),label_colour("AD"))) + theme(legend.position = "None") 
+
+pdf("suppFigureBDRBin1.pdf", width = 20, height = 10)
+plot_grid(Bin1A,Bin1TranscriptD,Bin1TranscriptA,Bin1B,Bin1TranscriptC,Bin1TranscriptB, ncol = 3, labels = c("A","B","C","D","E","F"), 
+          rel_widths = c(0.3,0.35,0.35))
+dev.off()
+
+
+
+                       

@@ -169,6 +169,42 @@ pCorrGeneONT <- corrNovelIsoformGeneExpression(class.files$targ_all, TargetedDES
 pCorrGeneIso <- corrNovelIsoformGeneExpression(class.files$targ_all, TargetedDESeq$isoResGeneAnno$wald$norm_counts,"Iso.Seq")
 
 
+GRNIso <- class.files$glob_iso[class.files$glob_iso$associated_gene == "Grn","isoform"]
+C9orfIso <- class.files$glob_iso[class.files$glob_iso$associated_gene == "C9orf72","isoform"]
+
+
+ALS_Genes <- list(
+  GrnTracks = ggTranPlots(inputgtf=gtf$glob_iso, classfiles=class.files$glob_iso,
+              isoList = c(class.files$glob_iso[class.files$glob_iso$associated_gene == "Grn","isoform"]),
+              gene="Grn", codingTranscript=TRUE, simple = TRUE),
+  
+  GrnExp = plot_transexp_overtime("Grn",GlobalDESeq$resTranAnno$wald$norm_counts_all,show="specific",
+                         isoSpecific=c(GRNIso),setorder=c("CONTROL","CASE")) + 
+    labs(title = "", subtitle = "Iso-Seq Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks)+
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "right"),
+  
+  C9orf72Tracks = ggTranPlots(inputgtf=gtf$glob_iso, classfiles=class.files$glob_iso,
+              isoList = c(class.files$glob_iso[class.files$glob_iso$associated_gene == "C9orf72","isoform"]),
+              gene="C9orf72", codingTranscript=TRUE, simple = TRUE),
+  
+  C9orf72Exp = plot_transexp_overtime("C9orf72",GlobalDESeq$resTranAnno$wald$norm_counts_all,show="specific",
+                         isoSpecific=c(C9orfIso),setorder=c("CONTROL","CASE")) + 
+    labs(title = "", subtitle = "Iso-Seq Transcript Expression", y = "Normalized counts (K)") + scale_y_continuous(labels = ks)+
+    theme(legend.title=element_blank(), legend.justification = c(0, 1), legend.position = "right")
+  
+)
+
+
+## ---------- AS events correlation ----------
+
+AS_correlation <- list(
+  A = corr_plot(totalNEvents,"meanGeneExp","n","Normalised mean gene expression","Total number of AS events", ""),
+  B = corr_plot(totalNEvents,"Maxexons","n","Number of exons (max)","Total number of AS events", ""),
+  #C = corr_plot(totalNEvents,"Maxexons","numberESEvents","Number of exons (max)","Total number of ES events", ""),
+  C = corr_plot(totalNEvents,"MaxGeneLength", "n","Gene Length (bp)","Total number of AS events", ""),
+  D = corr_plot(totalNEvents,"MaxTransLength","n","Transcript Length (bp)","Total number of AS events", "")
+)
+AScorrAll <- plot_grid(plotlist = AS_correlation, ncol = 2, labels = c("A","B","C","D","E"))
 
 ## ---------------------------  output (pdf)
 
@@ -182,3 +218,9 @@ plot_grid(plot_grid(pCorr3, NULL,rel_widths = c(0.6,0.4), labels = c("A","")),
           plot_grid(pCorr1,pCorr2, rel_widths = c(0.6,0.4), labels = c("B","C")), nrow = 2, scale = 0.95)
 dev.off()
 plot_grid(pCorrGeneONT, pCorrGeneIso, labels = c("A","B"))
+
+plot_grid(ALS_Genes$GrnTracks,ALS_Genes$GrnExp, ALS_Genes$C9orf72Tracks, ALS_Genes$C9orf72Exp, labels = c("A","C","B","D"), rel_heights = c(0.6,0.4))
+
+pdf("ASCorrelation.pdf", width = 11, height = 11)
+AScorrAll 
+dev.off()
