@@ -12,17 +12,17 @@ suppressMessages(library("dplyr"))
 
 ## ---------- LOGEN modules -----------------
 
-LOGEN = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
+LOGEN = "/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LOGen/"
 source(paste0(LOGEN, "longread_QC/number_ont_reads.R"))
 
 
 ## ---------- Directory and input files -----------------
 
 dirnames <- list(
-  root = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/F_ONT_Targeted/",
-  raw = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/1_raw/F_ont_targeted/",
-  meta = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/0_metadata/F_ont_targeted/",
-  mapt = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/F_ONT_Targeted/0_characterise/transgene/"
+  root = "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/F_ONT_Targeted/",
+  raw = "/lustre/recovered/Research_Project-MRC148213/sl693/rTg4510/1_raw/F_ont_targeted/",
+  meta = "/lustre/recovered/Research_Project-MRC148213/sl693/rTg4510/0_metadata/F_ont_targeted/",
+  mapt = "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/F_ONT_Targeted/0_characterise/transgene/"
 )
 
 

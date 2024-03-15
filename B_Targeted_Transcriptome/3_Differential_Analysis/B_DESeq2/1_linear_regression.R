@@ -23,7 +23,7 @@ suppressMessages(library("RColorBrewer"))
 
 ## ---------- source functions -----------------
 
-LOGEN_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
+LOGEN_ROOT = "/lustre/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
 source(paste0(LOGEN_ROOT, "/transcriptome_stats/read_sq_classification.R"))
 source(paste0(LOGEN_ROOT, "differential_analysis/run_DESeq2.R"))
 
@@ -32,26 +32,27 @@ source(paste0(LOGEN_ROOT, "differential_analysis/run_DESeq2.R"))
 
 # directory names
 dirnames <- list(
-  rTg4510 = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/",
-  output = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Targeted_Transcriptome"
+  rTg4510 = "/lustre/projects/Research_Project-MRC148213/sl693/rTg4510/",
+  output = "/lustre/projects/Research_Project-MRC148213/sl693/rTg4510/01_figures_tables/Targeted_Transcriptome"
 )
 
 # read input files
 input_files <- list(
-  ontPhenotype = paste0(dirnames$rTg4510, "0_metadata/F_ont_targeted/ONT_phenotype.txt"), 
-  isoPhenotype = paste0(dirnames$rTg4510, "0_metadata/B_isoseq_targeted/TargetedMouse_PhenotypeTAPPAS.txt"), 
+  ontPhenotype = paste0(dirnames$rTg4510, "0_metadata/TargetedOntPhenotype.txt"), 
+  isoPhenotype = paste0(dirnames$rTg4510, "0_metadata/TargetedIsoSeqPhenotype.txt"), 
   
   # merged data
-  expression = paste0(dirnames$rTg4510, "G_Merged_Targeted/B_cupcake_pipeline/2_collapse/demux_fl_count.csv"),
-  classfiles = paste0(dirnames$rTg4510, "G_Merged_Targeted/B_cupcake_pipeline/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts.txt")
+  expression = paste0(dirnames$rTg4510, "G_Merged_Targeted/1_cupcake_collapse/demux_fl_count.csv"),
+  classfiles = paste0(dirnames$rTg4510, "G_Merged_Targeted/2_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts.txt")
 )
 
 
 input <- list()
 input$ontPhenotype <- read.table(input_files$ontPhenotype, sep = "\t", header = T) %>% mutate(sample = paste0("ONT_",sample))
-input$isoPhenotype <- read.table(input_files$isoPhenotype, sep = "\t", header = T) %>% mutate(sample = str_replace(sample, "FL.", "Iso.Seq_"))
+input$isoPhenotype <- read.table(input_files$isoPhenotype, sep = "\t", header = T) %>% mutate(sample = paste0("Iso.Seq_", sample))
 input$classfiles <- SQANTI_class_preparation(input_files$classfiles,"ns")
 input$expression <- read.csv(input_files$expression) %>% .[.$isoform != "0",] %>% filter(isoform %in% input$classfiles$isoform)
+# equal number of genotype samples
 input$matchedOntPhenotype <- input$ontPhenotype %>% filter(!sample %in% c("ONT_Q20","ONT_Q18"))
 
 # datawrangle for input to run_DESeq2()

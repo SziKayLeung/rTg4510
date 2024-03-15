@@ -329,7 +329,6 @@ gtf$glob_iso <- rbind(gtf$glob_iso[,c("seqnames","strand","start","end","type","
 
 ## -------------------------- protein ----------
 
-
 mouseProtein = list(
   cpat = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.ORF_prob.best.tsv"), sep ="\t", header = T),
   cpat_best = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont_best_orf.tsv"), sep ="\t", header = T),
@@ -338,13 +337,6 @@ mouseProtein = list(
   t2p.collapse = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T),
   t2p.collapse.refined = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined_collapsed.tsv"))
 )
-
-humanProtein = list(
-  cpat = read.table(paste0(dirnames$protein,"5_calledOrfs/all_iso_ont_best_orf.tsv"), sep ="\t", header = T),
-  t2p.collapse = read.table(paste0(dirnames$protein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T)
-)
-
-annopResTran <- readRDS(paste0(dirnames$targ_output, "/DESeq2ProteinLevel.RDS"))
 
 class.files$protein <- read.table(paste0(dirnames$mprotein,"7_classified_protein/all_iso_ont.sqanti_protein_classification.tsv"), sep = "\t", header = T)
 nmd <- read.table(paste0(dirnames$mprotein, "7_classified_protein/all_iso_ont.classification_filtered.tsv"), sep = "\t", header = T)
@@ -355,27 +347,3 @@ nmd <- transform(nmd, corrected_acc = ifelse(!is.na(idx), as.character(class.fil
 
 rawReadsWhole <- read.table(paste0(dirnames$utils,"numReadsWhole.txt"), sep = "\t", header = T)
 rawReadsTargeted <- read.table(paste0(dirnames$utils,"numReadsTargeted.txt"), sep = "\t", header = T)
-
-## --------------------------- Tappas ---- 
-# TAPPAS (Differential Analysis) 
-#tappas_dir <- list(
-#  glob_iso = paste0(dirnames$glob_tabroot, "/IsoSeq_Expression"), 
-#  glob_rna = paste0(dirnames$glob_tabroot, "/RNASeq_Expression"),
-#  targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/IsoSeq_Expression"),
-#  targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/TAPPAS_OUTPUT")
-#)
-
-
-
-# Output from Tappas_DEA.R
-#tappassiggene <- list(
-#  glob = read_dea_files(paste0(dirnames$glob_tabroot,"/DifferentialGeneExpression_Analysis.xlsx")),
-#  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx")),
-#  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/thesis_dump/TALON/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx"))
-#)
-
-#tappassigtrans <- list(
-#  glob = read_dea_files(paste0(dirnames$glob_tabroot,"/DifferentialTransExpression_Analysis.xlsx")),
-#  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx")),
-#  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/thesis_dump/TALON/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx"))
-#)

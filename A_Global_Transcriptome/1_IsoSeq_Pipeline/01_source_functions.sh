@@ -398,7 +398,7 @@ run_sqanti3(){
 
     # sqanti qc
     echo "Processing Sample $1 for SQANTI2 QC"
-
+    
     # no kalliso file
     if [ $8 == "rnaseq" ]; then
       python ${SQANTI3_DIR}/sqanti3_qc.py -t 30 $3/$2 ${GENOME_GTF} ${GENOME_FASTA} --CAGE_peak ${CAGE_PEAK} --coverage "./*SJ.out.bed" --polyA_motif_list ${POLYA} --genename --isoAnnotLite --gff3 ${GFF3} --report skip &> $1.sqanti.qc.log
