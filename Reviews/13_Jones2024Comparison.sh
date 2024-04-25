@@ -62,7 +62,7 @@ python $SQANTI3_DIR/sqanti3_filter.py rules ${NAME}"_classification.txt" --faa=$
 ##-------------------------------------------------------------------------
 
 rTg4510_gtf=/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/G_Merged_Targeted/B_cupcake_pipeline/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf
-cd ${J2024}/comparison
+cd ${J2024}/comparison/targeted
 cp ${rTg4510_gtf} .
 cp ${J2024}/sqanti/chr_annotations.filtered.gtf .
 PATH="/lustre/projects/Research_Project-MRC148213/lsl693/software/gffcompare:$PATH"
@@ -72,3 +72,13 @@ gffcompare -r chr_annotations.filtered.gtf all_iso_ont_collapsed.filtered_counts
 cp ${J2024}/sqanti/chr_annotations_corrected.gtf .
 gffcompare -r all_iso_ont_collapsed.filtered_counts_filtered.gtf chr_annotations_corrected.gtf -o rTg4510Jones
 gffcompare -r chr_annotations_corrected.gtf all_iso_ont_collapsed.filtered_counts_filtered.gtf -o JonesrTg4510
+
+# whole dataset
+rTg4510_gtf=/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/A_IsoSeq_Whole/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed.filtered.gtf
+cd ${J2024}/comparison/whole
+cp ${rTg4510_gtf} .
+cp ${J2024}/sqanti/chr_annotations.filtered.gtf .
+PATH="/lustre/projects/Research_Project-MRC148213/lsl693/software/gffcompare:$PATH"
+gffcompare -r WholeIsoSeq.collapsed.filtered.gtf chr_annotations.filtered.gtf -o rTg4510Jones
+gffcompare -r chr_annotations.filtered.gtf WholeIsoSeq.collapsed.filtered.gtf -o JonesrTg4510
+

@@ -63,9 +63,20 @@ python $SQANTI3_DIR/sqanti3_filter.py rules ${NAME}"_classification.txt" --faa=$
   -j=${SQANTIFIL_JSON} --skip_report &> ${NAME}.sqanti.filter.log
   
 rTg4510_gtf=/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/G_Merged_Targeted/B_cupcake_pipeline/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf
-cd ${K2024}/comparison
+cd ${K2024}/comparison/targeted
 cp ${rTg4510_gtf} .
 cp ${K2024}/cupcake/Kumar2024.filtered.gtf .
 PATH="/lustre/projects/Research_Project-MRC148213/lsl693/software/gffcompare:$PATH"
 gffcompare -r all_iso_ont_collapsed.filtered_counts_filtered.gtf Kumar2024.filtered.gtf -o rTg4510Kumar
 gffcompare -r Kumar2024.filtered.gtf all_iso_ont_collapsed.filtered_counts_filtered.gtf -o KumarrTg4510
+
+# whole dataset
+rTg4510_gtf=/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/A_IsoSeq_Whole/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed.filtered.gtf
+cd ${K2024}/comparison/whole
+cp ${rTg4510_gtf} .
+cp ${K2024}/cupcake/Kumar2024.filtered.gtf .
+PATH="/lustre/projects/Research_Project-MRC148213/lsl693/software/gffcompare:$PATH"
+gffcompare -r WholeIsoSeq.collapsed.filtered.gtf Kumar2024.filtered.gtf -o rTg4510Kumar
+gffcompare -r Kumar2024.filtered.gtf WholeIsoSeq.collapsed.filtered.gtf -o KumarrTg4510
+
+
