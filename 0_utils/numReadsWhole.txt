@@ -1,0 +1,13 @@
+Sample	Sample	Number of Reads	Genotype	Age (months)
+K23	Mouse 2	351454	WT	8
+K18	Mouse 4	338557	TG	2
+K17	Mouse 6	329636	WT	2
+K24	Mouse 8	350120	TG	8
+L22	Mouse 9	328831	TG	8
+M21	Mouse 10	339563	WT	2
+O18	Mouse 11	212387	TG	2
+O23	Mouse 12	329376	WT	8
+Q20	Mouse 16	342173	TG	8
+Q21	Mouse 17	227113	WT	2
+S18	Mouse 18	358413	TG	2
+S23	Mouse 19	354154	WT	8
