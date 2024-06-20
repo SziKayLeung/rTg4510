@@ -163,6 +163,10 @@ GlobalDESeq <- list(
   resGeneComparison = readRDS(file = paste0(dirnames$glob_output, "/Comparison_DESeq2GeneLevel.RDS"))
 ) 
 
+# re-annotate gene expression deseq results
+class.files$glob_iso <- class.files$glob_iso %>% mutate(associated_gene_id = word(isoform,c(2),sep = fixed(".")))
+GlobalDESeq$resGeneAnno$wald$norm_counts_all <- merge(GlobalDESeq$resGeneAnno$wald$norm_counts_all, 
+                                                      unique(class.files$glob_iso[,c("associated_gene","associated_gene_id")]), by.x="isoform",by.y = "associated_gene_id")
 
 TargetedDESeq <- list(
   ontResTranAnno = readRDS(file = paste0(dirnames$targ_output, "/Ont_DESeq2TranscriptLevel.RDS")),

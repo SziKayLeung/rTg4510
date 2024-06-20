@@ -15,11 +15,43 @@ housekeepingGenes = c("Las1l","Rrp1","Gusb","Polr2b","Cyc1","Tbp","Xpnpep1","Gap
 
 
 ## ---------- functions -----------------
+meanTargetGeneExpression <- GlobalDESeq$resGeneAnno$wald$norm_counts_all %>% 
+  filter(associated_gene %in% TargetGene) %>% 
+  group_by(associated_gene) %>% 
+  dplyr::summarise(mean = mean(normalised_counts)) 
+
+meanOtherADGeneExpression <- GlobalDESeq$resGeneAnno$wald$norm_counts_all %>% 
+  group_by(associated_gene) %>% 
+  dplyr::summarise(mean = mean(normalised_counts)) %>%
+  filter(min(meanTargetGeneExpression$mean) < mean, mean < max(meanTargetGeneExpression$mean))
+
+rbind(meanTargetGeneExpression %>% mutate(Dataset = "Target"),
+      meanOtherADGeneExpression %>% mutate(Dataset = "Others")) %>%
+  ggplot(., aes(x = mean, fill = Dataset)) + geom_density(alpha = 0.2) +
+  labs(x = paste0("Number of isoform"), y = "Density") +
+  theme_classic() + scale_x_continuous(trans='log10') 
+
+dat <- rbind(class.files$glob_iso %>% filter(associated_gene %in% TargetGene) %>% group_by(associated_gene) %>% tally() %>%
+               mutate(Genes = "Target"),
+             class.files$glob_iso %>% filter(!associated_gene %in% c(TargetGene)) %>% group_by(associated_gene) %>% tally() %>%
+               mutate(Genes = "Other protein-coding")) 
+ggplot(dat, aes(x = n, fill = Genes)) + geom_density(alpha = 0.4) +
+  labs(x = paste0("Number of isoforms"), y = "Density") +
+  theme_classic() + scale_x_continuous(trans='log10') +
+  scale_fill_manual(values = c("green","orange","blue"))
+
+dat %>% filter(Dataset %in% c("Target","Other protein-coding")) %>% 
+  t.test(n ~ Dataset, data = .)
+
+dat %>% filter(Dataset %in% c("AD GWAS","Other protein-coding")) %>% 
+  t.test(n ~ Dataset, data = .)
+
+
 
 expressionADGene <- function(){
   
   meanADGeneExpression <- GlobalDESeq$resGeneAnno$wald$norm_counts_all %>% 
-    filter(associated_gene %in% ADRelatedGenes) %>% 
+    filter(associated_gene %in% TargetGene) %>% 
     group_by(associated_gene) %>% 
     dplyr::summarise(mean = mean(normalised_counts)) 
   
