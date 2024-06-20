@@ -16,9 +16,9 @@
 
 # source config file and function script
 module load Miniconda2/4.3.21
-FICLE_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/FICLE/
-LOGEN_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
-SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
+FICLE_ROOT=/lustre/projects/Research_Project-MRC148213/lsl693/scripts/FICLE/
+LOGEN_ROOT=/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LOGen
+SC_ROOT=/lustre/projects/Research_Project-MRC148213/lsl693/scripts/rTg4510
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/rTg4510_merged.config
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/01_source_function.sh
 export PATH=$PATH:${LOGEN_ROOT}/assist_ont_processing
@@ -53,6 +53,9 @@ demux_ont_isoseq_cupcake_collapse.py \
   ${ONT_TCLEAN_DIR}/AllBatch2Batch3/AllBatch2Batch3_mergedsample_id.csv \
   ${ISO_MERGED_CLUSTER_DIR}/AllMouseTargeted.clustered.demuxed.cluster_report.csv \
   --ont_sample=${ONT_BARCODE_CONFIG} 
+  
+# kallisto input (RNA-Seq data)
+
 
 # sqanti3
 echo "Running SQANTI3..."

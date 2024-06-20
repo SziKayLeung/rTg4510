@@ -1,7 +1,7 @@
 # Szi Kay Leung: sl693@exeter.ac.uk
 
 suppressMessages(library("data.table"))
-LOGEN <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen"
+LOGEN <- "/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LOGen/"
 source(paste0(LOGEN,"/transcriptome_stats/read_sq_classification.R"))
 source(paste0(LOGEN,"/target_gene_annotation/summarise_gene_stats.R"))
 source(paste0(LOGEN,"/compare_datasets/dataset_identifer.R"))
@@ -23,7 +23,7 @@ targetedTG <- c("K18","K20","K24","L22","O18","O22","T20","Q20","S18","Q18","L18
 
 ## --------------------------- 
 # directory names
-root_dir <- "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/"
+root_dir <- "/lustre/projects/Research_Project-MRC148213/lsl693/"
 dirnames <- list(
   # global transcriptome (Iso-Seq, Iso-Seq + RNA-Seq)
   glob_metadata = paste0(root_dir, "rTg4510/0_metadata/A_isoseq_whole"),
@@ -40,13 +40,23 @@ dirnames <- list(
   targ_ont_root = paste0(root_dir, "rTg4510/F_ONT_Targeted"),
   #targ_anno = paste0(root_dir,"rTg4510/F_ONT_Targeted/thesis_dump/TALON/All/Merged/TargetGenes")
   targ_anno = paste0(root_dir,"rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_characterise/TargetGenes"),
+  # modified format output from FICLE 
+  targ_anno_mod = paste0(root_dir,"rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_characterise/TargetGenesModFormat"),
   targ_output = paste0(root_dir, "/rTg4510/01_figures_tables/Targeted_Transcriptome"),
   
   # rnaseq 
   rna_aligned = paste0(root_dir,"rTg4510/C_RNASeq/2_aligned/All"),
   
   # miscellaneous
-  references = paste0(root_dir,"references/annotation")
+  references = paste0(root_dir,"references/annotation"),
+  
+  # sorted nuclei data
+  SCN_root = paste0(root_dir, "rTg4510/H_Sorted_Nuclei/"),
+  
+  # proteogeonomics
+  mprotein = paste0(root_dir, "rTg4510/G_Merged_Targeted/B_cupcake_pipeline/4_proteogenomics/"),
+  
+  utils =  paste0(root_dir, "scripts/rTg4510/0_utils/")
 )
 
 
@@ -74,18 +84,30 @@ phenotype$targeted_rTg4510_ont <- read.csv(paste0(dirnames$targ_ont_metadata, "/
 phenotype$targeted_rTg4510_ont <- phenotype$targeted_rTg4510_ont %>% mutate(group = Phenotype, time = Age) %>% mutate(group = factor(group, levels = c("WT","TG")))
 phenotype$targeted_rTg4510_ont <- phenotype$targeted_rTg4510_ont %>% mutate(sample = paste0("ONT_",sample),col = paste0(sample,"_",Phenotype)) 
 
+ensemblID <- read.csv(paste0(dirnames$utils,"ensemblGeneName.csv"))
+
 
 ## --------------------------- 
 # Final classification file
 class.names.files <- list(
   glob_iso = paste0(dirnames$glob_root, "/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed_RulesFilter_result_classification.txt"),
   targ_all = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts.txt"),
+  targ_qc = paste0(dirnames$targ_root, "/3_sqanti3/reRunValidation/all_iso_ont_collapsed_RulesFilter_result_classification.txt"),
   targ_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered.txt"),
-  iso_match = paste0(dirnames$targ_iso_root, "/7b_matched_only/8d_sqanti3/MatchedMouse_RulesFilter_result_classification.txt")#,
+  iso_match = paste0(dirnames$targ_iso_root, "/7b_matched_only/8d_sqanti3/MatchedMouse_RulesFilter_result_classification.txt"),
+  targ_sorted = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_targetgenes_counts.txt"),
+  targ_sorted_all = paste0(dirnames$SCN_root, "/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification_counts.txt"),
+  ptarg_filtered = paste0(dirnames$targ_root, "/3_sqanti3/all_iso_ont_collapsed_RulesFilter_result_classification.targetgenes_counts_filtered_pCollapsed.txt")
+  
   #targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/SQANTI3/AllMouseTargeted.collapsed_classification.filtered_lite_classification.txt"),
-  #targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt")
+  #targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/All/Unfiltered/SQANTI3/ONTTargeted_unfiltered_talon_classification.txt"),
 ) 
-class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard"))
+class.files <- lapply(class.names.files, function(x) SQANTI_class_preparation(x,"nstandard")) 
+
+class.files$targ_filtered <- class.files$targ_filtered %>% dplyr::filter(associated_gene %in% TargetGene)
+class.files$protein_filtered <- read.table(paste0(dirnames$mprotein, "/7_classified_protein/all_iso_ont.sqanti_protein_classification.tsv"), sep = "\t", as.is = T, header = T)
+# file below generated from 1_generate_stats.R
+class.files$protein_filtered_final <- read.table(paste0(dirnames$mprotein, "/7_classified_protein/all_iso_ont.sqanti_protein_classification_finalised.tsv"))
 
 # for downstream subsetting of the global transcriptome by WT and TG mice sample
 sub_class.files <- lapply(wholesamples, function(x) subset_class_by_sample(class.files$glob_iso,x))
@@ -111,6 +133,21 @@ group_class.files.diff.targeted <- cbind(class.files$targ_filtered[,c("isoform",
   `colnames<-`(c("isoform","associated_gene","WTFL", "TGFL"))
 
 
+### sorted nuclei data
+class.files$targ_sorted <- class.files$targ_sorted %>% select(-`NeuN65 _mapped`)
+
+# differentiate NeuN vs DN specific isoforms
+class.files$targ_sorted$NeuNSum <- class.files$targ_sorted  %>% select(contains("NeuN")) %>% apply(., 1,sum)
+class.files$targ_sorted$DNSum <- class.files$targ_sorted  %>% select(contains("DN")) %>% apply(., 1,sum)
+class.files$targ_sorted$dataset <- apply(class.files$targ_sorted,1, function(x) identify_dataset_by_counts(x[["NeuNSum"]], x[["DNSum"]], "NeuN","DN"))
+
+# calculate TPM
+expression <- class.files$targ_sorted_all %>% select(contains("mapped"))
+TPM <- expression %>% mutate_if(is.numeric, funs(./sum(.))) 
+colnames(TPM) <- paste0("TPM_", colnames(TPM))
+class.files$targ_sorted_all <- cbind(class.files$targ_sorted_all, TPM)
+class.files$targ_sorted_all$totalReads <- class.files$targ_sorted_all %>% select(contains("mapped") & !contains("TPM")) %>% apply(., 1, sum)
+
 # Expression 
 rawExp <- list(
   targ_ont_all = class.files$targ_all %>% dplyr::select(associated_gene, contains("ONT")) %>% select(!contains("sum_FL"))
@@ -121,11 +158,15 @@ cat("Input DESEQ2 results\n")
 GlobalDESeq <- list(
   resTranAnno = readRDS(file = paste0(dirnames$glob_output, "/IsoSeq_DESeq2TranscriptLevel.RDS")),
   resGeneAnno = readRDS(file = paste0(dirnames$glob_output, "/IsoSeq_DESeq2GeneLevel.RDS")),
-  #RresTranAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2TranscriptLevel.RDS")),
+  RresTranAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2TranscriptLevel.RDS")),
   RresGeneAnno = readRDS(file = paste0(dirnames$glob_output, "/RNASeqHybrid_DESeq2GeneLevel.RDS")),
   resGeneComparison = readRDS(file = paste0(dirnames$glob_output, "/Comparison_DESeq2GeneLevel.RDS"))
 ) 
 
+# re-annotate gene expression deseq results
+class.files$glob_iso <- class.files$glob_iso %>% mutate(associated_gene_id = word(isoform,c(2),sep = fixed(".")))
+GlobalDESeq$resGeneAnno$wald$norm_counts_all <- merge(GlobalDESeq$resGeneAnno$wald$norm_counts_all, 
+                                                      unique(class.files$glob_iso[,c("associated_gene","associated_gene_id")]), by.x="isoform",by.y = "associated_gene_id")
 
 TargetedDESeq <- list(
   ontResTranAnno = readRDS(file = paste0(dirnames$targ_output, "/Ont_DESeq2TranscriptLevel.RDS")),
@@ -152,8 +193,16 @@ TargetedMergedDESeq <- lapply(TargetedMergedDESeq, function(x) x %>% filter(!is.
 TargetedMergedDESeqSig <- lapply(TargetedMergedDESeq, function(x) x %>% filter(padj_ont < 0.05))
 
 
-## ---------- DIU results (EdgeR) -----------------
-TargetedDIU <- readRDS(file = paste0(dirnames$targ_output, "/resultsDIU.RDS"))
+## ---------- sorted nuclei data -----------------
+
+NeuNrawCounts <- read.table("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/2_cutadapt_merge/NeuN/read_numbers.txt")
+DNrawCounts <- read.table("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/2_cutadapt_merge/DN/read_numbers.txt")
+libraryPrep <- read.csv("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/0_metadata/libraryPrepMolarity.csv")
+phenotype$sorted <- read.csv("/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/0_metadata/SCNPhenotype.csv")
+libraryPrep <- merge(phenotype$sorted, libraryPrep, by = "tissue")
+RawCounts <- rbind(NeuNrawCounts %>% mutate(cell = "NeuN"), DNrawCounts %>% mutate(cell = "DN")) %>% mutate(barcode = word(V1,c(1),sep=fixed("_")))
+RawCounts <- merge(RawCounts, libraryPrep, by = "barcode") %>% dplyr::rename("totalReads" = "V2")
+
 
 ## ---------- Expression -----------------
 Exp <- list(
@@ -176,6 +225,17 @@ Exp <- list(
       remove_rownames %>% tibble::column_to_rownames(var="isoform")
   )
 )
+
+Exp$targ_sorted_all <- class.files$targ_sorted_all %>% 
+  filter(associated_gene %in% c("Gfap",TargetGene)) %>%
+  select(contains("TPM"), "isoform", "associated_gene", "associated_transcript") %>% 
+  reshape2::melt() %>% 
+  mutate(sample = word(variable, c(2),sep = fixed("_"))) %>% 
+  merge(RawCounts[,c("sample","genotype","age", "cell")], ., by = "sample") %>% 
+  mutate(value = value * 1000000) %>% 
+  filter(variable != "TPM_NeuN65 _mapped" )
+colnames(Exp$targ_sorted_all) <- c("sample","genotype","time","cell","isoform","associated_gene","associated_transcript","file","TPM")
+
 
 ## ---------- merged targeted results overview -----------------
 
@@ -210,6 +270,7 @@ Merged_gene_class_df <- all_summarise_gene_stats(Gene_class=Targeted$Gene_class,
 
 # AS events
 ES <- input_FICLE_splicing_results(dirnames$targ_anno,"Exonskipping_tab")
+ESNumAll <- ES %>% group_by(associated_gene) %>% tally(name = "numberESEvents")
 A5A3 <- input_FICLE_splicing_results(dirnames$targ_anno,"A5A3_tab")
 IR <- input_FICLE_splicing_results(dirnames$targ_anno,"IntronRetentionCounts")
 IRGen <- input_FICLE_splicing_results(dirnames$targ_anno,"IntronRetention_tab")
@@ -219,6 +280,23 @@ NovelExons <- input_FICLE_splicing_results(dirnames$targ_anno,"NE_counts_pertran
 
 ApoeA5A3 <- read.csv(paste0(dirnames$targ_anno,"/Apoe/Stats/Apoe_A5A3_tab.csv"))
 ApoeExon <- read.csv(paste0(dirnames$targ_anno,"/Apoe/Stats/Apoe_Exonskipping_generaltab.csv"))
+
+# novel cryptic exons
+FICLENE <- list.files(path = dirnames$targ_anno_mod, pattern = "_NE_coordinates.csv", recursive = T, full.names = T)
+FICLENE <- lapply(FICLENE, function(x) read.csv(x))
+names(FICLENE) <- word(list.files(path = dirnames$targ_anno, pattern = "_NE_coordinates.csv", recursive = T, full.names = F),c(1),sep=fixed("/"))
+MaptES <- read.csv(paste0(dirnames$targ_anno_mod, "/Mapt/Stats/Mapt_general_exon_level.csv"))
+
+# correlation of AS events
+reMerged_gene_class_df <- Merged_gene_class_df %>% tibble::rownames_to_column(., var = "ASEvent") %>% filter(ASEvent %in% c("A5A3","ES", "IR")) %>%
+  reshape2::melt(variable.name = "associated_gene", value.name = "numEvents")
+reMerged_gene_class_df <- merge(Targeted$ref_gencode, reMerged_gene_class_df, by = "associated_gene")
+
+totalNEvents <- reMerged_gene_class_df %>% group_by(associated_gene) %>% tally(numEvents) %>% full_join(., Targeted$ref_gencode, by = "associated_gene")
+totalNEvents <- merge(totalNEvents, ESNumAll, by = "associated_gene")
+TargetedONTGene <- TargetedDESeq$ontResGeneAnno$wald$norm_counts %>% group_by(associated_gene) %>% dplyr::summarise(meanGeneExp = mean(normalised_counts))
+totalNEvents  <- merge(totalNEvents, TargetedONTGene, by = "associated_gene")
+
 
 ## ---------------------------
 # Isabel's supplementary table of differentially expressed genes in rTg4510 
@@ -232,36 +310,44 @@ rnaseq_results <- list(
 gtf <- list(
   glob_iso = rtracklayer::import(paste0(dirnames$glob_root,"/2_post_isoseq3/9_sqanti3/WholeIsoSeq.collapsed.filtered.gtf")),
   targ_merged = rtracklayer::import(paste0(dirnames$targ_root,"/3_sqanti3/all_iso_ont_collapsed.filtered_counts_filtered.gtf")),
+  ptarg_merged = rtracklayer::import(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.gtf")),
   ref_target = rtracklayer::import(paste0(dirnames$references,"/gencode.M22.annotation.20Targets.gtf"))
 )
 gtf <- lapply(gtf, function(x) as.data.frame(x))
 
-gtf$targ_merged <- rbind(gtf$targ_merged[,c("seqnames","strand","start","end","type","transcript_id","gene_id")] ,
-                         gtf$ref_target[,c("seqnames","strand","start","end","type","transcript_id","gene_id")])
+gtfCols <- c("seqnames","strand","start","end","type","transcript_id","gene_id")
+gtf$targ_merged <- rbind(gtf$targ_merged[,gtfCols],
+                         gtf$ptarg_merged[,gtfCols],
+                         gtf$ref_target[,gtfCols])
 
 gtf$targ_merged <- gtf$targ_merged %>% mutate(co = paste0(seqnames,":",start,"-",end))
+gtf$ptarg_merged <- gtf$ptarg_merged %>% mutate(transcript = word(transcript_id,c(1),sep=fixed("_")))
 
-
-## ---------------------------
-# TAPPAS (Differential Analysis) 
-#tappas_dir <- list(
-#  glob_iso = paste0(dirnames$glob_tabroot, "/IsoSeq_Expression"), 
-#  glob_rna = paste0(dirnames$glob_tabroot, "/RNASeq_Expression"),
-#  targ_iso = paste0(dirnames$targ_iso_root, "/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/IsoSeq_Expression"),
-#  targ_ont = paste0(dirnames$targ_ont_root, "/thesis_dump/TALON/TAPPAS_OUTPUT")
-#)
+refgtf <- list(
+  Gfap = as.data.frame(rtracklayer::import(paste0(dirnames$references,"/gencode.M22.annotation.Gfap.gtf")))
+)
+refgtf <- lapply(refgtf, function(x) x %>% select(seqnames,strand,start,end,type,transcript_name,gene_id) %>% dplyr::rename(., "transcript_id" = "transcript_name"))
+gtf$glob_iso <- rbind(gtf$glob_iso[,c("seqnames","strand","start","end","type","transcript_id","gene_id")], refgtf$Gfap)
 
 
 
-# Output from Tappas_DEA.R
-#tappassiggene <- list(
-#  glob = read_dea_files(paste0(dirnames$glob_tabroot,"/DifferentialGeneExpression_Analysis.xlsx")),
-#  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx")),
-#  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/thesis_dump/TALON/TAPPAS_OUTPUT/DifferentialGeneExpression_Analysis.xlsx"))
-#)
+## -------------------------- protein ----------
 
-#tappassigtrans <- list(
-#  glob = read_dea_files(paste0(dirnames$glob_tabroot,"/DifferentialTransExpression_Analysis.xlsx")),
-#  targ_iso = read_dea_files(paste0(dirnames$targ_iso_root,"/thesis_dump/DiffAnalysis_noRNASEQ/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx")),
-#  targ_ont = read_dea_files(paste0(dirnames$targ_ont_root,"/thesis_dump/TALON/TAPPAS_OUTPUT/DifferentialTransExpression_Analysis.xlsx"))
-#)
+mouseProtein = list(
+  cpat = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.ORF_prob.best.tsv"), sep ="\t", header = T),
+  cpat_best = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont_best_orf.tsv"), sep ="\t", header = T),
+  mapped = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_orfs_mapped.tsv"), sep ="\t", header = T),
+  noORF = read.table(paste0(dirnames$mprotein,"5_calledOrfs/all_iso_ont.no_ORF.txt"), sep ="\t", header = F),
+  t2p.collapse = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined.tsv"), sep = "\t", header = T),
+  t2p.collapse.refined = read.table(paste0(dirnames$mprotein,"6_refined_database/all_iso_ont_orf_refined_collapsed.tsv"))
+)
+
+class.files$protein <- read.table(paste0(dirnames$mprotein,"7_classified_protein/all_iso_ont.sqanti_protein_classification.tsv"), sep = "\t", header = T)
+nmd <- read.table(paste0(dirnames$mprotein, "7_classified_protein/all_iso_ont.classification_filtered.tsv"), sep = "\t", header = T)
+idx <- match(nmd$pb,class.files$ptarg_filtered$base_acc)
+nmd <- transform(nmd, corrected_acc = ifelse(!is.na(idx), as.character(class.files$ptarg_filtered$corrected_acc[idx]), NA))
+
+## ------ raw reads -----
+
+rawReadsWhole <- read.table(paste0(dirnames$utils,"numReadsWhole.txt"), sep = "\t", header = T)
+rawReadsTargeted <- read.table(paste0(dirnames$utils,"numReadsTargeted.txt"), sep = "\t", header = T)

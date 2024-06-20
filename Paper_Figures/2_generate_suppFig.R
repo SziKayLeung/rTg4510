@@ -239,6 +239,150 @@ Cd33IRTrack <- ggTranPlots(gtf$targ_merged, class.files$targ_filtered,
                              isoList = c(as.character(Cd33Iso$Isoform)),
                              selfDf = Cd33Iso, gene = "Cd33")
 
+## ---------- Revision -----------------------------------------------------------------
+
+
+## ---------- Crytpic exons ----------
+InternalNovelExons <- lapply(FICLENE, function(x) x[x$classification == "Internal_NovelExon",])
+InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
+                                                                   mouseProtein$cpat[,c("seq_ID","Coding_prob")], 
+                                                                   by.x = "transcriptID", by.y = "seq_ID"))
+InternalNovelExons <- lapply(InternalNovelExons, function(x) x %>% mutate(coding = ifelse(Coding_prob < 0.44, "noncoding","coding")))
+InternalNovelExons <- lapply(InternalNovelExons, function(x) merge(x, 
+                                                                   nmd[,c("pb","is_nmd","has_stop_codon")], 
+                                                                   by.x = "transcriptID", by.y = "pb",all.x=TRUE)) 
+
+plotCE <- function(gene, type){
+  representative <- as.data.frame(gtf$ref_target %>% filter(type == "transcript" & transcript_type == "protein_coding") %>% group_by(gene_name) %>% top_n(1, width))
+  allRep <- as.data.frame(gtf$ref_target)
+  # manual drop gene
+  print(gene)
+  df <- InternalNovelExons[[gene]]
+  if(gene == "Apoe"){
+    # PB.40586.2026 = reference match ("PB.40586.2026")
+    df <- df[df$transcriptID %in% c("PB.40586.26305"),]
+    ref <-data.frame("PB.40586.2026",NA,NA,NA,NA,NA,"coding","False")
+    colnames(ref) <- colnames(df)
+    df <- rbind(df, ref)
+  }else if(gene == "Bin1"){
+    df <- df[df$transcriptID %in% paste0("PB.22007.",c("925","1554","1033","4967","1470","14222","1014")),]
+  }else if(gene == "Clu"){
+    df <-  df[df$transcriptID %in% paste0("PB.14646.",c("6992")),]
+    # PB.40586.2026 = reference match ("PB.14646.139", "PB.14646.483")
+    ref <- data.frame("PB.14646.139",NA,NA,NA,NA,NA,"coding","False")
+    colnames(ref) <- colnames(df)
+    df <- rbind(df, ref)
+  }else if(gene == "Snca"){
+    df <-  df[df$transcriptID %in% paste0("PB.38419.",c("3145")),]
+  }else if(gene == "Trem2"){
+    df <- df[df$transcript %in% paste0("PB.20818.", c("80","192","573","1074","493","362","1096")),]
+  }else{
+    return(NULL)
+  }
+  transcriptList <- list(
+    #Reference = c("ENSMUST00000024791.14","ENSMUST00000113237.3"),
+    Reference =  unique(allRep[allRep$gene_name == gene, "transcript_id"]),
+    #Reference =  representative[ representative$gene_name == gene, "transcript_id"],
+    `not NMD` = as.character(unique(df %>% filter(coding == "coding" & is_nmd == "False") %>% .[,c("transcriptID")])),
+    `NMD` = as.character(unique(df %>% filter(coding == "coding" & is_nmd == "True") %>% .[,c("transcriptID")])),
+    `non-coding` = as.character(unique(df %>% filter(coding == "noncoding") %>% .[,c("transcriptID")]))
+  )
+  proteinList <- list(
+    #Reference =  unique(allRep[allRep$gene_name == gene, "transcript_id"]),
+    `not NMD` =  unique(gtf$ptarg_merged %>% filter(transcript %in% transcriptList$`not NMD`) %>% .[["gene_id"]]),
+    `NMD` = unique(gtf$ptarg_merged %>% filter(transcript %in% transcriptList$`NMD`) %>% .[["gene_id"]]),
+    `non-coding` = unique(gtf$ptarg_merged %>% filter(transcript %in% transcriptList$`non-coding`) %>% .[["gene_id"]]))
+  
+  if(type == "transcript"){
+    p <-  generalggTranPlots(transcriptList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  }else if(type == "protein"){
+    p <- generalggTranPlots(proteinList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  }else{
+    bothList <- c(transcriptList, proteinList)
+    p <- generalggTranPlots(bothList, gtf$targ_merged, class.files$targ_filtered, gene) 
+  }
+  
+  return(p)
+}
+
+
+pInternalNovelExonsTranscript <- lapply(names(InternalNovelExons), function(x) plotCE(x,"transcript"))
+names(pInternalNovelExonsTranscript) <- names(InternalNovelExons)
+
+pInternalNovelExonsProtein <- lapply(names(InternalNovelExons), function(x) plotCE(x,"protein"))
+names(pInternalNovelExonsProtein) <- names(InternalNovelExons)
+
+pInternalNovelExonsProteinBoth <- lapply(names(InternalNovelExons), function(x) plotCE(x,"proteinTranscript"))
+names(pInternalNovelExonsProteinBoth) <- names(InternalNovelExons)
+
+CE <- c(paste0("PB.22007.",c("925","1554","1033","4967","1470","14222","1014")),
+        "PB.40586.26305",
+        paste0("PB.14646.",c("6992")),
+        paste0("PB.38419.",c("3145")),
+        paste0("PB.20818.", c("80","192","573","1074","493","362","1096")))
+plot_expression_summed(CE, "Cryptic exons", AgeDiv = TRUE)
+plot_expression_summed(CE)
+
+plot_grid(pInternalNovelExonsProteinBoth$Apoe,pInternalNovelExonsProteinBoth$Bin1, pInternalNovelExonsProteinBoth$Clu, 
+          pInternalNovelExonsProteinBoth$Trem2, pInternalNovelExonsProtein$Snca, ncol = 2)
+  
+## ---------- IR ----------
+
+IRList <- lapply(TargetGene,function(x) IR[IR$associated_gene == x,"transcript_id"])
+names(IRList) <- TargetGene
+IRp <- lapply(IRList, function(x) plot_expression_summed(x, AgeDiv = TRUE))
+IRGenop <- lapply(IRList, function(x) plot_expression_summed(x, AgeDiv = FALSE))
+
+
+IR <- list(
+  Trem2Exp = IRp$Trem2 + labs(subtitle = "Trem2: IR transcripts"),
+  Cd33Exp = IRp$Cd33 + labs(subtitle = "Cd33: IR transcripts"),
+  Trem2Tracks = ggTranPlots(inputgtf=gtf$targ_merged,classfiles=class.files$targ_filtered,
+                             isoList = c(as.character(IRList$Trem2),RefIsoforms$Trem2[1:2]),
+                             colours = c(rep(wes_palette("Royal1")[2],5),rep("#0C0C78",10)), 
+                             lines = c(rep(wes_palette("Royal1")[2],5),rep("#0C0C78",10)),
+                             gene = "Trem2",simple=TRUE),
+  Cd33Tracks = ggTranPlots(inputgtf=gtf$targ_merged,classfiles=class.files$targ_filtered,
+                           isoList = c(as.character(IRList$Cd33),RefIsoforms$Cd33[1:2]),
+                           colours = c(rep(wes_palette("Royal1")[2],9),rep("#0C0C78",10)), 
+                           lines = c(rep(wes_palette("Royal1")[2],9),rep("#0C0C78",10)),
+                           gene = "Cd33",simple=TRUE)
+  
+)
+
+
+## ---------- NMD ----------
+
+# list of NMD transcripts
+NMD <- lapply(TargetGene,function(x) class.files$protein_filtered_final[class.files$protein_filtered_final$is_nmd == "TRUE" & class.files$protein_filtered_final$associated_gene == x,"corrected_acc"])
+names(NMD) <- TargetGene
+
+# plot summed expression of NMD by gene (genotype * age)
+NMDp <- lapply(NMD, function(x) plot_expression_summed(x, AgeDiv = TRUE))
+for(i in 1:length(TargetGene)){NMDp[[i]] <- NMDp[[i]] + labs(subtitle = TargetGene[[i]])}
+# plot summed expression of NMD by gene (genotype )
+NMDGenop <- lapply(NMD, function(x) plot_expression_summed(x, AgeDiv = FALSE))
+for(i in 1:length(TargetGene)){NMDGenop[[i]] <- NMDGenop[[i]] + labs(subtitle = TargetGene[[i]])}
+names(NMDp) <- TargetGene
+names(NMDGenop) <- TargetGene
+
+NMD_plots <- list(
+  Trem2Exp = NMDp$Trem2 + labs(subtitle = "Trem2: NMD transcripts"),
+  Cd33Exp = NMDp$Cd33 + labs(subtitle = "Cd33: NMD transcripts"),
+  Trem2Tracks = visualise_ORFs_NMD(NMD$Trem2, "Trem2"),
+  Cd33Tracks = visualise_ORFs_NMD(NMD$Cd33, "Cd33")
+)
+
+
+## ---------- Proteogenomics ----------
+
+pGeneralProtein <- plot_protein_general(class.files$ptarg_filtered, class.files$protein_filtered_final, ORFCorrectedCollapsedID)
+pTrem2SameORF <- visualise_ORFs(refgtf=gtf$ref_target, tgtf=gtf$targ_merged,pgtf=gtf$ptarg_merged,
+               tclassfiles=class.files$targ_filtered, pclassfiles=class.files$ptarg_filtered,gene="Trem2", transcript="PB.20818.54", cpat=mouseProtein$cpat, species="mouse")
+
+pTrem2UniqueORF <- visualise_ORFs(refgtf=gtf$ref_target, tgtf=gtf$targ_merged,pgtf=gtf$ptarg_merged,
+               tclassfiles=class.files$targ_filtered, pclassfiles=class.files$ptarg_filtered,gene="Trem2",cpat=mouseProtein$cpat, species="mouse")
+
 
 ## ---------- Output -----------------
 
@@ -294,4 +438,16 @@ for(i in Targeted$Genes){
   print(i)
   print(plot_grid(pIF$ontNorm[[i]][[2]],pIF$isoNorm[[i]][[2]],nrow = 1))
 }
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/SuppProteomics.pdf"), width = 22, height = 13)
+A <- plot_grid(pGeneralProtein[[1]], pGeneralProtein[[2]], pTrem2SameORF, ncol = 1, labels = c("A","B","C"), scale = 0.95, 
+          rel_heights = c(0.3,0.45,0.35))
+B <- plot_grid(pTrem2UniqueORF, labels = c("D"), scale = 0.95)
+plot_grid(A,B, rel_widths = c(0.35,0.65))
+dev.off()
+
+pdf(paste0(dirnames$targ_output,"/IR_NMD.pdf"), width = 22, height = 13)
+plot_grid(IR$Trem2Tracks, IR$Trem2Exp, IR$Cd33Tracks, IR$Cd33Exp, labels = c("A","B","C","D"))
+plot_grid(NMD_plots$Trem2Tracks, NMD_plots$Trem2Exp, NMD_plots$Cd33Tracks, NMD_plots$Cd33Exp, labels = c("A","B","C","D"))
 dev.off()
