@@ -12,6 +12,7 @@
 LOGEN = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
 source(paste0(LOGEN, "aesthetics_basics_plots/pthemes.R"))
 source(paste0(LOGEN, "aesthetics_basics_plots/draw_density.R"))
+source(paste0(LOGEN, "transcriptome_stats/read_sq_classification.R"))
 
 sapply(list.files(path = paste0(LOGEN,"longread_QC"), pattern="*.R", full = T), source,.GlobalEnv)
 sapply(list.files(path = paste0(LOGEN,"compare_datasets"), pattern="*.R", full = T), source,.GlobalEnv)
@@ -43,6 +44,8 @@ QC_yield <- iso_QC_yield_batch(Reads$Reads, misc_input$targetedpheno, misc_input
 # Target rate of probes
 ontarget <- on_target_plot(Probes_files, misc_input$targetedpheno,"notbatched")
 
+# Transgene sequence (Iso-Seq)
+humanMAPT_plots <- find_mapt(dirnames$mapt, misc_input$targeted_tg4510_samples)
 
 ## ---------- Compare datasets ------------------------------
 

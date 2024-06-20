@@ -80,7 +80,9 @@ venn_IR_NMD <- associate_IR_NMD(input.class.files$isoseq)
 NMDvsnon <- plot_IR_NMD_isoform_expression(input.class.files$isoseq) 
 
 
-humanMAPT_plots <- find_mapt()
+## ---------- MAPT transgene  -------------------------
+
+humanMAPT_plots <- find_mapt(dirnames$mapt, misc_input$whole_tg4510_samples, misc_input$map)
 
 
 ## ---------- Pdf Output ----------------------------------------

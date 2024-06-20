@@ -41,28 +41,39 @@ suppressMessages(library(cowplot))
 suppressMessages(library(readxl))
 suppressMessages(library(ggdendro))
 suppressMessages(library(pheatmap))
+suppressMessages(library(ggrepel))
+suppressMessages(library(forcats))
 suppressMessages(library(extrafont))
 suppressMessages(loadfonts())
+suppressMessages(library(ggtranscript))
+suppressMessages(library(ggplot2))
+suppressMessages(library(rtracklayer))
+suppressMessages(library(rtracklayer))
 
 
 ## ----------Functions-----------------
 
 # load all the functions
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_aesthetics.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/plot_tappas_analysis.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/sqanti_general.R")
-source("/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/General/5_TappAS_Differential/characterise/comp_characterise.R")
-
-SC_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510/Paper_Figures/"
-source(paste0(SC_ROOT,"bin/segregate_tappasresults.R"))
-
+LOGEN_ROOT = "/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen/"
+source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/pthemes.R"))
+source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_venn.R"))
+source(paste0(LOGEN_ROOT, "aesthetics_basics_plots/draw_density.R"))
+source(paste0(LOGEN_ROOT, "transcriptome_stats/plot_basic_stats.R"))
+source(paste0(LOGEN_ROOT,"longread_QC/plot_cupcake_collapse_sensitivty.R"))
+source(paste0(LOGEN_ROOT, "compare_datasets/base_comparison.R"))
+source(paste0(LOGEN_ROOT, "compare_datasets/whole_vs_targeted.R"))
+source(paste0(LOGEN_ROOT, "differential_analysis/plot_transcript_level.R"))
+source(paste0(LOGEN_ROOT, "differential_analysis/plot_usage.R"))
+source(paste0(LOGEN_ROOT, "merge_characterise_dataset/run_ggtranscript.R"))
+sapply(list.files(path = paste0(LOGEN_ROOT,"longread_QC"), pattern="*.R", full = T), source,.GlobalEnv)
+sapply(list.files(path = paste0(LOGEN_ROOT,"target_gene_annotation"), pattern="*summarise*", full = T), source,.GlobalEnv)
 
 ## ----------Theme-----------------
 
 label_colour <- function(genotype){
-  if(genotype %in% c("WT","Control")){colour = wes_palette("Royal1")[1]}else{
+  if(genotype %in% c("WT","Control","CONTROL")){colour = wes_palette("Royal1")[1]}else{
     if(genotype == "WT_2mos"){colour = alpha(wes_palette("Royal1")[2],0.5)}else{
-      if(genotype %in% c("TG","Case")){colour = wes_palette("Royal1")[2]}else{
+      if(genotype %in% c("TG","Case","CASE")){colour =wes_palette("IsleofDogs1")[4]}else{
         if(genotype == "TG_2mos"){colour = alpha(wes_palette("Royal1")[1],0.5)}else{
           if(genotype == "mouse"){colour = wes_palette("Royal1")[4]}else{
             if(genotype == "novel"){colour = wes_palette("Darjeeling1")[4]}else{
@@ -72,34 +83,239 @@ label_colour <- function(genotype){
 }
 
 label_group <- function(genotype){
-  if(genotype %in% c("Case","CASE")){group = "TG"}else{
-    if(genotype %in% c("Control","CONTROL")){group = "WT"}}
+  if(genotype %in% c("TG","Case","CASE")){group = "TG"}else{
+    if(genotype %in% c("WT","Control","CONTROL")){group = "WT"}}
   return(group)
 }
 
-## ---------- Load tappAS files -----------------
 
-loaded <- list(
-  glob_iso = input_tappasfiles(tappas_dir$glob_iso),
-  glob_rna = input_tappasfiles(tappas_dir$glob_rna),
-  targ_iso = input_tappasfiles(tappas_dir$targ_iso),
-  targ_ont = input_tappasfiles(tappas_dir$targ_ont)
-)
-
-## ---------- Annotate tappAS files -----------------
-
-annotated <- list(
-  glob_iso = annotate_tappasfiles(class.files$glob_iso,loaded$glob_iso$input_normalized_matrix,phenotype$glob_iso),
-  glob_rna = annotate_tappasfiles(class.files$glob_iso,loaded$glob_rna$input_normalized_matrix,phenotype$glob_rna),
-  targ_iso = annotate_tappasfiles(class.files$targ_iso,loaded$targ_iso$input_normalized_matrix,phenotype$targ_iso),
-  targ_ont = annotate_tappasfiles(class.files$targ_ont,loaded$targ_ont$input_normalized_matrix,phenotype$targ_ont)
-)
+reportStats <- function(res,stats,isoList){
+  for(i in isoList){
+    print(res %>% select(!c("lfcSE","stat")) %>% filter(isoform == i))  
+    cat("Wald statistic: ")
+    cat(stats[rownames(stats) == i,"WaldStatistic_group_CASE_vs_CONTROL"],"\n")
+    cat("******************\n")
+  }
+}
 
 
-## ---------- Differential expression models -----------------
-# segregate differential gene and transcript expression results by the different models (using beta coefficient as filters)
-diff_models <- list(
-  glob_iso_siggenes = segregate_tappasresults(tappassiggene$glob$WholeIso_Genexp,"IsoSeq"),
-  glob_rna_siggenes = segregate_tappasresults(tappassiggene$glob$WholeRNA_Genexp,"RNASeq")
-)
+vennONTvsIso <- function(classf){
+  ont <- classf %>% filter(Dataset %in% c("ONT","Both")) %>% mutate(Dataset = "ONT") 
+  isoseq <- classf  %>% filter(Dataset %in% c("Both","Iso-Seq")) %>% mutate(Dataset = "Iso-Seq") 
+  
+  p <- twovenndiagrams(ont$isoform,isoseq $isoform, "ONT", "Iso-Seq")
+  return(p)
+}
+
+pSensitivity <- function(classf){
+  
+  dat <- classf %>% arrange(-nreads) %>% mutate(cumreads = cumsum(nreads), relative = prop.table(nreads), cumrel = cumsum(relative)) 
+  p <- ggplot(dat, aes(x = isoform, y = cumrel, label = paste0(associated_gene,", ",associated_transcript))) + 
+    geom_point() + 
+    aes(x = fct_reorder(isoform, cumrel)) + 
+    scale_x_discrete(labels = NULL, breaks = NULL) + labs(x = "XX") +
+    geom_label_repel(data          = subset(dat, cumrel < 0.48),
+                     size          = 4,
+                     box.padding   = 0.5,
+                     point.padding = 0.1,
+                     force         = 100,
+                     #nudge_y = 0.2,
+                     nudge_x = 0.1,
+                     segment.size  = 0.2,
+                     segment.color = "grey50",
+                     direction     = "x") +
+    labs(x = "Isoform", y = "Cumulative read proportion") + mytheme
+  
+  return(p)
+  
+  #densityfill <- function(x){
+  #  if(x <= 10){return("<10")
+  #  }else if (10 < x & x <= 100){return("10-100")
+  #  }else if (100 < x & x < 200){return("100-200")
+  #  }else {return(">200")}
+  #}
+  #class.files$targ_all$ndensity <- factor(unlist(lapply(class.files$targ_all$nreads, function(x) densityfill(x))),
+  #                                        levels = c("<10","10-100","100-200",">200"))
+  #ggplot(class.files$targ_all, aes(x = associated_gene, fill = as.factor(ndensity))) + 
+  #  geom_bar() + labs(x = "Target genes", y = "Number of isoforms") + 
+  #  scale_fill_discrete(name = "Number of total reads") + mytheme +
+  #  theme(legend.position="bottom")
+  
+}
+
+
+#' @title draw_heatmap_gene_level
+#' @description This function uses hierarchal clustering to plot a heatmap of the gene expression across samples
+#' @param diff_genes: tappAS output of list of differentially expressed genes 
+#' @param genelevel_exp: tappAS output of normalised gene expression values
+#' @param type: "glob_isoseq" used to determine annnotation of colours
+#' @param type: "yes" or "no" whether to filter differentially expressed genes 
+
+draw_heatmap_gene_level <- function(diff_genes,genelevel_exp, type, diff){
+  
+  dat <- genelevel_exp[,c("associated_gene", "Exp","time","variable")]
+  
+  if(diff == "yes"){
+    dat <- dat %>% filter(associated_gene %in% rownames(diff_genes))
+  }
+  
+  dat <- aggregate(Exp ~ time + variable + associated_gene, data = dat, mean) %>% 
+    mutate(Exp = log2(Exp)) %>% 
+    select(variable, associated_gene, Exp) %>% 
+    spread(., variable, Exp) %>% tibble::column_to_rownames(var = "associated_gene")  
+  
+  # remove isoforms that have been removed by tappAS due to very low count 
+  # replace infinity value from log value with 0 
+  # rotate the dataframe for visualisation ease
+  dat <- dat[,colSums(is.na(dat))<nrow(dat)]
+  dat[dat == "-Inf"] <- 0
+  
+  # set the order for the column (Age, Genotype)
+  coldata = genelevel_exp[,c("sample", "time", "group")] %>% 
+    distinct(.keep_all = TRUE) %>% 
+    column_to_rownames(var = "sample") %>% 
+    mutate(time = as.factor(time)) %>% 
+    mutate(group = ifelse(group == "CONTROL","WT","TG"))
+  colnames(coldata) = c("Age (months)","Genotype")
+  
+  if(type == "glob_isoseq"){
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white", "8"="black"))
+  }else{
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white","4"="#CFCFCF","6"="#777777","8"="black"))
+  }
+  
+  if(diff == "yes"){
+    p = pheatmap(dat, annotation_col=coldata, annotation_legend = TRUE,annotation_names_col = FALSE,
+                 show_colnames = FALSE,show_rownames = TRUE, color = viridis(10),annotation_colors = annotation_colors,
+                 fontsize_col = 20)
+    
+  }else{
+    p = pheatmap(dat, annotation_col=coldata, annotation_legend = TRUE,annotation_names_col = FALSE,
+                 show_colnames = FALSE,show_rownames = FALSE, color = viridis(10),annotation_colors = annotation_colors,
+                 fontsize_col = 20)
+  }
+  
+  return(p)
+}
+
+# Draw the heatmap for the Isoform expression of the gene 
+
+draw_heatmap_gene <- function(gene, cf, normCounts, type){
+  
+  # Subset the normalised expression count to gene, and datawrangle for plot
+  dat = normCounts[normCounts$associated_gene == gene,c("isoform","normalised_counts","sample")] %>%
+    mutate(log2normalised = log2(normalised_counts)) %>% 
+    select(isoform, log2normalised, sample) %>%
+    spread(., isoform, log2normalised) %>% tibble::column_to_rownames(var = "sample") 
+  
+  # remove isoforms that have been removed by tappAS due to very low count 
+  # replace infinity value from log value with 0 
+  # rotate the dataframe for visualisation ease
+  dat <- dat[,colSums(is.na(dat))<nrow(dat)]
+  dat[dat == "-Inf"] <- 0
+  dat.t <- t(dat)
+  
+  # set the order for the column (Age, Genotype)
+  coldata = normCounts %>% 
+    dplyr::select(sample, time, group) %>% distinct(.keep_all = TRUE) %>% column_to_rownames(var = "sample") %>% 
+    mutate(time = as.factor(time))
+  colnames(coldata) = c("Age (months)","Genotype")
+  
+  
+  # set the order for the row (isoform structural category)
+  rowdata = cf[cf$isoform %in% colnames(dat),c("isoform","structural_category")] %>% dplyr::select(-isoform)
+  colnames(rowdata) = c("Category")
+  
+  # set annotation colours
+  if(type == "targeted"){
+    annotation_colors = list(
+      Genotype = c(CONTROL=wes_palette("Royal1")[1], CASE=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white","4"="#CFCFCF","6"="#777777","8"="black"), 
+      Category = c(FSM = alpha("#00BFC4",0.8),ISM = alpha("#00BFC4",0.3),NIC = alpha("#F8766D",0.8),NNC = alpha("#F8766D",0.3)))
+  }else{
+    annotation_colors = list(
+      Genotype = c(WT=wes_palette("Royal1")[1], TG=wes_palette("Royal1")[2]),
+      `Age (months)` = c("2"="white", "8"="black"), 
+      Category = c(FSM = alpha("#00BFC4",0.8),ISM = alpha("#00BFC4",0.3),NIC = alpha("#F8766D",0.8),NNC = alpha("#F8766D",0.3)))
+  }
+  
+  
+  # draw heatmap
+  if(nrow(dat.t) > 1){
+    p <- pheatmap(dat.t, 
+             annotation_col = coldata, 
+             annotation_row = rowdata, 
+             annotation_legend = FALSE,
+             show_colnames = FALSE, 
+             show_rownames = FALSE, 
+             color = viridis(10),
+             annotation_colors = annotation_colors,
+             fontsize_col = 20,
+             labels_row = FALSE, 
+             labels_col = FALSE,
+             legend = FALSE,
+             annotation_names_row = FALSE)
+  }else{
+    p = ggplot()
+  }
+  
+  return(p)
+}
+
+
+# recapitulate RNA-Seq and Iso-Seq at the gene level (whole transcriptome dataset)
+recapitulate_gene_level <- function(){
+  
+  # effect size up and down in global DESeq2 output at gene level 
+  GlobalDESeq$RresGeneAnno$wald$anno_res <- GlobalDESeq$RresGeneAnno$wald$anno_res %>% mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
+  GlobalDESeq$resGeneAnno$wald$res_wald_rResGeneSig <- GlobalDESeq$resGeneAnno$wald$res_Wald %>% 
+    filter(isoform %in% GlobalDESeq$RresGeneAnno$lrt$anno_res$isoform) %>% 
+    mutate(direction = ifelse(log2FoldChange < 0, "down","up"))
+  
+  # merge gene results from rnaseq and isoseq 
+  # differentiate log2FC and direction betwen two datasets 
+  
+  mergedGeneRep <- merge(GlobalDESeq$RresGeneAnno$wald$anno_res %>% 
+                           select(isoform, associated_gene, log2FoldChange, direction) %>% dplyr::rename("RresLog2FC" = "log2FoldChange", "RresDirection" = "direction"),
+                         GlobalDESeq$resGeneAnno$wald$res_wald_rResGeneSig %>% 
+                           select(isoform, log2FoldChange, direction) %>% dplyr::rename("resLog2FC" = "log2FoldChange", "resDirection" = "direction"), 
+                         by = "isoform"
+  )
+  
+  # create new column determining if direction is consistent 
+  mergedGeneRep <- mergedGeneRep %>% mutate(effectSize = ifelse(RresDirection == resDirection, TRUE, FALSE))
+  p <- ggplot(mergedGeneRep, aes(x = RresLog2FC, y = resLog2FC)) + geom_point() + mytheme + 
+    labs(x = "RNA-Seq dataset: gene Log2FC", y = "Iso-Seq dataset: gene Log2FC")
+  
+  # binomial p-value 
+  message("Binomial test of number of genes with consisitent effect size")
+  consistentNum = nrow(subset(mergedGeneRep, effectSize == TRUE))
+  totalNum = nrow(GlobalDESeq$RresGeneAnno$wald$anno_res)
+  consistentNum/totalNum
+  res <- binom.test(consistentNum, totalNum, alternative = c("two.sided"))
+  print(res)
+  print(res$p.value)
+  
+  # correlation 
+  message("correlation test of gene Log2FC between RNA-Seq and Iso-Seq")
+  res <- cor.test(mergedGeneRep$RresLog2FC,mergedGeneRep$resLog2FC, method = "pearson")
+  print(res)
+  print(res$p.value)
+  
+  return(p)
+}
+
+twovenndiagrams <- function(set1, set2, name1, name2){
+  p <- venn.diagram(x = list(set1,set2), 
+                    label_alpha = 0, category.names = c(name1,name2),filename = NULL, output=TRUE, lwd = 0.2,lty = 'blank', 
+                    fill = c("#B3E2CD", "#FDCDAC"), main = "\n", cex = 1,fontface = "bold",fontfamily = "ArialMT",
+                    cat.cex = 1,  cat.default.pos = "outer",  cat.col = c("#60756c", "#ba7443"),
+                    cat.pos = c(-145, 200), cat.dist = c(-0.15,-0.03),  cat.fontfamily = "ArialMT",  #rotation = 1,   main = "\n\n\n\n"
+                    print.mode = "raw")
+  return(p)
+}
 
