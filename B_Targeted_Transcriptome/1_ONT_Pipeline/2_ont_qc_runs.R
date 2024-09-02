@@ -37,11 +37,8 @@ AllQCPlots_B3 <- AllQCPlots(B3_sequencingdata)
 # On Target Rate 
 ontarget <- on_target_plot(Probes_input, misc_input$BarcodedPhenotype,"batched")
 
-
-## ---------- hMAPT --------------------------------------
-
-hmapt_iso = find_mapt_isoseq()
-hmapt_ont = find_mapt_ont()
+# Transgene sequence (ONT)
+humanMAPT_plots <- find_mapt(dirnames$mapt, misc_input$BarcodedPhenotype)
 
 
 ## ---------- Pdf Output ----------------

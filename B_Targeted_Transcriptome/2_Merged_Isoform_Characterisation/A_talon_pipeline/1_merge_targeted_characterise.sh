@@ -19,8 +19,11 @@
 module load Miniconda2/4.3.21
 FICLE_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/FICLE/
 SC_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/rTg4510
+LOGEN_ROOT=/gpfs/mrc0/projects/Research_Project-MRC148213/sl693/scripts/LOGen
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/rTg4510_merged.config
 source $SC_ROOT/B_Targeted_Transcriptome/2_Merged_Isoform_Characterisation/01_source_function.sh
+export PATH=$PATH:${LOGEN}/target_gene_annotation
+export PATH=$PATH:${LOGEN}/merge_characterise_dataset
 
 ##-------------------------------------------------------------------------
 
@@ -39,14 +42,11 @@ run_cpat $WKD_ROOT/3_sqanti3/$NAME"_genename_corrected.fasta" $NAME $WKD_ROOT
 # extract_best_orf <sample> <root_dir>
 extract_best_orf $NAME $WKD_ROOT
 
-# convert_gtf_bed12 <input_gtf> 
-convert_gtf_bed12 $WKD_ROOT/3_sqanti3/$NAME"_genename_corrected.gtf" 
-
 # colour_by_abundance <sample> <input_gtf> <root_dir>
-colour_by_abundance $NAME $WKD_ROOT/3_sqanti3/$NAME"_genename_corrected.gtf" $WKD_ROOT
+colour_by_abundance $NAME $WKD_ROOT/3_sqanti3/$NAME"_genename_corrected.gtf" $WKD_ROOT/2_common_transcripts/Final_Merged_Abundance.csv $WKD_ROOT
 
 # subset_gene_reference 
-subset_gene_reference 
+subset_gene_reference $WKD_ROOT
 
 # extract reference information
 python $FICLE_ROOT/reference/extract_reference_info.py --r ${GENOME_GTF} --glist ${TGENES[@]} --split ${TGENES_REF} --exc ${TGENES_REF}/Gencode_transcript_exclusion.csv  --short_read  ${RNASEQ_COUNTS} --o ${TGENES_REF}

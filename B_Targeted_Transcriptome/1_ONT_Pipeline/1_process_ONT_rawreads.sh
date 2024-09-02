@@ -60,4 +60,18 @@ for demuxsample in ${ALL_BARCODE_NAMES[@]}; do
   run_talon_label $demuxsample $WKD_ROOT ${BATCH}
   
 done
-  
+
+# grep transgene sequences in clustered .fasta
+mkdir -p ${WKD_ROOT}/0_characterise
+mkdir -p ${WKD_ROOT}/0_characterise/transgene
+mkdir -p ${WKD_ROOT}/0_characterise/transgene/${BATCH}
+
+name=(hmapt1 hmapt2 mmapt1)
+seq=($hMAPT_1 $hMAPT_2 $mMAPT_1)
+for i in {0..2}; do
+  echo ${name[$i]}
+  echo ${seq[$i]}
+  search_fasta_by_sequence.py --fasta=${WKD_ROOT}/2_demultiplex/${BATCH}_Demultiplex --i=combined_reads.fastq \
+    --seq=${seq[$i]} -o=${name[$i]} \
+    -d=${WKD_ROOT}/0_characterise/transgene/${BATCH}
+done
