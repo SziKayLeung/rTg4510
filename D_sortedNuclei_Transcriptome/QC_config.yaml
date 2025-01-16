@@ -1,0 +1,7 @@
+# config to run QC 
+export WKD_ROOT=/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei
+export SCRIPT_ROOT=/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LRPipeline/ont_cDNA
+export LRPipelineDir=/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LRPipeline
+export LOGEN_ROOT=/lustre/projects/Research_Project-MRC148213/lsl693/scripts/LOGen
+export manifest=/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/0_metadata/H_Sorted_Nuclei/manifest_QC.csv
+export ERCC_WKD_ROOT=NULL

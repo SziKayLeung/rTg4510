@@ -1,0 +1,154 @@
+Job started on:
+Wed 15 Jan 15:25:32 UTC 2025
+Loading config file for project: QC_config.yaml
+Prepare input for QC
+[[1]]
+[1] "data.table" "stats"      "graphics"   "grDevices"  "utils"     
+[6] "datasets"   "methods"    "base"      
+
+[[2]]
+[1] "dplyr"      "data.table" "stats"      "graphics"   "grDevices" 
+[6] "utils"      "datasets"   "methods"    "base"      
+
+[[3]]
+ [1] "stringr"    "dplyr"      "data.table" "stats"      "graphics"  
+ [6] "grDevices"  "utils"      "datasets"   "methods"    "base"      
+
+[[4]]
+ [1] "reshape2"   "stringr"    "dplyr"      "data.table" "stats"     
+ [6] "graphics"   "grDevices"  "utils"      "datasets"   "methods"   
+[11] "base"      
+
+[[5]]
+ [1] "optparse"   "reshape2"   "stringr"    "dplyr"      "data.table"
+ [6] "stats"      "graphics"   "grDevices"  "utils"      "datasets"  
+[11] "methods"    "base"      
+
+Warning messages:
+1: package ‘dplyr’ was built under R version 4.2.3 
+2: package ‘stringr’ was built under R version 4.2.3 
+3: package ‘reshape2’ was built under R version 4.2.3 
+Manifest file: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/0_metadata/H_Sorted_Nuclei/manifest_QC.csv
+Root directory: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei
+Reading in demultipled read stats
+ [1] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC01_NeuN_readstats.txt"
+ [2] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC02_NeuN_readstats.txt"
+ [3] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC03_NeuN_readstats.txt"
+ [4] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC04_NeuN_readstats.txt"
+ [5] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC05_NeuN_readstats.txt"
+ [6] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC06_NeuN_readstats.txt"
+ [7] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC07_NeuN_readstats.txt"
+ [8] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC08_NeuN_readstats.txt"
+ [9] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC09_DN_readstats.txt"  
+[10] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC10_DN_readstats.txt"  
+[11] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC11_DN_readstats.txt"  
+[12] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC12_DN_readstats.txt"  
+[13] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC13_DN_readstats.txt"  
+[14] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC14_DN_readstats.txt"  
+[15] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC15_DN_readstats.txt"  
+[16] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/1b_demultiplex_merged//BC16_DN_readstats.txt"  
+Reading alignment stats from: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap/
+ [1] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC01_merged_mappedstats.txt"
+ [2] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC02_merged_mappedstats.txt"
+ [3] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC03_merged_mappedstats.txt"
+ [4] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC04_merged_mappedstats.txt"
+ [5] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC05_merged_mappedstats.txt"
+ [6] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC06_merged_mappedstats.txt"
+ [7] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC07_merged_mappedstats.txt"
+ [8] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC08_merged_mappedstats.txt"
+ [9] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC09_merged_mappedstats.txt"
+[10] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC10_merged_mappedstats.txt"
+[11] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC11_merged_mappedstats.txt"
+[12] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC12_merged_mappedstats.txt"
+[13] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC13_merged_mappedstats.txt"
+[14] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC14_merged_mappedstats.txt"
+[15] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC15_merged_mappedstats.txt"
+[16] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/3_minimap//BC16_merged_mappedstats.txt"
+Reading alignment stats from: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF/
+ [1] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC01_NeuN_mapped_mappedstats.txt"
+ [2] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC02_NeuN_mapped_mappedstats.txt"
+ [3] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC03_NeuN_mapped_mappedstats.txt"
+ [4] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC04_NeuN_mapped_mappedstats.txt"
+ [5] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC05_NeuN_mapped_mappedstats.txt"
+ [6] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC06_NeuN_mapped_mappedstats.txt"
+ [7] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC07_NeuN_mapped_mappedstats.txt"
+ [8] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC08_NeuN_mapped_mappedstats.txt"
+ [9] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC09_DN_mapped_mappedstats.txt"  
+[10] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC10_DN_mapped_mappedstats.txt"  
+[11] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC11_DN_mapped_mappedstats.txt"  
+[12] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC12_DN_mapped_mappedstats.txt"  
+[13] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC13_DN_mapped_mappedstats.txt"  
+[14] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC14_DN_mapped_mappedstats.txt"  
+[15] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC15_DN_mapped_mappedstats.txt"  
+[16] "/lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/5_align/PAF//BC16_DN_mapped_mappedstats.txt"  
+Reading SQANTI classification file: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_RulesFilter_result_classification.txt
+Reading demux expression file: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/6_collapse/demux_fl_count.csv
+Reading SQANTI Reasons filtered file: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/5_cupcake/7_sqanti3/rTg4510SCN_collapsed_filtering_reasons.txt
+Write output to: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/QC_input.RData
+
+
+processing file: QC_report.Rmd
+1/59                       
+2/59 [global_options]      
+3/59                       
+4/59 [setup]               
+5/59                       
+6/59 [load_input]          
+7/59                       
+8/59 [load_ERCC]           
+9/59                       
+10/59 [manifest]            
+11/59                       
+12/59 [demuxStats]          
+13/59                       
+14/59 [alignedStats]        
+15/59                       
+16/59 [alignedPlot]         
+17/59                       
+18/59 [chromStats]          
+19/59                       
+20/59 [ERCC]                
+21/59                       
+22/59 [amount]              
+23/59 [length]              
+24/59                       
+25/59 [redundancy1]         
+26/59                       
+27/59 [redundancy2]         
+28/59                       
+29/59 [usage]               
+30/59                       
+31/59 [usageTable]          
+32/59                       
+33/59 [sexCheck]            
+34/59                       
+35/59 [reasonFiltered]      
+36/59                       
+37/59 [monoExonic]          
+38/59                       
+39/59 [sensitivity]         
+40/59                       
+41/59 [fullStats]           
+42/59                       
+43/59 [normalisation]       
+44/59                       
+45/59 [geneCellExpressions] 
+46/59                       
+47/59 [neuronalExpression]  
+48/59                       
+49/59 [oligoCellExpressions]
+50/59                       
+51/59 [saturation_plot]     
+52/59                       
+53/59 [summary]             
+54/59                       
+55/59 [geneType]            
+56/59                       
+57/59 [geneExpression]      
+58/59                       
+59/59 [sessionInfo]         
+output file: QC_report.knit.md
+
+/lustre/home/sl693/.conda/envs/lrp/bin/pandoc +RTS -K512m -RTS QC_report.knit.md --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/QC_report.html --lua-filter /lustre/home/sl693/.conda/envs/lrp/lib/R/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /lustre/home/sl693/.conda/envs/lrp/lib/R/library/rmarkdown/rmarkdown/lua/latex-div.lua --embed-resources --standalone --variable bs3=TRUE --section-divs --table-of-contents --toc-depth 3 --variable toc_float=1 --variable toc_selectors=h1,h2,h3 --variable toc_collapsed=1 --variable toc_smooth_scroll=1 --variable toc_print=1 --template /lustre/home/sl693/.conda/envs/lrp/lib/R/library/rmarkdown/rmd/h/default.html --no-highlight --variable highlightjs=1 --number-sections --variable theme=bootstrap --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /tmp/Rtmphs6Gmx/rmarkdown-strd1ab7189f01f5.html --variable code_folding=hide --variable code_menu=1 
+
+Output created: /lustre/projects/Research_Project-MRC148213/lsl693/rTg4510/H_Sorted_Nuclei/QC_report.html
